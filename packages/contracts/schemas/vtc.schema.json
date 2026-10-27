@@ -1,0 +1,240 @@
+{
+  "$defs": {
+    "ExpectedCount": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "integer",
+          "default": "integer",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reviewer": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Reviewer",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "verification": {
+          "const": "human",
+          "default": "human",
+          "title": "Verification",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "reviewer"
+      ],
+      "title": "ExpectedCount",
+      "type": "object"
+    },
+    "Limits": {
+      "additionalProperties": false,
+      "properties": {
+        "max_candidates": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Candidates",
+          "type": "integer"
+        },
+        "max_estimated_usd": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "maximum": 150,
+          "title": "Max Estimated Usd",
+          "type": "number"
+        },
+        "max_runtime_seconds": {
+          "default": 1200,
+          "maximum": 7200,
+          "minimum": 60,
+          "title": "Max Runtime Seconds",
+          "type": "integer"
+        },
+        "max_target_calls": {
+          "default": 60,
+          "maximum": 500,
+          "minimum": 3,
+          "title": "Max Target Calls",
+          "type": "integer"
+        }
+      },
+      "title": "Limits",
+      "type": "object"
+    },
+    "MutationFamily": {
+      "enum": [
+        "background_replacement",
+        "background_clutter",
+        "brightness_shift"
+      ],
+      "title": "MutationFamily",
+      "type": "string"
+    },
+    "ProtectedObjects": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_instances": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Expected Instances",
+          "type": "integer"
+        },
+        "label": {
+          "maxLength": 100,
+          "minLength": 2,
+          "title": "Label",
+          "type": "string"
+        },
+        "mask_asset_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Mask Asset Ids",
+          "type": "array"
+        },
+        "min_visible_fraction": {
+          "maximum": 1,
+          "minimum": 0.8,
+          "title": "Min Visible Fraction",
+          "type": "number"
+        }
+      },
+      "required": [
+        "label",
+        "expected_instances",
+        "mask_asset_ids",
+        "min_visible_fraction"
+      ],
+      "title": "ProtectedObjects",
+      "type": "object"
+    },
+    "ReproductionPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "attempts": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "required_failures": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Required Failures",
+          "type": "integer"
+        }
+      },
+      "title": "ReproductionPolicy",
+      "type": "object"
+    },
+    "ValidationPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "require_mask_review": {
+          "const": true,
+          "default": true,
+          "title": "Require Mask Review",
+          "type": "boolean"
+        },
+        "uncertain": {
+          "const": "REVIEW_REQUIRED",
+          "default": "REVIEW_REQUIRED",
+          "title": "Uncertain",
+          "type": "string"
+        }
+      },
+      "title": "ValidationPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "allowed_mutations": {
+      "items": {
+        "$ref": "#/$defs/MutationFamily"
+      },
+      "minItems": 1,
+      "title": "Allowed Mutations",
+      "type": "array"
+    },
+    "case_id": {
+      "maxLength": 120,
+      "minLength": 3,
+      "title": "Case Id",
+      "type": "string"
+    },
+    "expected": {
+      "$ref": "#/$defs/ExpectedCount"
+    },
+    "forbidden_mutations": {
+      "items": {
+        "enum": [
+          "object_addition",
+          "object_removal",
+          "protected_region_repaint"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Forbidden Mutations",
+      "type": "array"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    },
+    "prompt": {
+      "maxLength": 300,
+      "minLength": 10,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "protected": {
+      "$ref": "#/$defs/ProtectedObjects"
+    },
+    "reproduction": {
+      "$ref": "#/$defs/ReproductionPolicy"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_type": {
+      "const": "object_counting",
+      "default": "object_counting",
+      "title": "Task Type",
+      "type": "string"
+    },
+    "validation_policy": {
+      "$ref": "#/$defs/ValidationPolicy"
+    }
+  },
+  "required": [
+    "case_id",
+    "prompt",
+    "expected",
+    "protected",
+    "allowed_mutations",
+    "forbidden_mutations",
+    "validation_policy",
+    "reproduction",
+    "limits"
+  ],
+  "title": "VisualTestContract",
+  "type": "object"
+}

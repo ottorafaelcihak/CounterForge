@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "MutationFamily": {
+      "enum": [
+        "background_replacement",
+        "background_clutter",
+        "brightness_shift"
+      ],
+      "title": "MutationFamily",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Provider structured output, expanded by the server into a MutationPlan.",
+  "properties": {
+    "family": {
+      "$ref": "#/$defs/MutationFamily"
+    },
+    "hypothesis": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Hypothesis",
+      "type": "string"
+    },
+    "prompt": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "strength": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Strength",
+      "type": "number"
+    }
+  },
+  "required": [
+    "family",
+    "strength",
+    "hypothesis",
+    "prompt"
+  ],
+  "title": "PlannerProposal",
+  "type": "object"
+}

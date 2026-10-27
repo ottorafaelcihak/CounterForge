@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "SegmentedObject": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox_xyxy": {
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Bbox Xyxy",
+          "type": "array"
+        },
+        "confidence_or_null": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence Or Null"
+        },
+        "mask_asset_id": {
+          "format": "uuid",
+          "title": "Mask Asset Id",
+          "type": "string"
+        },
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "bbox_xyxy",
+        "mask_asset_id"
+      ],
+      "title": "SegmentedObject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "diagnostics": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "objects": {
+      "items": {
+        "$ref": "#/$defs/SegmentedObject"
+      },
+      "title": "Objects",
+      "type": "array"
+    },
+    "outcome": {
+      "enum": [
+        "COMPLETED",
+        "INCOMPLETE",
+        "REFUSED",
+        "PROVIDER_ERROR"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    }
+  },
+  "required": [
+    "objects",
+    "outcome"
+  ],
+  "title": "SegmentationResult",
+  "type": "object"
+}

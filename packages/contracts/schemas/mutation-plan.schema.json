@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "MutationFamily": {
+      "enum": [
+        "background_replacement",
+        "background_clutter",
+        "brightness_shift"
+      ],
+      "title": "MutationFamily",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "estimated_cost_usd": {
+      "minimum": 0,
+      "title": "Estimated Cost Usd",
+      "type": "number"
+    },
+    "family": {
+      "$ref": "#/$defs/MutationFamily"
+    },
+    "hypothesis": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Hypothesis",
+      "type": "string"
+    },
+    "prompt": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "requires_muse_image": {
+      "title": "Requires Muse Image",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "strength": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Strength",
+      "type": "number"
+    },
+    "target_region": {
+      "default": "background_only",
+      "enum": [
+        "background_only",
+        "full_image"
+      ],
+      "title": "Target Region",
+      "type": "string"
+    }
+  },
+  "required": [
+    "hypothesis",
+    "family",
+    "strength",
+    "prompt",
+    "requires_muse_image",
+    "estimated_cost_usd"
+  ],
+  "title": "MutationPlan",
+  "type": "object"
+}

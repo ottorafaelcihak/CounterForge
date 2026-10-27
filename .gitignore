@@ -1,0 +1,47 @@
+# --- Secrets and local credential material (never committed) -------------
+.env
+.env.*
+!.env.example
+
+# --- Agent/tool staging areas (may contain user-supplied material) --------
+.codex-attachments/
+.remember/
+.agents/
+.aws/
+.codex/
+.superpowers/
+.worktrees/
+.cache/
+
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+
+# --- Node / Next.js -------------------------------------------------------
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- Runtime artifacts (content-addressed assets, exports, evidence) ------
+data/
+/artifacts/
+*.zip
+
+# --- Editor / OS ----------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/

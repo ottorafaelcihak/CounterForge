@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+:root { color-scheme: light; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f5f5f2; color: #182327; }
+a { text-underline-offset: 0.2em; }
+a:focus-visible { outline: 3px solid #1b7065; outline-offset: 4px; }

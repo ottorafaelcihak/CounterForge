@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "TargetOutcome": {
+      "enum": [
+        "CORRECT",
+        "INCORRECT",
+        "UNKNOWN",
+        "PROVIDER_ERROR"
+      ],
+      "title": "TargetOutcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "latency_ms": {
+      "minimum": 0,
+      "title": "Latency Ms",
+      "type": "integer"
+    },
+    "model_id": {
+      "title": "Model Id",
+      "type": "string"
+    },
+    "options": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Options",
+      "type": "object"
+    },
+    "parsed_answer": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parsed Answer"
+    },
+    "raw_asset_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Raw Asset Sha256",
+      "type": "string"
+    },
+    "raw_text": {
+      "title": "Raw Text",
+      "type": "string"
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Request Id"
+    },
+    "status": {
+      "$ref": "#/$defs/TargetOutcome"
+    },
+    "version_claim": {
+      "title": "Version Claim",
+      "type": "string"
+    }
+  },
+  "required": [
+    "raw_text",
+    "parsed_answer",
+    "status",
+    "model_id",
+    "version_claim",
+    "options",
+    "latency_ms",
+    "raw_asset_sha256"
+  ],
+  "title": "TargetResult",
+  "type": "object"
+}

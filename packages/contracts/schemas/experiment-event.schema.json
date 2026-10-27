@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "CandidateValidated": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "const": "candidate_validated",
+          "default": "candidate_validated",
+          "title": "Event",
+          "type": "string"
+        },
+        "experiment_id": {
+          "format": "uuid",
+          "title": "Experiment Id",
+          "type": "string"
+        },
+        "mutation_id": {
+          "format": "uuid",
+          "title": "Mutation Id",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/ValidityVerdict"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "mutation_id",
+        "verdict"
+      ],
+      "title": "CandidateValidated",
+      "type": "object"
+    },
+    "ExperimentState": {
+      "enum": [
+        "DRAFT",
+        "BASELINE_VALIDATING",
+        "READY",
+        "PLANNING",
+        "MUTATING",
+        "VALIDATING",
+        "EVALUATING",
+        "CONFIRMING",
+        "PAUSE_REQUESTED",
+        "PAUSED",
+        "CANCEL_REQUESTED",
+        "CANCELLED",
+        "COMPLETED",
+        "BUDGET_EXHAUSTED",
+        "SEED_INVALID_FOR_SEARCH",
+        "FAILED"
+      ],
+      "title": "ExperimentState",
+      "type": "string"
+    },
+    "StateChanged": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "const": "state_changed",
+          "default": "state_changed",
+          "title": "Event",
+          "type": "string"
+        },
+        "experiment_id": {
+          "format": "uuid",
+          "title": "Experiment Id",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/ExperimentState"
+        }
+      },
+      "required": [
+        "experiment_id",
+        "state"
+      ],
+      "title": "StateChanged",
+      "type": "object"
+    },
+    "ValidityVerdict": {
+      "enum": [
+        "VALID",
+        "INVALID",
+        "REVIEW_REQUIRED"
+      ],
+      "title": "ValidityVerdict",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "discriminator": {
+        "mapping": {
+          "candidate_validated": "#/$defs/CandidateValidated",
+          "state_changed": "#/$defs/StateChanged"
+        },
+        "propertyName": "event"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/StateChanged"
+        },
+        {
+          "$ref": "#/$defs/CandidateValidated"
+        }
+      ],
+      "title": "Data"
+    },
+    "id": {
+      "minimum": 1,
+      "title": "Id",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "data"
+  ],
+  "title": "ExperimentEvent",
+  "type": "object"
+}
