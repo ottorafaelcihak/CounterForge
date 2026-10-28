@@ -5,7 +5,7 @@ import hashlib
 import hmac
 import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from decimal import Decimal
 from typing import Any, cast
 from uuid import UUID, uuid4
@@ -29,7 +29,10 @@ from counterforge_contracts.responses import (
     Finding,
     JobLinks,
     JobRef,
+    JobResult,
+    JobUsage,
     Mask,
+    MaskGeometry,
     Metrics,
     Page,
     Project,
@@ -49,6 +52,7 @@ from .config import Settings
 from .db.repositories import IdempotencyConflict
 from .db.uow import UnitOfWork
 from .errors import ServiceError
+from .mask_review import MaskReview
 from .redaction import review_text
 
 
@@ -69,6 +73,7 @@ class Service:
         self.t = uow.tables
         self.settings = settings
         self.artifacts = ArtifactStore(uow, settings.artifact_root)
+        self.mask_review = MaskReview(self)
 
     def row(self, table: Table, entity_id: UUID, *, lock: bool = False) -> RowMapping:
         query = select(table).where(table.c.id == entity_id)
@@ -134,8 +139,26 @@ class Service:
         )
 
     @staticmethod
-    def mask_dto(row: RowMapping) -> Mask:
+    def mask_dto(row: Mapping[str, Any] | RowMapping) -> Mask:
+        raw_geometry = row["geometry_json"]
+        geometry = (
+            MaskGeometry.model_validate(
+                {
+                    key: raw_geometry[key]
+                    for key in ("width", "height", "bbox_xyxy", "foreground_pixels", "binary")
+                }
+            )
+            if all(
+                key in raw_geometry
+                for key in ("width", "height", "bbox_xyxy", "foreground_pixels", "binary")
+            )
+            else None
+        )
         return Mask(
+            revision=row.get("revision", 1),
+            active=row.get("active", True),
+            origin=row.get("origin", "SAM"),
+            geometry=geometry,
             **{
                 name: row[name]
                 for name in (
@@ -148,7 +171,7 @@ class Service:
                     "reviewer",
                     "reviewed_at",
                 )
-            }
+            },
         )
 
     def create_project(self, body: CreateProject) -> Project:
@@ -325,14 +348,14 @@ class Service:
             self.t.seed_masks,
             f"masks:{seed_id}",
             self.mask_dto,
-            [self.t.seed_masks.c.seed_id == seed_id],
+            [self.t.seed_masks.c.seed_id == seed_id, self.t.seed_masks.c.active.is_(True)],
             limit,
             cursor,
         )
 
     def approve_mask(self, seed_id: UUID, mask_id: UUID, body: ReviewDecision) -> Mask:
         seed = self.seed(seed_id, lock=True)
-        mask = self.row(self.t.seed_masks, mask_id, lock=True)
+        mask = self.mask_review.mask(seed_id, mask_id, lock=True)
         if mask["seed_id"] != seed_id:
             raise ServiceError(ErrorCode.NOT_FOUND, "Mask does not belong to this seed.", 404)
         asset = self.asset(mask["mask_asset_id"])
@@ -354,6 +377,7 @@ class Service:
             .mappings()
             .one()
         )
+        self.mask_review.touch(seed_id)
         self.audit(
             seed["project_id"],
             "MASK_REVIEWED",
@@ -383,6 +407,7 @@ class Service:
                 "Contract must preserve the verified seed label and question.",
                 422,
             )
+        self.mask_review.require_ready(seed["id"])
         source = self.asset(seed["image_asset_id"])
         provenance = SeedProvenance.model_validate(seed["provenance_json"])
         original = self.asset(provenance.original_asset_id)
@@ -410,6 +435,7 @@ class Service:
                     .where(
                         self.t.seed_masks.c.seed_id == seed["id"],
                         self.t.seed_masks.c.mask_asset_id == asset_id,
+                        self.t.seed_masks.c.active.is_(True),
                     )
                     .with_for_update(read=True)
                 )
@@ -441,6 +467,7 @@ class Service:
                     "reviewed_at": mask["reviewed_at"].isoformat(),
                     "object_ordinal": mask["object_ordinal"],
                     "object_label": mask["object_label"],
+                    "revision": mask["revision"],
                 }
             )
         return {
@@ -737,6 +764,13 @@ class Service:
                 usage.c.experiment_id == row["id"], usage.c.status == "UNKNOWN_CHARGE"
             )
         )
+        estimated = self.db.scalar(
+            select(func.coalesce(func.sum(usage.c.accounted_estimate_usd), 0)).where(
+                usage.c.experiment_id == row["id"],
+                usage.c.status == "SETTLED",
+                usage.c.cost_kind == "ESTIMATED",
+            )
+        )
         mutations, validations = self.t.mutations, self.t.mutation_validations
         latest = (
             select(validations.c.mutation_id, validations.c.verdict)
@@ -800,16 +834,69 @@ class Service:
                 total_target_calls=row["calls_consumed"],
                 stable_findings=stable or 0,
                 actual_provider_usage_usd=float(actual or 0),
-                conservative_estimate_usd=float(row["reserved_usd"]),
+                conservative_estimate_usd=float(row["reserved_usd"] + (estimated or 0)),
                 unresolved_charges_usd=float(unknown or 0),
             ),
             stop_reason=row["stop_reason"],
         )
 
-    @staticmethod
-    def job_dto(row: RowMapping) -> JobRef:
+    def job_dto(self, row: RowMapping) -> JobRef:
+        events = (
+            self.db.execute(
+                select(self.t.usage_events).where(
+                    self.t.usage_events.c.background_job_id == row["id"]
+                )
+            )
+            .mappings()
+            .all()
+        )
+        usage = JobUsage(
+            actual_usd=float(
+                sum(
+                    (e["actual_usd"] or Decimal(0))
+                    for e in events
+                    if e["status"] == "SETTLED" and e["cost_kind"] == "ACTUAL"
+                )
+            ),
+            estimated_usd=float(
+                sum(
+                    e["accounted_estimate_usd"]
+                    for e in events
+                    if e["status"] == "SETTLED" and e["cost_kind"] == "ESTIMATED"
+                )
+            ),
+            unresolved_usd=float(
+                sum(e["estimated_max_usd"] for e in events if e["status"] == "UNKNOWN_CHARGE")
+            ),
+            reserved_usd=float(
+                sum(e["estimated_max_usd"] for e in events if e["status"] == "RESERVED")
+            ),
+        )
+        result = row["result_json"]
+        parsed_result = JobResult.model_validate(result) if result and "outcome" in result else None
+        if parsed_result is not None:
+            parsed_result = parsed_result.model_copy(
+                update={
+                    "evidence_asset_ids": sorted(
+                        {
+                            *parsed_result.evidence_asset_ids,
+                            *(
+                                e["raw_response_asset_id"]
+                                for e in events
+                                if e["raw_response_asset_id"] is not None
+                            ),
+                        },
+                        key=str,
+                    )
+                }
+            )
         return JobRef(
-            job_id=row["id"], state=row["state"], links=JobLinks(self=f"/api/v1/jobs/{row['id']}")
+            job_id=row["id"],
+            state=row["state"],
+            links=JobLinks(self=f"/api/v1/jobs/{row['id']}"),
+            error_code=row["error_code"],
+            usage=usage,
+            result=parsed_result,
         )
 
     def job(self, job_id: UUID) -> RowMapping:
@@ -821,12 +908,13 @@ class Service:
         """Queue durable intent only. Stated job limits are the dispatch authorization:
         a job without them may wait here, but accounting refuses to dispatch it."""
 
-        seed = self.seed(seed_id)
+        seed = self.seed(seed_id, lock=True)
         job_id = self.uow.background_jobs.enqueue(
             project_id=seed["project_id"],
             kind="SEGMENT",
             request_json={
                 "seed_id": str(seed_id),
+                "mask_generation": seed["mask_generation"],
                 **body.model_dump(mode="json", exclude_none=True),
             },
             idempotency_key=key,
@@ -837,7 +925,24 @@ class Service:
         self, target_id: UUID, key: str | None, body: TargetCheckRequest | None = None
     ) -> JobRef:
         target = self.target(target_id)
-        request: dict[str, Any] = {"target_config_id": str(target_id)}
+        request: dict[str, Any] = {
+            "target_config_id": str(target_id),
+            "target_snapshot": {
+                name: target[name]
+                for name in (
+                    "adapter_key",
+                    "model_id",
+                    "model_revision",
+                    "prompt_template",
+                    "inference_options",
+                )
+            },
+        }
+        if body is not None and body.seed_id is not None:
+            seed = self.seed(body.seed_id)
+            if seed["project_id"] != target["project_id"]:
+                raise ServiceError(ErrorCode.FORBIDDEN, "Target seed is outside this project.", 403)
+            request["seed_id"] = str(body.seed_id)
         if body is not None and body.limits is not None:
             request["limits"] = body.limits.model_dump(mode="json")
         job_id = self.uow.background_jobs.enqueue(

@@ -68,8 +68,14 @@ async def service_for(request: Request) -> AsyncIterator[Service]:
             ) from None
         request.app.state.uow_factory = factory
     with factory() as uow:
+        uow.background_jobs.max_pending_jobs = settings.max_pending_jobs
         yield Service(uow, settings)
         uow.commit()
+        pending = list(uow.background_jobs.new_job_ids)
+    if settings.enqueue_jobs and pending:
+        from services.worker.app.queue import enqueue_ids
+
+        enqueue_ids(settings, pending)
 
 
 Services = Annotated[Service, Depends(service_for, scope="function")]
@@ -79,7 +85,7 @@ def base_app(settings: Settings | None, engine: Engine | None) -> FastAPI:
     app = FastAPI(
         title="CounterForge API",
         version="1.0.0",
-        description="Authenticated evidence persistence. Provider dispatch remains disabled.",
+        description="Owner-authenticated evidence persistence and bounded setup jobs.",
     )
     app.state.settings = settings
     app.state.engine = engine
@@ -200,7 +206,7 @@ def base_app(settings: Settings | None, engine: Engine | None) -> FastAPI:
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         response = await call_next(request)
-        response.headers["X-CounterForge-Phase"] = "02"
+        response.headers["X-CounterForge-Phase"] = "03"
         return response
 
     return app

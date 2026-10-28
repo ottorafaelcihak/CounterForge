@@ -2,7 +2,7 @@ UV ?= uv
 RUN := $(UV) run --locked --offline
 PYTHON := $(RUN) python
 
-.PHONY: lint typecheck test test-unit test-contract test-db migrate services-up services-down compose-check generate-contracts check-contracts dev-api dev-web build-web
+.PHONY: lint typecheck test test-unit test-contract test-db migrate services-up services-down test-e2e compose-check generate-contracts check-contracts dev-api dev-web build-web
 
 lint:
 	$(RUN) ruff check .
@@ -23,7 +23,7 @@ test-contract:
 
 test-db:
 	@test -n "$$COUNTERFORGE_TEST_DATABASE_URL" || { echo "COUNTERFORGE_TEST_DATABASE_URL is required; use a disposable loopback PostgreSQL database." >&2; exit 2; }
-	$(RUN) pytest tests/integrations
+	$(RUN) pytest tests/integrations --allow-hosts=127.0.0.1,::1,localhost
 
 migrate:
 	$(PYTHON) -m services.api.app.db.migrations
@@ -52,3 +52,14 @@ dev-web:
 
 build-web:
 	npm run build --prefix apps/web
+
+.PHONY: smoke-meta recover-jobs
+smoke-meta:
+	$(PYTHON) -m scripts.smoke_meta
+
+recover-jobs:
+	$(PYTHON) -m services.worker.app.main --recover-only
+
+test-e2e:
+	@test -n "$$COUNTERFORGE_TEST_DATABASE_URL" && test -n "$$COUNTERFORGE_TEST_REDIS_URL" || { echo "Explicit disposable PostgreSQL and loopback Redis /15 URLs are required." >&2; exit 2; }
+	RUN_COUNTERFORGE_E2E=1 $(RUN) pytest tests/e2e

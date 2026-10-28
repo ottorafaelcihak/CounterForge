@@ -2,6 +2,7 @@ from typing import Annotated, Any, NoReturn
 from uuid import UUID
 
 from counterforge_contracts.requests import (
+    AcknowledgeMaskMismatch,
     ConfirmRequest,
     CreateProject,
     CreateTargetConfig,
@@ -22,11 +23,14 @@ from counterforge_contracts.responses import (
     Health,
     JobRef,
     Mask,
+    MaskReviewState,
+    MaskRevision,
     Metrics,
     Mutation,
     Page,
     Project,
     Seed,
+    SetupCapabilities,
     Target,
     ValidationReport,
 )
@@ -76,6 +80,45 @@ async def ready(request: Request) -> JSONResponse:
         content=envelope(
             ErrorCode.DEPENDENCY_UNAVAILABLE, "Required services are not ready."
         ).model_dump(mode="json"),
+    )
+
+
+@router.get(PREFIX + "/setup", response_model=SetupCapabilities, responses=ERRORS)
+async def setup_capabilities(service: Services) -> SetupCapabilities:
+    from counterforge_meta.usage import PriceBook
+
+    from .accounting import Budget
+
+    revision = None
+    try:
+        revision = PriceBook.load(service.settings.pricing_path).revision
+    except (OSError, ValueError, KeyError):
+        pass
+    allowance = Budget(service.uow).deployment_allowance()
+    from datetime import UTC, datetime
+
+    configured = (
+        allowance is not None
+        and allowance.expires_at > datetime.now(UTC)
+        and allowance.consumed_calls < allowance.max_calls
+        and allowance.consumed_usd <= allowance.max_usd
+    )
+    return SetupCapabilities(
+        provider_mode=service.settings.provider_mode,
+        synthetic_fixture_enabled=service.settings.provider_mode == "FIXTURE",
+        pricing_revision=revision,
+        allowance_configured=configured,
+    )
+
+
+@router.get(PREFIX + "/fixtures/development-seed", response_class=Response, responses=ERRORS)
+async def development_seed(request: Request) -> Response:
+    if settings_for(request).provider_mode != "FIXTURE":
+        raise ServiceError(ErrorCode.NOT_FOUND, "Development fixture is unavailable.", 404)
+    from services.worker.app.fixtures import seed_bytes
+
+    return Response(
+        content=seed_bytes(), media_type="image/png", headers={"Cache-Control": "no-store"}
     )
 
 
@@ -421,8 +464,19 @@ async def revise_mask(
     mask_id: UUID,
     file: Annotated[UploadFile, File()],
     notes: Annotated[str, Form(min_length=1, max_length=2000)],
-) -> NoReturn:
-    disabled()
+    service: Services,
+    idempotency_key: OptionalKey = None,
+) -> Mask:
+    if file.content_type != "image/png":
+        await file.close()
+        raise InvalidImage("Mask must be PNG")
+    try:
+        data = await file.read(MAX_UPLOAD_BYTES + 1)
+    finally:
+        await file.close()
+    return service.mask_review.write(
+        seed_id, data, notes=notes, mask_id=mask_id, key=idempotency_key
+    )
 
 
 @router.get(PREFIX + "/contracts/{contract_id}", response_model=Contract, responses=ERRORS)
@@ -466,6 +520,78 @@ def create_app(*, settings: Settings | None = None, engine: Engine | None = None
     application.include_router(public_router)
     application.include_router(router)
     return application
+
+
+@router.post(
+    PREFIX + "/seeds/{seed_id}/masks", response_model=Mask, status_code=201, responses=ERRORS
+)
+async def add_mask(
+    seed_id: UUID,
+    service: Services,
+    file: Annotated[UploadFile, File()],
+    object_label: Annotated[str, Form(min_length=2, max_length=100)],
+    notes: Annotated[str, Form(min_length=1, max_length=2000)],
+    idempotency_key: OptionalKey = None,
+) -> Mask:
+    if file.content_type != "image/png":
+        await file.close()
+        raise InvalidImage("Mask must be PNG")
+    try:
+        data = await file.read(MAX_UPLOAD_BYTES + 1)
+    finally:
+        await file.close()
+    return service.mask_review.write(
+        seed_id, data, notes=notes, object_label=object_label, key=idempotency_key
+    )
+
+
+@router.get(
+    PREFIX + "/seeds/{seed_id}/masks/{mask_id}/revisions",
+    response_model=Page[MaskRevision],
+    responses=ERRORS,
+)
+async def mask_history(
+    seed_id: UUID,
+    mask_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[MaskRevision]:
+    return service.mask_review.history(seed_id, mask_id, limit, cursor)
+
+
+@router.post(
+    PREFIX + "/seeds/{seed_id}/masks/{mask_id}/retire", response_model=Mask, responses=ERRORS
+)
+async def retire_mask(
+    seed_id: UUID, mask_id: UUID, body: ReviewDecision, service: Services
+) -> Mask:
+    if body.decision != "INVALID":
+        raise ServiceError(
+            ErrorCode.INVALID_INPUT,
+            "Retirement requires an invalid or extra-instance decision.",
+            422,
+        )
+    return service.mask_review.retire(seed_id, mask_id, body.notes)
+
+
+@router.get(
+    PREFIX + "/seeds/{seed_id}/mask-review", response_model=MaskReviewState, responses=ERRORS
+)
+async def mask_review_state(seed_id: UUID, service: Services) -> MaskReviewState:
+    return service.mask_review.state(seed_id)
+
+
+@router.post(
+    PREFIX + "/seeds/{seed_id}/masks/acknowledgements",
+    response_model=MaskReviewState,
+    status_code=201,
+    responses=ERRORS,
+)
+async def acknowledge_masks(
+    seed_id: UUID, body: AcknowledgeMaskMismatch, service: Services
+) -> MaskReviewState:
+    return service.mask_review.acknowledge(seed_id, body)
 
 
 app = create_app()

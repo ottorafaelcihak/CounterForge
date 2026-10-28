@@ -13,6 +13,7 @@ from .versions import (
     JobState,
     MutationFamily,
     MutationState,
+    TargetOutcome,
     ValidityVerdict,
 )
 from .vtc import ExpectedCount, Limits, VisualTestContract
@@ -62,6 +63,10 @@ class JobRef(ContractModel):
     state: JobState
     links: JobLinks
 
+    error_code: str | None = None
+    result: "JobResult | None" = None
+    usage: "JobUsage" = Field(default_factory=lambda: JobUsage())
+
 
 class ExperimentRef(ContractModel):
     experiment_id: UUID
@@ -100,6 +105,14 @@ class Seed(ContractModel):
     provenance: SeedProvenance
 
 
+class MaskGeometry(ContractModel):
+    width: int = Field(ge=1)
+    height: int = Field(ge=1)
+    bbox_xyxy: tuple[int, int, int, int]
+    foreground_pixels: int = Field(ge=1)
+    binary: Literal[True] = True
+
+
 class Mask(ContractModel):
     id: UUID
     seed_id: UUID
@@ -109,6 +122,11 @@ class Mask(ContractModel):
     reviewed: bool
     reviewer: str | None = None
     reviewed_at: datetime | None = None
+
+    revision: int = Field(default=1, ge=1)
+    active: bool = True
+    origin: Literal["SAM", "HUMAN", "FIXTURE"] = "SAM"
+    geometry: MaskGeometry | None = None
 
 
 class Contract(ContractModel):
@@ -247,3 +265,54 @@ class DemoManifest(ContractModel):
     findings: list[Finding]
     public_asset_ids: list[UUID]
     limitations: list[str]
+
+
+class MaskRevision(Mask):
+    actor: str
+    notes: str
+    created_at: datetime
+    retired_at: datetime | None = None
+
+
+class MaskReviewState(ContractModel):
+    seed_id: UUID
+    expected_count: int
+    detected_count: int | None
+    draft_count: int
+    approved_count: int
+    mismatch: bool
+    acknowledged: bool
+    mask_set_sha256: str
+    segmentation_outcome: str | None
+    blocking: list[str]
+    can_create_contract: bool
+    synthetic: bool = False
+
+
+class JobUsage(ContractModel):
+    actual_usd: FiniteNumber = Field(default=0.0, ge=0)
+    estimated_usd: FiniteNumber = Field(default=0.0, ge=0)
+    unresolved_usd: FiniteNumber = Field(default=0.0, ge=0)
+    reserved_usd: FiniteNumber = Field(default=0.0, ge=0)
+
+
+class JobResult(ContractModel):
+    outcome: str
+    synthetic: bool = False
+    detected_count: int | None = Field(default=None, ge=0)
+    expected_count: int | None = Field(default=None, ge=0)
+    mask_asset_ids: list[UUID] = Field(default_factory=list)
+    parsed_count: int | None = None
+    target_status: TargetOutcome | None = None
+    diagnostics: list[str] = Field(default_factory=list)
+    evidence_asset_ids: list[UUID] = Field(default_factory=list)
+
+
+class SetupCapabilities(ContractModel):
+    provider_mode: Literal["DISABLED", "FIXTURE", "LIVE"]
+    synthetic_fixture_enabled: bool
+    pricing_revision: str | None
+    allowance_configured: bool
+
+
+JobRef.model_rebuild()

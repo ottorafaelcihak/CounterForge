@@ -3,9 +3,12 @@ import json
 from typing import Any, Literal, cast
 from uuid import UUID
 
-from sqlalchemy import Table, select
+from counterforge_contracts.versions import ErrorCode
+from sqlalchemy import Table, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, RowMapping
+
+from ..errors import ServiceError
 
 JobKind = Literal["SEGMENT", "TARGET_CHECK", "EXPORT", "RETEST", "CONFIRM"]
 
@@ -24,6 +27,8 @@ class BackgroundJobs:
     def __init__(self, connection: Connection, table: Table) -> None:
         self.connection = connection
         self.table = table
+        self.new_job_ids: list[UUID] = []
+        self.max_pending_jobs = 100
 
     def get(self, job_id: UUID) -> RowMapping | None:
         return (
@@ -55,6 +60,31 @@ class BackgroundJobs:
                 allow_nan=False,
             ).encode("utf-8")
         ).hexdigest()
+        # One global queue bound; deduplication is checked before capacity.
+        self.connection.execute(select(func.pg_advisory_xact_lock(73402031)))
+        if idempotency_key is not None:
+            existing = (
+                self.connection.execute(
+                    select(self.table).where(
+                        self.table.c.project_id == project_id,
+                        self.table.c.kind == kind,
+                        self.table.c.idempotency_key == idempotency_key,
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if existing is not None:
+                if existing["request_fingerprint"] != fingerprint:
+                    raise IdempotencyConflict("Job key identifies a different request")
+                return cast(UUID, existing["id"])
+        pending = self.connection.scalar(
+            select(func.count())
+            .select_from(self.table)
+            .where(self.table.c.state.in_(["QUEUED", "RUNNING"]))
+        )
+        if pending is not None and pending >= self.max_pending_jobs:
+            raise ServiceError(ErrorCode.QUEUE_FULL, "Setup queue is at capacity.", 429)
         statement = insert(self.table).values(
             project_id=project_id,
             kind=kind,
@@ -74,6 +104,7 @@ class BackgroundJobs:
             ).returning(self.table.c.id)
         )
         if job_id is not None:
+            self.new_job_ids.append(job_id)
             return cast(UUID, job_id)
         existing = (
             self.connection.execute(

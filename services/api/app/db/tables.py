@@ -34,6 +34,9 @@ class Tables:
     background_jobs: Table
     public_asset_whitelist: Table
     deployment_allowance: Table
+    seed_mask_revisions: Table
+    seed_mask_acknowledgements: Table
+    mask_edit_requests: Table
 
 
 def load_tables(connection: Connection) -> Tables:

@@ -45,6 +45,7 @@ class SegmentationRequest(ContractModel):
 
 
 class TargetCheckRequest(ContractModel):
+    seed_id: UUID | None = None
     limits: JobLimits | None = None
 
 
@@ -69,3 +70,9 @@ class ConfirmRequest(ContractModel):
 class RetestRequest(ContractModel):
     target_config_id: UUID
     limits: Limits = Field(default_factory=Limits)
+
+
+class AcknowledgeMaskMismatch(ContractModel):
+    detected_count: StrictInt | None = Field(default=None, ge=0, le=1000)
+    human_count: StrictInt = Field(ge=1, le=16)
+    notes: str = Field(min_length=10, max_length=2000)

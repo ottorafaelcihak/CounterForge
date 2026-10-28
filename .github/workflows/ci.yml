@@ -16,7 +16,14 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U counterforge_test -d counterforge_test"
           --health-interval 5s --health-timeout 3s --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports: ["56379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 15
     env:
+      COUNTERFORGE_TEST_REDIS_URL: redis://127.0.0.1:56379/15
       RUN_META_LIVE_TESTS: "0"
       NEXT_TELEMETRY_DISABLED: "1"
       COUNTERFORGE_TEST_DATABASE_URL: postgresql+psycopg://counterforge_test@127.0.0.1:55432/counterforge_test
@@ -43,3 +50,5 @@ jobs:
           POSTGRES_PASSWORD: ci-configuration-placeholder
           OWNER_AUTH_TOKEN: ci-configuration-placeholder
       - run: make build-web
+      - run: uv run --locked python -m playwright install --with-deps chromium
+      - run: make test-e2e

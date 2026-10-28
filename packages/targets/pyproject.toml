@@ -2,7 +2,7 @@
 name = "counterforge-targets"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["counterforge-contracts", "counterforge-verification"]
+dependencies = ["counterforge-contracts", "counterforge-verification", "counterforge-meta"]
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]
@@ -14,3 +14,4 @@ packages = ["counterforge_targets"]
 [tool.uv.sources]
 counterforge-contracts = { workspace = true }
 counterforge-verification = { workspace = true }
+counterforge-meta = { workspace = true }

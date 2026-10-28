@@ -19,7 +19,8 @@ class BodyLimitMiddleware:
             await self.app(scope, receive, send)
             return
         upload = re.fullmatch(
-            r"/api/v1/(?:projects/[^/]+/seeds|seeds/[^/]+/masks/[^/]+/revisions)", scope["path"]
+            r"/api/v1/(?:projects/[^/]+/seeds|seeds/[^/]+/masks(?:/[^/]+/revisions)?)/?",
+            scope["path"],
         )
         limit = MAX_UPLOAD_BYTES + 65536 if upload else 65536
         total, chunks = 0, []

@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, make_url
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.pool import NullPool
 
 
@@ -31,6 +32,33 @@ def database_engine() -> Iterator[Engine]:
     schema = "cf_test_" + uuid4().hex
     admin = create_engine(url, poolclass=NullPool, connect_args={"connect_timeout": 3})
     with admin.begin() as connection:
+        # pgcrypto is database-wide. Keep it outside disposable schemas so one
+        # concurrent test's DROP SCHEMA CASCADE cannot remove another's extension.
+        # This setup touches only the explicitly configured disposable test DB.
+        connection.execute(text("SELECT pg_advisory_xact_lock(73402033)"))
+        try:
+            with connection.begin_nested():
+                connection.execute(
+                    text("CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public")
+                )
+        except IntegrityError as exc:
+            # A previously started test process may still use the older fixture
+            # without our advisory lock. Its committed CREATE is safe to reuse.
+            if (
+                getattr(exc.orig, "sqlstate", None) != "23505"
+                or getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+                != "pg_extension_name_index"
+            ):
+                raise
+            connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public"))
+        extension_schema = connection.scalar(
+            text(
+                "SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace "
+                "WHERE e.extname='pgcrypto'"
+            )
+        )
+        if extension_schema != "public":
+            connection.execute(text("ALTER EXTENSION pgcrypto SET SCHEMA public"))
         connection.execute(text(f'CREATE SCHEMA "{schema}"'))
     engine = create_engine(
         url,

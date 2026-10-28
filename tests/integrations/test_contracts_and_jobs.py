@@ -178,7 +178,7 @@ async def test_experiment_locks_snapshot_and_start_is_idempotent(api, vtc_payloa
         uow.connection.execute(
             uow.tables.seed_masks.update()
             .where(uow.tables.seed_masks.c.id == mask)
-            .values(reviewed=False)
+            .values(reviewed=False, reviewer=None, reviewed_at=None)
         )
         uow.connection.execute(
             uow.tables.target_configs.update()

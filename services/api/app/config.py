@@ -2,11 +2,12 @@ import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlsplit
 
 from counterforge_contracts.base import ContractModel
 from counterforge_contracts.vtc import Limits
-from pydantic import Field, PrivateAttr, SecretStr, field_validator
+from pydantic import Field, PrivateAttr, SecretStr, field_validator, model_validator
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ArgumentError
 
@@ -40,6 +41,13 @@ class Settings(ContractModel):
     app_env: str = "development"
     api_bind: str = "127.0.0.1"
     api_port: int = 8000
+    provider_mode: Literal["DISABLED", "FIXTURE", "LIVE"] = "DISABLED"
+    allow_synthetic_fixtures: bool = False
+    model_api_key: SecretStr = Field(default=SecretStr(""), exclude=True, repr=False)
+    pricing_path: Path = Path(__file__).resolve().parents[3] / "pricing.toml"
+    enqueue_jobs: bool = False
+    queue_name: str = Field(default="counterforge", pattern=r"^[A-Za-z0-9_-]{1,80}$")
+    max_pending_jobs: int = Field(default=100, ge=1, le=100)
     run_meta_live_tests: bool = False
     max_concurrent_provider_calls: int = 1
     default_limits: Limits = Limits()
@@ -53,6 +61,20 @@ class Settings(ContractModel):
     _database_url: URL | None = PrivateAttr(default=None)
 
     _valid_origin = field_validator("web_origin")(validate_origin)
+
+    @model_validator(mode="after")
+    def provider_gates(self) -> "Settings":
+        if self.max_concurrent_provider_calls != 1:
+            raise ValueError("Provider concurrency must be one")
+        if self.provider_mode == "FIXTURE" and not (
+            self.app_env in {"development", "test"} and self.allow_synthetic_fixtures
+        ):
+            raise ValueError("Synthetic fixtures require explicit development/test authorization")
+        if self.provider_mode == "LIVE" and not (
+            self.run_meta_live_tests and self.model_api_key.get_secret_value().strip()
+        ):
+            raise ValueError("Live providers require explicit authorization and a model key")
+        return self
 
     @property
     def database_url(self) -> URL:
@@ -110,6 +132,15 @@ class Settings(ContractModel):
                 app_env=env.get("APP_ENV", "development"),
                 api_bind=env.get("API_BIND", "127.0.0.1"),
                 api_port=int(env.get("API_PORT", "8000")),
+                provider_mode=env.get("PROVIDER_MODE", "DISABLED"),
+                allow_synthetic_fixtures=env.get("ALLOW_SYNTHETIC_FIXTURES", "0") == "1",
+                model_api_key=SecretStr(env.get("MODEL_API_KEY", "")),
+                pricing_path=Path(
+                    env.get("PRICING_PATH", str(cls.model_fields["pricing_path"].default))
+                ),
+                enqueue_jobs=env.get("ENQUEUE_JOBS", "0") == "1",
+                queue_name=env.get("QUEUE_NAME", "counterforge"),
+                max_pending_jobs=int(env.get("MAX_PENDING_JOBS", "100")),
                 run_meta_live_tests=env.get("RUN_META_LIVE_TESTS", "0") == "1",
                 max_concurrent_provider_calls=int(env.get("MAX_CONCURRENT_PROVIDER_CALLS", "1")),
                 artifact_root=Path(env.get("ARTIFACT_ROOT", "/data/artifacts")),

@@ -293,6 +293,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fixtures/development-seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Development Seed */
+        get: operations["development_seed_api_v1_fixtures_development_seed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/live": {
         parameters: {
             query?: never;
@@ -517,6 +534,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/seeds/{seed_id}/mask-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mask Review State */
+        get: operations["mask_review_state_api_v1_seeds__seed_id__mask_review_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/seeds/{seed_id}/masks": {
         parameters: {
             query?: never;
@@ -527,7 +561,25 @@ export interface paths {
         /** List Masks */
         get: operations["list_masks_api_v1_seeds__seed_id__masks_get"];
         put?: never;
-        post?: never;
+        /** Add Mask */
+        post: operations["add_mask_api_v1_seeds__seed_id__masks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seeds/{seed_id}/masks/acknowledgements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge Masks */
+        post: operations["acknowledge_masks_api_v1_seeds__seed_id__masks_acknowledgements_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -551,7 +603,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/seeds/{seed_id}/masks/{mask_id}/revisions": {
+    "/api/v1/seeds/{seed_id}/masks/{mask_id}/retire": {
         parameters: {
             query?: never;
             header?: never;
@@ -559,6 +611,24 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        /** Retire Mask */
+        post: operations["retire_mask_api_v1_seeds__seed_id__masks__mask_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seeds/{seed_id}/masks/{mask_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mask History */
+        get: operations["mask_history_api_v1_seeds__seed_id__masks__mask_id__revisions_get"];
         put?: never;
         /** Revise Mask */
         post: operations["revise_mask_api_v1_seeds__seed_id__masks__mask_id__revisions_post"];
@@ -579,6 +649,23 @@ export interface paths {
         put?: never;
         /** Segment */
         post: operations["segment_api_v1_seeds__seed_id__segment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Setup Capabilities */
+        get: operations["setup_capabilities_api_v1_setup_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -610,6 +697,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcknowledgeMaskMismatch */
+        AcknowledgeMaskMismatch: {
+            /** Detected Count */
+            detected_count?: number | null;
+            /** Human Count */
+            human_count: number;
+            /** Notes */
+            notes: string;
+        };
+        /** Body_add_mask_api_v1_seeds__seed_id__masks_post */
+        Body_add_mask_api_v1_seeds__seed_id__masks_post: {
+            /** File */
+            file: string;
+            /** Notes */
+            notes: string;
+            /** Object Label */
+            object_label: string;
+        };
         /** Body_revise_mask_api_v1_seeds__seed_id__masks__mask_id__revisions_post */
         Body_revise_mask_api_v1_seeds__seed_id__masks__mask_id__revisions_post: {
             /** File */
@@ -977,19 +1082,69 @@ export interface components {
         };
         /** JobRef */
         JobRef: {
+            /** Error Code */
+            error_code?: string | null;
             /**
              * Job Id
              * Format: uuid
              */
             job_id: string;
             links: components["schemas"]["JobLinks"];
+            result?: components["schemas"]["JobResult"] | null;
             state: components["schemas"]["JobState"];
+            usage?: components["schemas"]["JobUsage"];
+        };
+        /** JobResult */
+        JobResult: {
+            /** Detected Count */
+            detected_count?: number | null;
+            /** Diagnostics */
+            diagnostics?: string[];
+            /** Evidence Asset Ids */
+            evidence_asset_ids?: string[];
+            /** Expected Count */
+            expected_count?: number | null;
+            /** Mask Asset Ids */
+            mask_asset_ids?: string[];
+            /** Outcome */
+            outcome: string;
+            /** Parsed Count */
+            parsed_count?: number | null;
+            /**
+             * Synthetic
+             * @default false
+             */
+            synthetic: boolean;
+            target_status?: components["schemas"]["TargetOutcome"] | null;
         };
         /**
          * JobState
          * @enum {string}
          */
         JobState: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "REVIEW_REQUIRED";
+        /** JobUsage */
+        JobUsage: {
+            /**
+             * Actual Usd
+             * @default 0
+             */
+            actual_usd: number;
+            /**
+             * Estimated Usd
+             * @default 0
+             */
+            estimated_usd: number;
+            /**
+             * Reserved Usd
+             * @default 0
+             */
+            reserved_usd: number;
+            /**
+             * Unresolved Usd
+             * @default 0
+             */
+            unresolved_usd: number;
+        };
         /** Limits */
         Limits: {
             /**
@@ -1016,6 +1171,12 @@ export interface components {
         /** Mask */
         Mask: {
             /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            geometry?: components["schemas"]["MaskGeometry"] | null;
+            /**
              * Id
              * Format: uuid
              */
@@ -1029,12 +1190,134 @@ export interface components {
             object_label: string;
             /** Object Ordinal */
             object_ordinal: number;
+            /**
+             * Origin
+             * @default SAM
+             * @enum {string}
+             */
+            origin: "SAM" | "HUMAN" | "FIXTURE";
             /** Reviewed */
             reviewed: boolean;
             /** Reviewed At */
             reviewed_at?: string | null;
             /** Reviewer */
             reviewer?: string | null;
+            /**
+             * Revision
+             * @default 1
+             */
+            revision: number;
+            /**
+             * Seed Id
+             * Format: uuid
+             */
+            seed_id: string;
+        };
+        /** MaskGeometry */
+        MaskGeometry: {
+            /** Bbox Xyxy */
+            bbox_xyxy: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /**
+             * Binary
+             * @default true
+             * @constant
+             */
+            binary: true;
+            /** Foreground Pixels */
+            foreground_pixels: number;
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
+        };
+        /** MaskReviewState */
+        MaskReviewState: {
+            /** Acknowledged */
+            acknowledged: boolean;
+            /** Approved Count */
+            approved_count: number;
+            /** Blocking */
+            blocking: string[];
+            /** Can Create Contract */
+            can_create_contract: boolean;
+            /** Detected Count */
+            detected_count: number | null;
+            /** Draft Count */
+            draft_count: number;
+            /** Expected Count */
+            expected_count: number;
+            /** Mask Set Sha256 */
+            mask_set_sha256: string;
+            /** Mismatch */
+            mismatch: boolean;
+            /**
+             * Seed Id
+             * Format: uuid
+             */
+            seed_id: string;
+            /** Segmentation Outcome */
+            segmentation_outcome: string | null;
+            /**
+             * Synthetic
+             * @default false
+             */
+            synthetic: boolean;
+        };
+        /** MaskRevision */
+        MaskRevision: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            geometry?: components["schemas"]["MaskGeometry"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Mask Asset Id
+             * Format: uuid
+             */
+            mask_asset_id: string;
+            /** Notes */
+            notes: string;
+            /** Object Label */
+            object_label: string;
+            /** Object Ordinal */
+            object_ordinal: number;
+            /**
+             * Origin
+             * @default SAM
+             * @enum {string}
+             */
+            origin: "SAM" | "HUMAN" | "FIXTURE";
+            /** Retired At */
+            retired_at?: string | null;
+            /** Reviewed */
+            reviewed: boolean;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Reviewer */
+            reviewer?: string | null;
+            /**
+             * Revision
+             * @default 1
+             */
+            revision: number;
             /**
              * Seed Id
              * Format: uuid
@@ -1119,6 +1402,13 @@ export interface components {
         Page_Finding_: {
             /** Items */
             items: components["schemas"]["Finding"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** Page[MaskRevision] */
+        Page_MaskRevision_: {
+            /** Items */
+            items: components["schemas"]["MaskRevision"][];
             /** Next Cursor */
             next_cursor?: string | null;
         };
@@ -1291,6 +1581,20 @@ export interface components {
             concept: string;
             limits?: components["schemas"]["JobLimits"] | null;
         };
+        /** SetupCapabilities */
+        SetupCapabilities: {
+            /** Allowance Configured */
+            allowance_configured: boolean;
+            /** Pricing Revision */
+            pricing_revision: string | null;
+            /**
+             * Provider Mode
+             * @enum {string}
+             */
+            provider_mode: "DISABLED" | "FIXTURE" | "LIVE";
+            /** Synthetic Fixture Enabled */
+            synthetic_fixture_enabled: boolean;
+        };
         /** StartExperiment */
         StartExperiment: {
             /**
@@ -1344,7 +1648,14 @@ export interface components {
         /** TargetCheckRequest */
         TargetCheckRequest: {
             limits?: components["schemas"]["JobLimits"] | null;
+            /** Seed Id */
+            seed_id?: string | null;
         };
+        /**
+         * TargetOutcome
+         * @enum {string}
+         */
+        TargetOutcome: "CORRECT" | "INCORRECT" | "UNKNOWN" | "PROVIDER_ERROR";
         /** ValidationPolicy */
         ValidationPolicy: {
             /**
@@ -3340,6 +3651,114 @@ export interface operations {
             };
         };
     };
+    development_seed_api_v1_fixtures_development_seed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     live_api_v1_health_live_get: {
         parameters: {
             query?: never;
@@ -5066,6 +5485,118 @@ export interface operations {
             };
         };
     };
+    mask_review_state_api_v1_seeds__seed_id__mask_review_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                seed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaskReviewState"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     list_masks_api_v1_seeds__seed_id__masks_get: {
         parameters: {
             query?: {
@@ -5087,6 +5618,240 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_Mask_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    add_mask_api_v1_seeds__seed_id__masks_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                seed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_mask_api_v1_seeds__seed_id__masks_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mask"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    acknowledge_masks_api_v1_seeds__seed_id__masks_acknowledgements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                seed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcknowledgeMaskMismatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaskReviewState"];
                 };
             };
             /** @description Unauthorized */
@@ -5298,10 +6063,245 @@ export interface operations {
             };
         };
     };
-    revise_mask_api_v1_seeds__seed_id__masks__mask_id__revisions_post: {
+    retire_mask_api_v1_seeds__seed_id__masks__mask_id__retire_post: {
         parameters: {
             query?: never;
             header?: never;
+            path: {
+                seed_id: string;
+                mask_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mask"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    mask_history_api_v1_seeds__seed_id__masks__mask_id__revisions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                seed_id: string;
+                mask_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_MaskRevision_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    revise_mask_api_v1_seeds__seed_id__masks__mask_id__revisions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 seed_id: string;
                 mask_id: string;
@@ -5439,6 +6439,116 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    setup_capabilities_api_v1_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupCapabilities"];
                 };
             };
             /** @description Unauthorized */

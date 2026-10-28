@@ -6,6 +6,8 @@ COPY pyproject.toml uv.lock ./
 COPY packages ./packages
 COPY services ./services
 COPY scripts ./scripts
+COPY pricing.toml ./pricing.toml
+COPY fixtures/phase03 ./fixtures/phase03
 RUN uv sync --locked --no-dev --no-editable \
     && useradd --uid 10001 --create-home counterforge \
     && mkdir -p /data/artifacts \

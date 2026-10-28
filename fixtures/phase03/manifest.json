@@ -1,0 +1,46 @@
+{
+  "id": "phase03-five-blue-containers",
+  "purpose": "development integration fixture; not held out",
+  "source": "Original procedural artwork created for CounterForge",
+  "rights": "CC0-1.0",
+  "rights_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "verification": "Five disjoint rectangles by construction; owner review remains required",
+  "width": 480,
+  "height": 240,
+  "rectangles_half_open": [
+    [
+      40,
+      60,
+      96,
+      176
+    ],
+    [
+      128,
+      60,
+      184,
+      176
+    ],
+    [
+      216,
+      60,
+      272,
+      176
+    ],
+    [
+      304,
+      60,
+      360,
+      176
+    ],
+    [
+      392,
+      60,
+      448,
+      176
+    ]
+  ],
+  "normalized_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+  "original_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+  "verified_count": 5,
+  "verification_method": "five disjoint rectangles by construction"
+}

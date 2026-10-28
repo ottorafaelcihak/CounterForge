@@ -6,16 +6,18 @@ CounterForge is a visual-model reliability laboratory for controlled image chang
 independent ground-truth checks, repeated evaluation and portable regression tests.
 The initial task is single-image object counting.
 
-Phases 01–02 provide typed contracts, offline fixtures, PostgreSQL persistence,
-verified image artifacts, owner-authenticated setup/read APIs and atomic budget
-accounting. Segmentation, target checks and exports have durable queued records.
-Provider dispatch, experiment scheduling, ZIP creation and the product UI arrive
-in later phases; a queued job does not execute yet. No live discovery is claimed.
+Phases 01–03 implement typed contracts, PostgreSQL evidence storage, atomic spend
+accounting, bounded Meta adapters, durable setup jobs and an owner workspace for
+seed upload, target checks and audited mask correction. Experiment scheduling,
+mutation verification and regression ZIP creation belong to the following phases.
+Live entitlement and the real-provider smoke gate remain **unmet**; fixtures do
+not establish live access or a real model weakness.
 
 ## Development setup
 
 Requires Python 3.12, uv 0.13.6 or compatible, Node.js 24 LTS and npm. Docker
-Compose supplies PostgreSQL 16, Redis 7 and persistent artifact storage.
+Compose supplies PostgreSQL 16, Redis 7, the API, worker, web app and persistent
+artifact storage.
 
 ```bash
 uv sync --locked
@@ -28,99 +30,148 @@ make build-web
 ```
 
 `make test` runs unit and contract checks with outbound sockets disabled, even
-when `RUN_META_LIVE_TESTS=1` is inherited. It never calls billable endpoints.
-After changing canonical contracts, run `make generate-contracts`, review the
-OpenAPI/JSON Schema/TypeScript diff, then run `make check-contracts`.
+when a live-test flag is inherited. After changing canonical contracts, run
+`make generate-contracts`, review the generated diff and run `make check-contracts`.
 
 ## Run local services
 
-Copy `.env.example` to an ignored `.env` and set a local `POSTGRES_PASSWORD` and
-strong `OWNER_AUTH_TOKEN`, or export those two variables in your shell. Compose
-reads its environment file; Python applications read only explicit process
-environment and never load dotenv files. Do not commit credentials.
+Copy `.env.example` to an ignored `.env` and configure `POSTGRES_PASSWORD` and a
+strong `OWNER_AUTH_TOKEN`, or export the values explicitly. Compose reads its
+environment file; Python services read process environment without loading dotenv
+files. The web service receives the owner token on its server only.
 
 ```bash
 make compose-check    # validates without printing resolved configuration
-make services-up      # builds, migrates, starts API and idle RQ worker
-make dev-web          # Next.js shell at http://127.0.0.1:3000
-make services-down    # stops services, retains persistent volumes
+make services-up      # builds, migrates and starts the local stack
+# Open http://localhost:3000 and sign in with the configured owner access token.
+make services-down    # retains persistent volumes
 ```
 
-Published database, Redis and API ports bind to `127.0.0.1`. Override
-`POSTGRES_PORT`, `REDIS_PORT` or `API_PORT` if needed. Configure `WEB_ORIGIN` as
-one exact HTTP(S) origin, default `http://localhost:3000`, matching the browser's
-address. `OWNER_LABEL` defaults to `local-owner` and scopes projects; changing it
-changes which projects the configured owner can access.
+All published ports bind to loopback. Override `POSTGRES_PORT`, `REDIS_PORT`,
+`API_PORT` or `WEB_PORT` as needed. Set `WEB_ORIGIN` to the exact browser origin,
+default `http://localhost:3000`. `OWNER_LABEL` scopes projects; changing it changes
+which projects this owner can access.
 
-The API is at `http://127.0.0.1:8000/docs`. `/api/v1/health/live` is public;
-`/api/v1/health/ready` requires the owner token and checks migration heads,
-PostgreSQL, Redis and an artifact
-write/read/delete without model calls. Business routes require
-`Authorization: Bearer <OWNER_AUTH_TOKEN>`. Public asset reads require an explicit
-server-side whitelist entry; the public demo is a later-phase endpoint.
+For host development, export the PG components or a fully expanded
+`postgresql+psycopg` `DATABASE_URL`, plus `REDIS_URL`, `ARTIFACT_ROOT`,
+`OWNER_AUTH_TOKEN`, `OWNER_LABEL`, `WEB_ORIGIN` and `API_INTERNAL_URL`. Then run
+`make migrate`, `make dev-api`, `python -m services.worker.app.main` and
+`make dev-web` in separate terminals. Use `ENQUEUE_JOBS=1` for API job notification.
+`API_INTERNAL_URL` defaults to `http://127.0.0.1:8000` for the Next server.
+Nested variable interpolation is rejected; component passwords remain literal data.
 
-Host execution uses exported `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`,
-`PGPASSWORD`, `REDIS_URL`, `ARTIFACT_ROOT`, `OWNER_AUTH_TOKEN`, `OWNER_LABEL` and
-`WEB_ORIGIN`. A fully expanded PostgreSQL/psycopg `DATABASE_URL` takes precedence
-over PG components. Nested variable interpolation is rejected; component
-passwords are literal data. Then run `make migrate` and `make dev-api`.
+The API docs are at `http://127.0.0.1:8000/docs`. Business routes require
+`Authorization: Bearer <OWNER_AUTH_TOKEN>`. The browser uses an opaque, eight-hour
+HttpOnly/SameSite=Strict session and an allowlisted same-origin proxy. Mutations
+require the configured Origin; upstream owner/model keys never become browser
+DTOs, URLs or local-storage values. Public asset reads require an explicit server
+whitelist; the public demo belongs to a later phase.
 
-## Evidence and API behavior
+## Prepare and review a seed
 
-Create/read/list projects and seeds; uploads require a question, expected count,
-rights acknowledgement and named human label reviewer. JPEG, PNG and single-frame
-WebP are limited to 10 MiB and 16 megapixels. The decoder runs in a bounded
-subprocess. EXIF orientation is applied, alpha is composited on white, RGB PNG
-output strips metadata and ICC profiles without color conversion. Provenance keeps
-original bytes/SHA-256 separately from normalized output and pixel hashes.
-Upload filenames never determine storage paths.
+Create a project, upload a rights-cleared image, enter the counting question and
+human count, and name its label reviewer. JPEG, PNG and single-frame WebP inputs
+are limited to 10 MiB and 16 megapixels. A bounded subprocess applies EXIF
+orientation, composites alpha on white and creates a metadata-free RGB PNG.
+Original bytes/SHA, normalized SHA and pixel SHA are retained separately. Upload
+filenames never determine storage paths.
 
-Content-addressed files are fsynced and atomically installed before transactional
-registration. Identical bytes share a blob; distinct evidence roles retain their
-own asset UUIDs. Reads verify path, size and SHA. Project ownership and exact seed
-mask associations are enforced in services. Mask review records sanitized human
-rationale. Contracts require approved masks for the protected label, canonical
-JSON hashes and immutable increasing revisions. Every new experiment rechecks
-current approval/source integrity and locks its chosen contract and settings;
-already-started snapshots retain their historical evidence.
+Configure a curated `META_SPARK` or synthetic `LOCAL_FIXTURE` target. A target
+check is one handshake; it is not the full seed baseline from phase 05. Request
+segmentation with explicit call, dollar and runtime limits, then inspect each
+instance over the source image. Paint, erase or use source-coordinate rectangles
+to correct masks; add missing instances or retire extras. Corrections create new
+immutable assets, retain old approval evidence and clear approval on the current
+revision. Mask PNGs must be binary, nonempty and exactly match the source geometry.
 
-Target configuration accepts curated `META_SPARK` or `LOCAL_FIXTURE` adapters,
-with server-controlled secret references. External checks stay queued. Experiment
-starts require `Idempotency-Key`; replaying changed content is a conflict. Request
-limits may only tighten the contract ceilings (defaults: 20 candidates, 60 target
-calls, $10 estimated, 1200 seconds). Lists use signed scoped cursors, at most 100
-items. DTOs omit secret references, raw provider payloads and storage paths.
-Pending export UUIDs remain the same upon completion; downloads require verified
-bundle/manifest assets. ZIP generation itself belongs to Phase 06.
+Approve each exact current mask and acknowledge any detection/count discrepancy.
+The human count never changes automatically. A new VTC requires one distinct
+approved mask per expected object. Locked historical contracts and started runs
+retain their precise asset revisions; a new run rechecks current review and source
+integrity. Lists use signed scoped cursors with at most 100 items.
 
-## Accounting and maintenance
+## Provider modes and offline fixtures
 
-`Budget` is shared by API/worker. Reserve inside a unit of work and **commit**;
-claim with `begin_operation` in a second transaction and **commit before network
-I/O**. Only the caller receiving `True` may dispatch. Settle reconciled Decimal
-costs or record an unknown charge in a new transaction. Never retry an ambiguous
-charged call automatically. Unknown charges consume the upper bound and require
-review; known costs above the bound are recorded in full and stop further work.
-Only an undispatched intent may be voided. Runtime/state are rechecked at claim.
+`PROVIDER_MODE=DISABLED` is the default. Manual seed and mask review work without
+provider dispatch. Live mode additionally requires `RUN_META_LIVE_TESTS=1`, a
+server-only `MODEL_API_KEY`, finite job limits and an unexpired operator allowance.
+SDK construction and curated model names do not prove entitlement.
 
-Pre-experiment jobs also require explicit finite request `limits` and a shared
-operator allowance. No allowance exists by default. Configuring one does not
-execute a job or enable provider adapters:
+For a synthetic development session, set `APP_ENV=development`,
+`PROVIDER_MODE=FIXTURE` and `ALLOW_SYNTHETIC_FIXTURES=1`, then recreate the services.
+The workspace can load the original CC0 development image with five separate blue
+rectangles. Only its known SHA is supported by wire fixtures. SAM intentionally
+returns four proposals so the missing-instance workflow is exercised. All output
+is labeled synthetic; the official parser and SDK still execute locally.
+
+No deployment allowance exists by default. Configure a finite zero-dollar fixture
+allowance explicitly:
 
 ```bash
-docker compose exec api python -m scripts.configure_job_allowance --show
-# Explicit local authorization example, when paid adapters are implemented:
 docker compose exec api python -m scripts.configure_job_allowance \
-  --max-usd 0.50 --max-calls 2 --expires-in-minutes 60 --actor local-owner
+  --max-usd 0 --max-calls 100 --expires-in-minutes 60 --actor local-owner
+docker compose exec api python -m scripts.configure_job_allowance --show
 ```
 
-Allowance updates retain consumed totals. Lower actual costs do not refund the
-shared conservative estimate; higher costs increase it. Only never-dispatched
-voids release the reserved amount/calls.
+Each provider attempt reserves and commits, claims and commits before wire I/O,
+then reconciles in a fresh transaction. A PostgreSQL session lease limits global
+provider concurrency to one without holding a SQL transaction across network I/O.
+Actual usage, conservative estimates and unresolved charges remain separate.
+Missing usage is not priced at zero. Ambiguous post-send failures retain their
+upper-bound charge and are never automatically retried. Only proven connection
+failures and explicitly authorized unbilled rejections can receive bounded retries.
 
-Orphan maintenance defaults to a dry run and a minimum 24-hour age. Registration
-and maintenance share a transaction lock so maintenance cannot remove a blob
-being registered. Referenced evidence is retained:
+Allowance updates retain consumed totals. Lower ACTUAL costs do not refund the
+shared conservative upper bound; higher costs increase it. Undispatched voids and
+trusted UNBILLED proofs release reserved dollars once. Pre-send proofs release
+call capacity too; a sent unbilled 429 still consumes a call.
+
+PostgreSQL is the source of job intent. Redis notification occurs after commit;
+a Redis failure leaves a queued record. Startup recovery and `make recover-jobs`
+rescan queued/expired setup jobs. Duplicate deliveries do nothing. Expired
+undispatched work can be requeued; dispatched ambiguous work and lost settled
+output require review and a deliberate new job. RQ carries a UUID-only JSON
+payload and has no automatic provider retry policy.
+
+## Explicit live smoke gate
+
+Read [the provider record](docs/plans/phase-03-provider-record.md) before live
+configuration. The fixed API origin is `https://api.meta.ai/v1`; current standard
+SKUs are Spark 1.3, Image 1.0 and SAM 3.1. Pricing comes from root `pricing.toml`.
+No generated-image CDN host has been verified, so URL downloads fail closed by
+default and base64 output is requested.
+
+`make smoke-meta` requires `PROVIDER_MODE=LIVE`, `RUN_META_LIVE_TESTS=1`, a model
+key, an existing operator allowance, explicit finite `SMOKE_META_MAX_USD`,
+`SMOKE_META_MAX_CALLS` (at least four), `SMOKE_META_MAX_RUNTIME_SECONDS`, and owned
+`SMOKE_META_SEED_ID`, `SMOKE_META_VTC_ID`, `SMOKE_META_TARGET_ID` references with
+current reviewed evidence. It exercises planner, SAM, image and target sequentially
+through the same accounting. It records sanitized evidence IDs and usage. No live
+smoke was run during phase 03 implementation; TS-AT-18 remains unmet.
+
+## Verification and maintenance
+
+Provision disposable loopback services and opt in explicitly:
+
+```bash
+export COUNTERFORGE_TEST_DATABASE_URL=postgresql+psycopg://counterforge_test@127.0.0.1:55432/counterforge_test
+make test-db
+export COUNTERFORGE_TEST_REDIS_URL=redis://127.0.0.1:56379/15
+uv run --locked python -m playwright install chromium
+make build-web
+make test-e2e
+```
+
+Database tests create and drop only their random schemas, retaining test `pgcrypto`
+in `public`. Browser verification creates its own schema, queue, artifact root,
+service processes and zero-dollar fixture allowance, then cleans up those owned
+resources. It checks the complete five-object review flow, revision history,
+unchanged expected count, session privacy, CSRF and mobile overflow. It never
+falls back to application `DATABASE_URL` or flushes shared Redis data. CI runs
+unit, contract, database and browser suites with live Meta calls disabled.
+
+Orphan maintenance defaults to a dry run and a minimum 24-hour age. Referenced
+assets are retained; registration and maintenance share a transaction lock:
 
 ```bash
 docker compose exec api python -m scripts.maintain_artifacts --dry-run
@@ -128,44 +179,25 @@ docker compose exec api python -m scripts.maintain_artifacts --dry-run
 docker compose exec api python -m scripts.maintain_artifacts --delete
 ```
 
-Migration `0001` executes the supplied SQL byte for byte; `0002_workflow_support`
-adds jobs, provenance/snapshots, immutable contract protection, reservations and
-shared allowance. Baseline downgrade refuses to destroy evidence.
-`create_uow_factory(engine)` reflects migrated tables once. `with factory() as uow`
-exposes `connection`, source-named `tables` and `background_jobs`; exit rolls back
-unless `uow.commit()` is called explicitly.
-
-## Database verification
-
-Provision a **disposable loopback PostgreSQL database**, then explicitly opt in:
-
-```bash
-export COUNTERFORGE_TEST_DATABASE_URL=postgresql+psycopg://counterforge_test@127.0.0.1:55432/counterforge_test
-make test-db
-```
-
-Each test creates a random schema and drops only that schema. Tests never fall
-back to `DATABASE_URL`. Bare `pytest` skips integration cases without the test
-URL; `make test-db` fails clearly when it is absent. Database cases allow only
-loopback sockets. CI provisions a disposable PostgreSQL service and runs both
-suites; live Meta calls remain disabled.
+Migration `0001` executes the supplied SQL byte for byte. `0002` adds workflow and
+budget support; `0003` adds explicit billing provenance, job fencing and append-only
+mask history. Downgrades refuse to discard evidence. Asset reads verify paths,
+size and SHA; content-addressed blobs are fsynced and atomically installed before
+transactional registration.
 
 ## Project structure
 
 ```text
-CounterForge/
-├── apps/web/             # Next.js shell and generated API types
-├── services/api/         # Authenticated API, DB, artifacts and accounting
-├── services/worker/      # Idle RQ consumer and shared budget exports
-├── packages/             # Six Python workspace packages and shared contracts
-├── scripts/              # Contract export, allowance and artifact maintenance
-├── tests/                # Unit, contract and disposable PostgreSQL checks
-└── docs/plans/           # Ordered phases and verification handoffs
+apps/web/          Owner setup, mask editor and generated API types
+services/api/      Authenticated API, database, artifacts and accounting
+services/worker/   Durable setup jobs, fixture transport and recovery
+packages/          Shared contracts, adapters and later-phase boundaries
+fixtures/phase03/  Original CC0 development seed and manifest
+scripts/           Contract generation, smoke and operator maintenance
+tests/             Offline, PostgreSQL and real-process browser checks
+docs/plans/        Ordered phases and verification handoffs
 ```
 
-The offline `LOCAL_FIXTURE` target uses image hashes and explicit expected counts.
-Unknown images/replies stay UNKNOWN; fixtures never prove a real AI weakness.
-
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
-and [Phase 02 handoff](docs/plans/phase-02-handoff.md). The PRD, technical specification
-and supplied SQL remain the source documents.
+and [phase 03 handoff](docs/plans/phase-03-handoff.md). The PRD, technical
+specification and supplied SQL remain the source documents.

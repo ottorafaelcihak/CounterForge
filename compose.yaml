@@ -1,6 +1,6 @@
 x-runtime: &runtime
   environment: &runtime-environment
-    APP_ENV: development
+    APP_ENV: ${APP_ENV:-development}
     PGHOST: postgres
     PGPORT: "5432"
     PGDATABASE: counterforge
@@ -8,6 +8,15 @@ x-runtime: &runtime
     PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting services}
     REDIS_URL: redis://redis:6379/0
     ARTIFACT_ROOT: /data/artifacts
+    PRICING_PATH: /app/pricing.toml
+    PROVIDER_MODE: ${PROVIDER_MODE:-DISABLED}
+    ALLOW_SYNTHETIC_FIXTURES: ${ALLOW_SYNTHETIC_FIXTURES:-0}
+    RUN_META_LIVE_TESTS: ${RUN_META_LIVE_TESTS:-0}
+    MODEL_API_KEY: ${MODEL_API_KEY:-}
+    ENQUEUE_JOBS: "1"
+    QUEUE_NAME: ${QUEUE_NAME:-counterforge}
+    MAX_PENDING_JOBS: ${MAX_PENDING_JOBS:-100}
+    MAX_CONCURRENT_PROVIDER_CALLS: "1"
     OWNER_AUTH_TOKEN: ${OWNER_AUTH_TOKEN:?Set OWNER_AUTH_TOKEN before starting services}
     OWNER_LABEL: ${OWNER_LABEL:-local-owner}
     WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
@@ -72,6 +81,20 @@ services:
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      OWNER_AUTH_TOKEN: ${OWNER_AUTH_TOKEN:?Set OWNER_AUTH_TOKEN before starting services}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+    depends_on:
+      api: {condition: service_started}
 
 volumes:
   pgdata: {}

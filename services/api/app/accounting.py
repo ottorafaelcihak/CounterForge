@@ -34,7 +34,7 @@ from uuid import UUID
 from counterforge_contracts.requests import JobLimits
 from counterforge_contracts.versions import ErrorCode
 from pydantic import ValidationError
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine import RowMapping
 
@@ -346,6 +346,7 @@ class Budget:
         *,
         provider: str | None = None,
         model_id: str | None = None,
+        semantic_sha256: str | None = None,
     ) -> OperationReservation:
         """Record durable intent for one experiment stage before any dispatch.
 
@@ -356,6 +357,8 @@ class Budget:
         """
 
         key = self._key(operation_key)
+        if semantic_sha256 is not None and not re.fullmatch(r"[0-9a-f]{64}", semantic_sha256):
+            raise ServiceError(ErrorCode.INVALID_INPUT, "Invalid semantic fingerprint.", 422)
         upper = money(upper_bound_usd, label="upper_bound_usd")
         calls = quantity(target_calls, label="target_calls")
         slots = quantity(candidate_slots, label="candidate_slots")
@@ -368,6 +371,7 @@ class Budget:
                 "candidate_slots": slots,
                 "provider": provider,
                 "model_id": model_id,
+                "semantic_sha256": semantic_sha256,
             }
         )
         self._lock_key(key)
@@ -441,6 +445,7 @@ class Budget:
                 estimated_max_usd=upper,
                 reserved_calls=calls,
                 request_count=max(calls, 1),
+                semantic_sha256=semantic_sha256,
                 request_fingerprint=digest,
             )
             .returning(self.t.usage_events.c.id)
@@ -522,6 +527,10 @@ class Budget:
             return self._settle_job_usage(key, actual, provider_usage)
         experiment = self._experiment(probe["experiment_id"])
         operation, usage = self._locked_pair(key)
+        if usage["status"] == "SETTLED" and usage["cost_kind"] not in (None, "ACTUAL"):
+            raise ServiceError(
+                ErrorCode.REVIEW_REQUIRED, "Non-actual billing requires explicit reconciliation."
+            )
         if usage["status"] == "SETTLED" or operation["status"] == "DONE":
             if usage["status"] != "SETTLED" or not self._same_settlement(
                 usage, actual, provider_usage
@@ -555,6 +564,7 @@ class Budget:
             .where(self.t.usage_events.c.operation_key == key)
             .values(
                 status="SETTLED",
+                cost_kind="ACTUAL",
                 actual_usd=actual,
                 settled_at=func.now(),
                 tokens_in=self._counter(provider_usage.tokens_in, label="tokens_in"),
@@ -658,6 +668,7 @@ class Budget:
             .where(self.t.usage_events.c.operation_key == key)
             .values(
                 status="UNKNOWN_CHARGE",
+                cost_kind="UNKNOWN",
                 dispatched_at=func.coalesce(self.t.usage_events.c.dispatched_at, func.now()),
             )
         )
@@ -709,7 +720,7 @@ class Budget:
         self.db.execute(
             self.t.usage_events.update()
             .where(self.t.usage_events.c.operation_key == key)
-            .values(status="VOID")
+            .values(status="VOID", cost_kind="UNBILLED", actual_usd=ZERO)
         )
         self.db.execute(
             self.t.run_operations.update()
@@ -821,6 +832,7 @@ class Budget:
         *,
         provider: str | None = None,
         model_id: str | None = None,
+        semantic_sha256: str | None = None,
     ) -> OperationReservation:
         """Authorize one pre-experiment provider call against two finite limits.
 
@@ -832,6 +844,8 @@ class Budget:
         """
 
         key = self._key(operation_key)
+        if semantic_sha256 is not None and not re.fullmatch(r"[0-9a-f]{64}", semantic_sha256):
+            raise ServiceError(ErrorCode.INVALID_INPUT, "Invalid semantic fingerprint.", 422)
         upper = money(upper_bound_usd, label="upper_bound_usd")
         count = quantity(calls, label="calls", minimum=1)
         digest = _fingerprint(
@@ -842,6 +856,7 @@ class Budget:
                 "calls": count,
                 "provider": provider,
                 "model_id": model_id,
+                "semantic_sha256": semantic_sha256,
             }
         )
         self._lock_key(key)
@@ -920,6 +935,7 @@ class Budget:
                 estimated_max_usd=upper,
                 reserved_calls=count,
                 request_count=count,
+                semantic_sha256=semantic_sha256,
                 request_fingerprint=digest,
             )
             .returning(self.t.usage_events.c.id)
@@ -971,7 +987,23 @@ class Budget:
                 func.coalesce(
                     func.sum(func.coalesce(usage.c.actual_usd, usage.c.estimated_max_usd)), 0
                 ),
-                func.coalesce(func.sum(usage.c.reserved_calls), 0),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                (usage.c.cost_kind == "UNBILLED")
+                                & (
+                                    usage.c.metadata_json["nonactual_proof"]["request_sent"]
+                                    .as_boolean()
+                                    .is_(False)
+                                ),
+                                0,
+                            ),
+                            else_=usage.c.reserved_calls,
+                        )
+                    ),
+                    0,
+                ),
             ).where(
                 usage.c.background_job_id == background_job_id,
                 usage.c.status != "VOID",
@@ -1106,7 +1138,7 @@ class Budget:
         self.db.execute(
             self.t.usage_events.update()
             .where(self.t.usage_events.c.operation_key == key)
-            .values(status="VOID")
+            .values(status="VOID", cost_kind="UNBILLED", actual_usd=ZERO)
         )
         return VoidedOperation(operation_key=key, released_usd=released, recorded=True)
 
@@ -1121,6 +1153,10 @@ class Budget:
         if usage is None:
             raise ServiceError(ErrorCode.NOT_FOUND, "Operation reservation was not found.", 404)
         reserved = money(usage["estimated_max_usd"])
+        if usage["status"] == "SETTLED" and usage["cost_kind"] not in (None, "ACTUAL"):
+            raise ServiceError(
+                ErrorCode.REVIEW_REQUIRED, "Non-actual billing requires explicit reconciliation."
+            )
         if usage["status"] == "SETTLED":
             if not self._same_settlement(usage, actual, provider_usage):
                 raise ServiceError(
@@ -1147,6 +1183,7 @@ class Budget:
             .where(self.t.usage_events.c.operation_key == key)
             .values(
                 status="SETTLED",
+                cost_kind="ACTUAL",
                 actual_usd=actual,
                 settled_at=func.now(),
                 tokens_in=self._counter(provider_usage.tokens_in, label="tokens_in"),
@@ -1196,7 +1233,7 @@ class Budget:
         self.db.execute(
             self.t.usage_events.update()
             .where(self.t.usage_events.c.operation_key == key)
-            .values(status="UNKNOWN_CHARGE")
+            .values(status="UNKNOWN_CHARGE", cost_kind="UNKNOWN")
         )
         self._stop_job(job["id"], "PROVIDER_OUTCOME_UNKNOWN")
         self._audit(
@@ -1223,3 +1260,103 @@ class Budget:
                 updated_at=func.now(),
             )
         )
+
+    def settle_estimate(self, operation_key: str) -> None:
+        """Consume a successful but unpriced response without inventing actual usage."""
+        self._finish_nonactual(
+            operation_key, kind="ESTIMATED", proof_code="MISSING_USAGE", request_sent=True
+        )
+
+    def finish_unbilled(self, operation_key: str, *, proof_code: str, request_sent: bool) -> None:
+        """Close a claimed attempt only with trusted pre-send/rejection proof."""
+        if (
+            proof_code not in {"CONNECT_FAILED", "UNBILLED_RATE_LIMIT", "DEADLINE_BEFORE_SEND"}
+            or type(request_sent) is not bool
+            or request_sent != (proof_code == "UNBILLED_RATE_LIMIT")
+        ):
+            raise ServiceError(ErrorCode.INVALID_INPUT, "Unbilled proof is not recognized.", 422)
+        self._finish_nonactual(
+            operation_key, kind="UNBILLED", proof_code=proof_code, request_sent=request_sent
+        )
+
+    def _finish_nonactual(
+        self, operation_key: str, *, kind: str, proof_code: str, request_sent: bool
+    ) -> None:
+        key = self._key(operation_key)
+        probe = self._usage(key, lock=False)
+        if probe is None:
+            raise ServiceError(ErrorCode.NOT_FOUND, "Operation reservation was not found.", 404)
+        experiment = None
+        operation = None
+        if probe["experiment_id"] is not None:
+            experiment = self._experiment(probe["experiment_id"])
+            operation = self._operation(key, lock=True)
+        else:
+            self._job_for_usage(probe)
+        usage = self._usage(key, lock=True)
+        assert usage is not None
+        proof = {"kind": kind, "proof_code": proof_code, "request_sent": request_sent}
+        if usage["status"] == "SETTLED":
+            if (
+                usage["cost_kind"] == kind
+                and usage["metadata_json"].get("nonactual_proof") == proof
+            ):
+                return
+            raise ServiceError(ErrorCode.IDEMPOTENCY_CONFLICT, "Recorded billing cannot change.")
+        if (
+            usage["status"] != "RESERVED"
+            or usage["dispatched_at"] is None
+            or (operation is not None and operation["status"] != "RUNNING")
+        ):
+            raise ServiceError(ErrorCode.INVALID_STATE, "Only a claimed attempt can be finalized.")
+        reserved = money(usage["estimated_max_usd"])
+        estimate = reserved if kind == "ESTIMATED" else ZERO
+        self.db.execute(
+            self.t.usage_events.update()
+            .where(self.t.usage_events.c.operation_key == key)
+            .values(
+                status="SETTLED",
+                cost_kind=kind,
+                actual_usd=None if kind == "ESTIMATED" else ZERO,
+                accounted_estimate_usd=estimate,
+                settled_at=func.now(),
+                metadata_json={**usage["metadata_json"], "nonactual_proof": proof},
+            )
+        )
+        if experiment is None and kind == "UNBILLED":
+            # Trusted rejection/pre-send proof releases the monetary hold once.
+            # A sent 429 still consumes a call; failed connections consume none.
+            allowance = self.t.deployment_allowance
+            self.db.execute(select(allowance).with_for_update()).one()
+            self.db.execute(
+                allowance.update().values(
+                    consumed_usd=allowance.c.consumed_usd - reserved,
+                    consumed_calls=allowance.c.consumed_calls
+                    - (0 if request_sent else usage["reserved_calls"]),
+                    updated_at=func.now(),
+                )
+            )
+        if experiment is not None and operation is not None:
+            calls = operation["target_calls"] if request_sent else 0
+            candidates = operation["candidate_slots"] if kind == "ESTIMATED" else 0
+            self.db.execute(
+                self.t.run_operations.update()
+                .where(self.t.run_operations.c.operation_key == key)
+                .values(
+                    status="DONE" if kind == "ESTIMATED" else "FAILED",
+                    finished_at=func.now(),
+                    error_code=None if kind == "ESTIMATED" else proof_code,
+                    result_json=proof,
+                )
+            )
+            table = self.t.experiments
+            self.db.execute(
+                table.update()
+                .where(table.c.id == experiment["id"])
+                .values(
+                    reserved_usd=func.greatest(table.c.reserved_usd - reserved, ZERO),
+                    spent_usd=table.c.spent_usd + estimate,
+                    calls_consumed=table.c.calls_consumed + calls,
+                    candidates_created=table.c.candidates_created + candidates,
+                )
+            )
