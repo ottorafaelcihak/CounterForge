@@ -594,7 +594,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Check Target */
+        /**
+         * Check Target
+         * @description Queues a provider check. A body may state the owner-authorized job limits
+         *     that accounting requires before any dispatch; omitting it still only queues.
+         */
         post: operations["check_target_api_v1_targets__target_id__check_post"];
         delete?: never;
         options?: never;
@@ -619,6 +623,8 @@ export interface components {
             expected_count: number;
             /** File */
             file: string;
+            /** Label Reviewer */
+            label_reviewer: string;
             /** License Ack */
             license_ack: boolean;
             /** Question */
@@ -745,7 +751,7 @@ export interface components {
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "INVALID_INPUT" | "NOT_FOUND" | "UNAUTHORIZED" | "FORBIDDEN" | "INVALID_STATE" | "IDEMPOTENCY_CONFLICT" | "REVIEW_REQUIRED" | "SEED_INVALID_FOR_SEARCH" | "QUEUE_FULL" | "BUDGET_EXCEEDED" | "PROVIDER_RATE_LIMITED" | "PROVIDER_FAILURE" | "PROVIDER_OUTCOME_UNKNOWN" | "ARTIFACT_CHECKSUM_MISMATCH" | "NOT_IMPLEMENTED";
+        ErrorCode: "INTERNAL_ERROR" | "DEPENDENCY_UNAVAILABLE" | "INVALID_INPUT" | "NOT_FOUND" | "UNAUTHORIZED" | "FORBIDDEN" | "INVALID_STATE" | "IDEMPOTENCY_CONFLICT" | "REVIEW_REQUIRED" | "SEED_INVALID_FOR_SEARCH" | "QUEUE_FULL" | "BUDGET_EXCEEDED" | "PROVIDER_RATE_LIMITED" | "PROVIDER_FAILURE" | "PROVIDER_OUTCOME_UNKNOWN" | "ARTIFACT_CHECKSUM_MISMATCH" | "NOT_IMPLEMENTED";
         /** ErrorDetails */
         ErrorDetails: {
             /** Remaining Estimated Usd */
@@ -948,6 +954,21 @@ export interface components {
             temperature: number;
             /** Top P */
             top_p?: number | null;
+        };
+        /**
+         * JobLimits
+         * @description Explicit owner-authorized ceiling for one pre-experiment job.
+         *
+         *     Every field is required: a job without stated finite limits may be queued,
+         *     but it must never be dispatched to a paid provider.
+         */
+        JobLimits: {
+            /** Max Calls */
+            max_calls: number;
+            /** Max Estimated Usd */
+            max_estimated_usd: number;
+            /** Max Runtime Seconds */
+            max_runtime_seconds: number;
         };
         /** JobLinks */
         JobLinks: {
@@ -1202,6 +1223,8 @@ export interface components {
         };
         /** Seed */
         Seed: {
+            /** Case Key */
+            case_key: string;
             expected: components["schemas"]["ExpectedCount"];
             /**
              * Id
@@ -1223,15 +1246,50 @@ export interface components {
              * Format: uuid
              */
             project_id: string;
+            provenance: components["schemas"]["SeedProvenance"];
             /** Question */
             question: string;
             /** Sha256 */
             sha256: string;
         };
+        /** SeedProvenance */
+        SeedProvenance: {
+            /**
+             * Icc Policy
+             * @default discard_no_color_conversion
+             * @constant
+             */
+            icc_policy: "discard_no_color_conversion";
+            /** Normalization Policy */
+            normalization_policy: string;
+            /**
+             * Normalized Asset Id
+             * Format: uuid
+             */
+            normalized_asset_id: string;
+            /** Normalized Sha256 */
+            normalized_sha256: string;
+            /**
+             * Original Asset Id
+             * Format: uuid
+             */
+            original_asset_id: string;
+            /** Original Sha256 */
+            original_sha256: string;
+            /** Pixel Sha256 */
+            pixel_sha256: string;
+            /**
+             * Rights Acknowledged
+             * @default true
+             * @constant
+             */
+            rights_acknowledged: true;
+        };
         /** SegmentationRequest */
         SegmentationRequest: {
             /** Concept */
             concept: string;
+            limits?: components["schemas"]["JobLimits"] | null;
         };
         /** StartExperiment */
         StartExperiment: {
@@ -1282,6 +1340,10 @@ export interface components {
              * Format: uuid
              */
             project_id: string;
+        };
+        /** TargetCheckRequest */
+        TargetCheckRequest: {
+            limits?: components["schemas"]["JobLimits"] | null;
         };
         /** ValidationPolicy */
         ValidationPolicy: {
@@ -5356,7 +5418,9 @@ export interface operations {
     segment_api_v1_seeds__seed_id__segment_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 seed_id: string;
             };
@@ -5472,13 +5536,19 @@ export interface operations {
     check_target_api_v1_targets__target_id__check_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 target_id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TargetCheckRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             202: {

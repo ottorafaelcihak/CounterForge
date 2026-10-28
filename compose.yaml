@@ -1,0 +1,79 @@
+x-runtime: &runtime
+  environment: &runtime-environment
+    APP_ENV: development
+    PGHOST: postgres
+    PGPORT: "5432"
+    PGDATABASE: counterforge
+    PGUSER: counterforge
+    PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting services}
+    REDIS_URL: redis://redis:6379/0
+    ARTIFACT_ROOT: /data/artifacts
+    OWNER_AUTH_TOKEN: ${OWNER_AUTH_TOKEN:?Set OWNER_AUTH_TOKEN before starting services}
+    OWNER_LABEL: ${OWNER_LABEL:-local-owner}
+    WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+  volumes:
+    - artifacts:/data/artifacts
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: counterforge
+      POSTGRES_USER: counterforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting services}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U counterforge -d counterforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  migrate:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    command: ["python", "-m", "services.api.app.db.migrations"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  worker:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  artifacts: {}

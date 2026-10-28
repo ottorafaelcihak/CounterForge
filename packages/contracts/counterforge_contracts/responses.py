@@ -77,6 +77,17 @@ class Project(ContractModel):
     created_at: datetime
 
 
+class SeedProvenance(ContractModel):
+    original_asset_id: UUID
+    normalized_asset_id: UUID
+    original_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    normalized_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    pixel_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    normalization_policy: str
+    icc_policy: Literal["discard_no_color_conversion"] = "discard_no_color_conversion"
+    rights_acknowledged: Literal[True] = True
+
+
 class Seed(ContractModel):
     id: UUID
     project_id: UUID
@@ -85,6 +96,8 @@ class Seed(ContractModel):
     question: str
     expected: ExpectedCount
     label_provenance: Literal["HUMAN", "LICENSED_DATASET"]
+    case_key: str
+    provenance: SeedProvenance
 
 
 class Mask(ContractModel):

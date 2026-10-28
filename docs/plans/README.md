@@ -1,10 +1,10 @@
 # CounterForge implementation roadmap
 
-**Status:** Phase 01 foundation implemented and verified; phases 02–11 remain planned. Real-model integrations and evaluation measurements have not started.
+**Status:** Phases 01–02 implemented and verified; phases 03–11 remain planned. Real-model integrations and evaluation measurements have not started.
 
 Read these plans in order. Each phase produces a testable deliverable and carries
 forward the evidence needed by later phases. Checkboxes describe future work;
-completed checkboxes in phase 01 reflect the verification record in its handoff. Live integrations and benchmark results remain future work.
+completed checkboxes in phases 01–02 reflect their verification handoffs. Live integrations and benchmark results remain future work.
 
 ## Sources and authority
 

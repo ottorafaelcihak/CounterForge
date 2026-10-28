@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
+WORKDIR /app
+ENV UV_LINK_MODE=copy PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+COPY pyproject.toml uv.lock ./
+COPY packages ./packages
+COPY services ./services
+COPY scripts ./scripts
+RUN uv sync --locked --no-dev --no-editable \
+    && useradd --uid 10001 --create-home counterforge \
+    && mkdir -p /data/artifacts \
+    && chown counterforge:counterforge /data/artifacts
+USER counterforge
+CMD ["python", "-m", "services.worker.app.main"]

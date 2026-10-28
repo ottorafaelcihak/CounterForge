@@ -35,6 +35,12 @@
             "title": "File",
             "type": "string"
           },
+          "label_reviewer": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label Reviewer",
+            "type": "string"
+          },
           "license_ack": {
             "title": "License Ack",
             "type": "boolean"
@@ -50,7 +56,8 @@
           "file",
           "question",
           "expected_count",
-          "license_ack"
+          "license_ack",
+          "label_reviewer"
         ],
         "title": "Body_upload_seed_api_v1_projects__project_id__seeds_post",
         "type": "object"
@@ -354,6 +361,8 @@
       },
       "ErrorCode": {
         "enum": [
+          "INTERNAL_ERROR",
+          "DEPENDENCY_UNAVAILABLE",
           "INVALID_INPUT",
           "NOT_FOUND",
           "UNAUTHORIZED",
@@ -843,6 +852,37 @@
           }
         },
         "title": "InferenceOptions",
+        "type": "object"
+      },
+      "JobLimits": {
+        "additionalProperties": false,
+        "description": "Explicit owner-authorized ceiling for one pre-experiment job.\n\nEvery field is required: a job without stated finite limits may be queued,\nbut it must never be dispatched to a paid provider.",
+        "properties": {
+          "max_calls": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Calls",
+            "type": "integer"
+          },
+          "max_estimated_usd": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 150.0,
+            "title": "Max Estimated Usd",
+            "type": "number"
+          },
+          "max_runtime_seconds": {
+            "maximum": 7200.0,
+            "minimum": 60.0,
+            "title": "Max Runtime Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_estimated_usd",
+          "max_calls",
+          "max_runtime_seconds"
+        ],
+        "title": "JobLimits",
         "type": "object"
       },
       "JobLinks": {
@@ -1533,6 +1573,10 @@
       "Seed": {
         "additionalProperties": false,
         "properties": {
+          "case_key": {
+            "title": "Case Key",
+            "type": "string"
+          },
           "expected": {
             "$ref": "#/components/schemas/ExpectedCount"
           },
@@ -1559,6 +1603,9 @@
             "title": "Project Id",
             "type": "string"
           },
+          "provenance": {
+            "$ref": "#/components/schemas/SeedProvenance"
+          },
           "question": {
             "title": "Question",
             "type": "string"
@@ -1576,9 +1623,67 @@
           "sha256",
           "question",
           "expected",
-          "label_provenance"
+          "label_provenance",
+          "case_key",
+          "provenance"
         ],
         "title": "Seed",
+        "type": "object"
+      },
+      "SeedProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "icc_policy": {
+            "const": "discard_no_color_conversion",
+            "default": "discard_no_color_conversion",
+            "title": "Icc Policy",
+            "type": "string"
+          },
+          "normalization_policy": {
+            "title": "Normalization Policy",
+            "type": "string"
+          },
+          "normalized_asset_id": {
+            "format": "uuid",
+            "title": "Normalized Asset Id",
+            "type": "string"
+          },
+          "normalized_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Normalized Sha256",
+            "type": "string"
+          },
+          "original_asset_id": {
+            "format": "uuid",
+            "title": "Original Asset Id",
+            "type": "string"
+          },
+          "original_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Original Sha256",
+            "type": "string"
+          },
+          "pixel_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Pixel Sha256",
+            "type": "string"
+          },
+          "rights_acknowledged": {
+            "const": true,
+            "default": true,
+            "title": "Rights Acknowledged",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "original_asset_id",
+          "normalized_asset_id",
+          "original_sha256",
+          "normalized_sha256",
+          "pixel_sha256",
+          "normalization_policy"
+        ],
+        "title": "SeedProvenance",
         "type": "object"
       },
       "SegmentationRequest": {
@@ -1589,6 +1694,16 @@
             "minLength": 2,
             "title": "Concept",
             "type": "string"
+          },
+          "limits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobLimits"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1683,6 +1798,23 @@
           "enabled"
         ],
         "title": "Target",
+        "type": "object"
+      },
+      "TargetCheckRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "limits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobLimits"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "TargetCheckRequest",
         "type": "object"
       },
       "ValidationPolicy": {
@@ -1831,10 +1963,16 @@
         "title": "VisualTestContract",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "OwnerToken": {
+        "scheme": "bearer",
+        "type": "http"
+      }
     }
   },
   "info": {
-    "description": "Phase 01 contract surface. Business operations return 501 until implemented.",
+    "description": "Authenticated evidence persistence. Provider dispatch remains disabled.",
     "title": "CounterForge API",
     "version": "1.0.0"
   },
@@ -1968,6 +2106,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Asset"
       }
     },
@@ -2096,6 +2239,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Validate Contract"
       }
     },
@@ -2226,6 +2374,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Contract"
       }
     },
@@ -2367,6 +2520,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Start Experiment"
       }
     },
@@ -2497,6 +2655,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Experiment"
       }
     },
@@ -2627,6 +2790,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Cancel"
       }
     },
@@ -2774,6 +2942,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Events"
       }
     },
@@ -2949,6 +3122,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Findings"
       }
     },
@@ -3079,6 +3257,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Metrics"
       }
     },
@@ -3254,6 +3437,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Mutations"
       }
     },
@@ -3384,6 +3572,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Pause"
       }
     },
@@ -3514,6 +3707,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Resume"
       }
     },
@@ -3644,6 +3842,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Export"
       }
     },
@@ -3775,6 +3978,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Download Export"
       }
     },
@@ -3905,6 +4113,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Finding"
       }
     },
@@ -4045,6 +4258,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Confirm"
       }
     },
@@ -4186,6 +4404,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Export"
       }
     },
@@ -4320,6 +4543,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Ready"
       }
     },
@@ -4450,6 +4678,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Job"
       }
     },
@@ -4590,6 +4823,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Review Mutation"
       }
     },
@@ -4739,6 +4977,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "List Projects"
       },
       "post": {
@@ -4865,6 +5108,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Create Project"
       }
     },
@@ -4995,6 +5243,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Project"
       }
     },
@@ -5154,6 +5407,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "List Seeds"
       },
       "post": {
@@ -5292,6 +5550,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Upload Seed"
       }
     },
@@ -5451,6 +5714,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "List Targets"
       },
       "post": {
@@ -5589,6 +5857,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Create Target"
       }
     },
@@ -5856,6 +6129,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "List Regressions"
       }
     },
@@ -5996,6 +6274,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Retest"
       }
     },
@@ -6126,6 +6409,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Get Seed"
       }
     },
@@ -6266,6 +6554,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Create Contract"
       }
     },
@@ -6425,6 +6718,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "List Masks"
       }
     },
@@ -6575,6 +6873,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Approve Mask"
       }
     },
@@ -6725,6 +7028,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Revise Mask"
       }
     },
@@ -6740,6 +7048,24 @@
               "format": "uuid",
               "title": "Seed Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
             }
           }
         ],
@@ -6865,11 +7191,17 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Segment"
       }
     },
     "/api/v1/targets/{target_id}/check": {
       "post": {
+        "description": "Queues a provider check. A body may state the owner-authorized job limits\nthat accounting requires before any dispatch; omitting it still only queues.",
         "operationId": "check_target_api_v1_targets__target_id__check_post",
         "parameters": [
           {
@@ -6881,8 +7213,43 @@
               "title": "Target Id",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TargetCheckRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "202": {
             "content": {
@@ -6995,6 +7362,11 @@
             "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
         "summary": "Check Target"
       }
     }

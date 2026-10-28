@@ -4,9 +4,21 @@ version = "0.1.0"
 description = "Verified visual regression experiments — foundation workspace"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "counterforge-contracts", "counterforge-meta", "counterforge-mutations",
-  "counterforge-verification", "counterforge-targets", "counterforge-regression",
-  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "python-multipart>=0.0.20,<1",
+  "counterforge-contracts",
+  "counterforge-meta",
+  "counterforge-mutations",
+  "counterforge-verification",
+  "counterforge-targets",
+  "counterforge-regression",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "python-multipart>=0.0.20,<1",
+  "sqlalchemy>=2.0,<2.1",
+  "psycopg[binary]>=3.2,<4",
+  "alembic>=1.16,<2",
+  "pillow>=12,<14",
+  "redis>=6,<8",
+  "rq>=2,<3",
 ]
 
 [build-system]

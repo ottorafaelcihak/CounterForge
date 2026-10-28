@@ -1,11 +1,23 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, StrictInt
 
 from .base import ContractModel, FiniteNumber
 from .versions import ValidityVerdict
 from .vtc import Limits
+
+
+class JobLimits(ContractModel):
+    """Explicit owner-authorized ceiling for one pre-experiment job.
+
+    Every field is required: a job without stated finite limits may be queued,
+    but it must never be dispatched to a paid provider.
+    """
+
+    max_estimated_usd: FiniteNumber = Field(gt=0, le=150)
+    max_calls: StrictInt = Field(ge=1, le=100)
+    max_runtime_seconds: StrictInt = Field(ge=60, le=7200)
 
 
 class CreateProject(ContractModel):
@@ -29,6 +41,11 @@ class CreateTargetConfig(ContractModel):
 
 class SegmentationRequest(ContractModel):
     concept: str = Field(min_length=2, max_length=100)
+    limits: JobLimits | None = None
+
+
+class TargetCheckRequest(ContractModel):
+    limits: JobLimits | None = None
 
 
 class ReviewDecision(ContractModel):

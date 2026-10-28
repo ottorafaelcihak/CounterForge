@@ -1,13 +1,25 @@
-name: Phase 01 checks
+name: CounterForge checks
 on: [push, pull_request]
 permissions:
   contents: read
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: counterforge_test
+          POSTGRES_USER: counterforge_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U counterforge_test -d counterforge_test"
+          --health-interval 5s --health-timeout 3s --health-retries 15
     env:
       RUN_META_LIVE_TESTS: "0"
       NEXT_TELEMETRY_DISABLED: "1"
+      COUNTERFORGE_TEST_DATABASE_URL: postgresql+psycopg://counterforge_test@127.0.0.1:55432/counterforge_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -25,4 +37,9 @@ jobs:
       - run: make lint
       - run: make typecheck
       - run: make test
+      - run: make test-db
+      - run: docker compose --env-file /dev/null config --quiet
+        env:
+          POSTGRES_PASSWORD: ci-configuration-placeholder
+          OWNER_AUTH_TOKEN: ci-configuration-placeholder
       - run: make build-web
