@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, JsonValue
 
 from .base import ContractModel, FiniteNumber
 from .requests import InferenceOptions
@@ -205,6 +205,15 @@ class ExperimentView(ContractModel):
     limits: Limits
     metrics: Metrics
     stop_reason: str | None = None
+    mode: Literal["ADAPTIVE", "RANDOM_BASELINE"] = "ADAPTIVE"
+    synthetic: bool = False
+    started_at: datetime | None = None
+    elapsed_seconds: float = Field(default=0, ge=0)
+    baseline_completed: int = Field(default=0, ge=0, le=3)
+    spent_usd: FiniteNumber = Field(default=0, ge=0)
+    reserved_usd: FiniteNumber = Field(default=0, ge=0)
+    reserved_target_calls: int = Field(default=0, ge=0)
+    resume_blocked_reason: str | None = None
 
 
 class Mutation(ContractModel):
@@ -275,6 +284,7 @@ class FindingAssets(ContractModel):
 
 class Finding(ContractModel):
     id: UUID
+    mutation_id: UUID | None = None
     status: FindingStatus
     ground_truth: FindingTruth
     model: ModelIdentity
@@ -283,6 +293,9 @@ class Finding(ContractModel):
     confirmation: Confirmation
     assets: FindingAssets
     qualification: str
+    demo_approved: bool = False
+    demo_approved_by: str | None = None
+    demo_approved_at: datetime | None = None
 
 
 class ExportLinks(ContractModel):
@@ -342,6 +355,7 @@ class JobResult(ContractModel):
     background_sha256: str | None = None
     original_background_asset_id: UUID | None = None
     original_background_sha256: str | None = None
+    background_geometry: dict[str, JsonValue] | None = None
     synthetic: bool = False
     detected_count: int | None = Field(default=None, ge=0)
     expected_count: int | None = Field(default=None, ge=0)
@@ -360,3 +374,12 @@ class SetupCapabilities(ContractModel):
 
 
 JobRef.model_rebuild()
+
+
+class StoredExperimentEvent(ContractModel):
+    """One persisted SSE data frame; replay uses its monotonically increasing ID."""
+
+    id: int = Field(ge=1)
+    experiment_id: UUID
+    event: str = Field(min_length=1, max_length=100)
+    payload: dict[str, JsonValue]

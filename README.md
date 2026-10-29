@@ -6,15 +6,15 @@ CounterForge is a visual-model reliability laboratory for controlled image chang
 independent ground-truth checks, repeated evaluation and portable regression tests.
 The initial task is single-image object counting.
 
-Phases 01–04 implement typed contracts, PostgreSQL evidence storage, atomic spend
-accounting, bounded Meta adapters, durable setup jobs and an owner workspace for
-seed upload, target checks and audited mask correction, plus controlled mutations,
-independent verification and candidate review. Experiment scheduling and regression
-ZIP creation belong to the following phases.
-Live entitlement and the real-provider smoke gate remain **unmet**; fixtures do
-not establish live access or a real model weakness. Phase 04 specimens have only
-simulated acceptance decisions; actual human acceptance and automatic threshold
-calibration remain outstanding.
+Phases 01–05 implement typed contracts, PostgreSQL evidence storage, atomic spend
+accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
+independent verification, durable experiment scheduling and an owner cockpit.
+Three correct seed checks precede search; only VALID candidates reach screening,
+and a stable finding requires three fresh incorrect confirmations. Regression
+ZIP creation belongs to Phase 06. See the [Phase 05 handoff](docs/plans/phase-05-handoff.md)
+for verification, live-test usage and remaining human-review gates. Fixtures and
+Phase 04 simulated acceptance specimens do not establish a real model weakness;
+automatic threshold calibration remains outstanding.
 
 ## Development setup
 
@@ -59,7 +59,7 @@ For host development, export the PG components or a fully expanded
 `postgresql+psycopg` `DATABASE_URL`, plus `REDIS_URL`, `ARTIFACT_ROOT`,
 `OWNER_AUTH_TOKEN`, `OWNER_LABEL`, `WEB_ORIGIN` and `API_INTERNAL_URL`. Then run
 `make migrate`, `make dev-api`, `python -m services.worker.app.main` and
-`make dev-web` in separate terminals. Use `ENQUEUE_JOBS=1` for API job notification.
+`make dev-web` in separate terminals. Use `ENQUEUE_JOBS=1` in both API and worker environments for job notification.
 `API_INTERNAL_URL` defaults to `http://127.0.0.1:8000` for the Next server.
 Nested variable interpolation is rejected; component passwords remain literal data.
 
@@ -99,7 +99,7 @@ Use the authenticated API to create an experiment intent with an approved VTC
 and target, then `POST /api/v1/experiments/{id}/mutations` with an
 `Idempotency-Key`, typed `plan` and `rng_seed`. Supported families are
 `background_replacement`, `background_clutter` and `brightness_shift`.
-The Phase 05 experiment scheduler is not enabled yet.
+The Phase 05 scheduler advances started experiments when provider dispatch and queue notification are enabled.
 
 For a generative background, first request
 `POST /api/v1/contracts/{id}/backgrounds` with the generative plan and explicit
@@ -107,8 +107,8 @@ finite job limits. After that job succeeds, supply its `background_job_id` with
 the same plan when creating the candidate. Original approved foreground pixels
 are copied exactly onto the normalized background. Candidate segmentation via
 `POST /api/v1/mutations/{id}/segment` is optional supporting evidence and uses the
-same bounded setup-job accounting. Preparation usage is separate from experiment
-spend until Phase 05 integrates orchestration.
+same bounded accounting. Manually requested pre-experiment preparation has its own
+explicit allowance; orchestrated preparation is charged to the experiment budget.
 
 Open `/mutations/{id}` in the owner workspace to inspect original, candidate,
 background, protected union, pixel diff, source masks, recipe and revision history.
@@ -127,6 +127,28 @@ Recipes record exact parameters and runtime versions. Strength is specific to
 each family: brightness `0.5` is the identity, replacement `0` is the identity,
 and clutter `0` already draws one rectangle. It is not a universal severity scale.
 See the [Phase 04 handoff](docs/plans/phase-04-handoff.md) for integration rules.
+
+## Run a bounded experiment
+
+In project setup, choose a reviewed contract and target, tighten the candidate,
+target-call, dollar and wall-clock limits, then start. The cockpit displays saved
+state, baseline progress, review reasons, cap exposure and findings. A same-page
+retry of an unchanged start request reuses its idempotency key. After navigation
+following an uncertain reply, inspect Previous runs before creating another run.
+
+ADAPTIVE records a one-shot Spark plan (`spark-initial-v1`); invalid proposals
+use an explicitly labeled deterministic fallback. RANDOM_BASELINE uses a seeded
+proposal without a planner call. The initial scheduler processes one bounded
+proposal; later phases add feedback exploration. Generated candidates pause for
+human semantics/visibility review. Review the retained comparison evidence, record
+a decision, return to the experiment and resume. Paused time counts toward runtime.
+
+Pause and cancel drain in-flight calls, which may remain charged. Unknown charges
+or lost provider outcomes require operator resolution before resume. Reservations
+cover all fresh confirmations before their first dispatch. Actual usage, estimates
+and unresolved charges are components of committed exposure, not additive totals.
+Recovery reuses retained target receipts and never blindly repeats an ambiguous
+paid request. SSE replay remains private and uses no credentials in URLs.
 
 ## Provider modes and offline fixtures
 
@@ -185,7 +207,8 @@ key, an existing operator allowance, explicit finite `SMOKE_META_MAX_USD`,
 `SMOKE_META_SEED_ID`, `SMOKE_META_VTC_ID`, `SMOKE_META_TARGET_ID` references with
 current reviewed evidence. It exercises planner, SAM, image and target sequentially
 through the same accounting. It records sanitized evidence IDs and usage. No live
-smoke was run during phase 03 implementation; TS-AT-18 remains unmet.
+smoke was run during phase 03 implementation. The Phase 05 handoff records the
+later authorized bounded live capability test and its exact remaining gates.
 
 ## Verification and maintenance
 

@@ -14,7 +14,7 @@ from pydantic import JsonValue, ValidationError
 from .transport import MetaTransport
 from .usage import sanitize_raw
 
-PLANNER_TEMPLATE = "planner-v1"
+PLANNER_TEMPLATE = "planner-v2-low-4096"
 
 
 class SparkPlanner:
@@ -58,7 +58,8 @@ class SparkPlanner:
                 {"role": "user", "content": text},
             ],
             response_format=response_format,
-            max_completion_tokens=1024,
+            max_completion_tokens=4096,
+            reasoning_effort="low",
         )
         raw = ""
         proposal = None
@@ -79,6 +80,8 @@ class SparkPlanner:
         self.last_evidence = sanitize_raw(
             {
                 "template_version": PLANNER_TEMPLATE,
+                "max_completion_tokens": 4096,
+                "reasoning_effort": "low",
                 "proposal_sha256": sha256(raw.encode()).hexdigest(),
                 "raw_proposal": raw,
                 "author": "META_SPARK" if proposal else "DETERMINISTIC_FALLBACK",

@@ -62,6 +62,7 @@ def normalize_image(
     *,
     strict_opaque: bool = False,
     expected_size: tuple[int, int] | None = None,
+    _background_size: tuple[int, int] | None = None,
 ) -> NormalizedImage:
     if (
         not data
@@ -77,6 +78,11 @@ def normalize_image(
                 str(Path(__file__).with_name("_image_decode.py")),
                 media_type,
                 "strict" if strict_opaque else "seed",
+                *(
+                    ["background-cover", str(_background_size[0]), str(_background_size[1])]
+                    if _background_size
+                    else []
+                ),
             ],
             input=data,
             stdout=subprocess.PIPE,
@@ -100,9 +106,23 @@ def normalize_image(
             pixel_sha256=info["pixel_sha256"],
             original_width=info["original_width"],
             original_height=info["original_height"],
+            policy=info.get("geometry_policy", POLICY),
         )
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         raise InvalidImage("Image could not be safely decoded") from None
+
+
+def normalize_background(data: bytes, media_type: str, *, size: tuple[int, int]) -> NormalizedImage:
+    """Explicit background-only mapping; original media stays separately retained."""
+    if (
+        len(size) != 2
+        or any(type(v) is not int or not 1 <= v <= 4096 for v in size)
+        or size[0] * size[1] > 16_000_000
+    ):
+        raise InvalidImage("Invalid background geometry")
+    return normalize_image(
+        data, media_type, strict_opaque=True, expected_size=size, _background_size=size
+    )
 
 
 @dataclass(frozen=True)

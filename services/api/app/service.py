@@ -676,6 +676,9 @@ class Service:
                 )
             self.artifacts.read_verified(asset["id"])
         self.artifacts.read_verified(seed["image_asset_id"])
+        from counterforge_meta.usage import PriceBook
+
+        prices = PriceBook.load(self.settings.pricing_path)
         snapshot = {
             **evidence,
             "contract": vtc.model_dump(mode="json"),
@@ -692,9 +695,18 @@ class Service:
                     "inference_options",
                 )
             },
-            "verifier_version": "0.1.0",
-            "pricing_revision": "unconfigured-provider-dispatch-disabled",
-            "provider_dispatch_enabled": False,
+            "verifier_version": "phase04-1",
+            "policy_version": "strict-binary-human-gates-1",
+            "adapter_version": "target-count-v1",
+            "pricing_revision": prices.revision,
+            "pricing": {
+                "revision": prices.revision,
+                "source_url": prices.source_url,
+                "checked_at": prices.checked_at,
+                "models": prices.models,
+            },
+            "provider_dispatch_enabled": self.settings.provider_mode != "DISABLED",
+            "provider_mode": self.settings.provider_mode,
         }
         limits = body.limits
         row = (
@@ -747,6 +759,9 @@ class Service:
             row["id"],
             contract_id=str(body.contract_id),
         )
+        from .experiments import queue
+
+        queue(self, row["id"])
         return self.experiment_ref(row)
 
     def require_valid_candidate(self, mutation_id: UUID) -> Any:
@@ -819,6 +834,8 @@ class Service:
                 self.t.findings.c.experiment_id == row["id"], self.t.findings.c.status == "STABLE"
             )
         )
+        from .accounting import Budget
+
         return ExperimentView(
             id=row["id"],
             project_id=row["project_id"],
@@ -844,6 +861,45 @@ class Service:
                 unresolved_charges_usd=float(unknown or 0),
             ),
             stop_reason=row["stop_reason"],
+            mode=row["mode"],
+            synthetic=row["config_snapshot"].get("provider_mode") == "FIXTURE",
+            started_at=row["started_at"],
+            elapsed_seconds=max(
+                0,
+                (
+                    (row["ended_at"] or self.db.scalar(select(func.clock_timestamp())))
+                    - row["started_at"]
+                ).total_seconds(),
+            )
+            if row["started_at"]
+            else 0,
+            resume_blocked_reason=(
+                "Resolve retained provider outcomes or unknown charges before resuming."
+                if row["state"] == "PAUSED"
+                and (
+                    row["checkpoint_json"].get("unresolved_result")
+                    or self.db.scalar(
+                        select(usage.c.id)
+                        .where(
+                            usage.c.experiment_id == row["id"], usage.c.status == "UNKNOWN_CHARGE"
+                        )
+                        .limit(1)
+                    )
+                )
+                else None
+            ),
+            baseline_completed=self.db.scalar(
+                select(func.count())
+                .select_from(observations)
+                .where(
+                    observations.c.experiment_id == row["id"],
+                    observations.c.phase == "SEED_BASELINE",
+                )
+            )
+            or 0,
+            spent_usd=float(row["spent_usd"]),
+            reserved_usd=float(row["reserved_usd"]),
+            reserved_target_calls=Budget(self.uow)._pending(row["id"])[0],
         )
 
     def job_dto(self, row: RowMapping) -> JobRef:
@@ -1017,6 +1073,7 @@ class Service:
         # Build from authoritative evidence columns; arbitrary summary/provider JSON is private.
         return Finding(
             id=row["id"],
+            mutation_id=row["mutation_id"],
             status=row["status"],
             ground_truth={"value": contract["contract_json"]["expected"]["value"]},
             model={
@@ -1039,6 +1096,9 @@ class Service:
                 "original_image_id": seed["image_asset_id"],
                 "mutated_image_id": mutation["image_asset_id"],
             },
+            demo_approved=row["demo_approved_at"] is not None,
+            demo_approved_by=row["demo_approved_by"],
+            demo_approved_at=row["demo_approved_at"],
             qualification=f"{row['confirmation_failures']}/{row['confirmation_attempts']} incorrect under recorded settings; no claim of universal reproducibility.",
         )
 

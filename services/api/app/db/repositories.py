@@ -24,9 +24,12 @@ class BackgroundJobs:
     headers, provider payloads and private prompts must not be passed here.
     """
 
-    def __init__(self, connection: Connection, table: Table) -> None:
+    def __init__(
+        self, connection: Connection, table: Table, experiments: Table | None = None
+    ) -> None:
         self.connection = connection
         self.table = table
+        self.experiments = experiments
         self.new_job_ids: list[UUID] = []
         self.max_pending_jobs = 100
 
@@ -81,9 +84,24 @@ class BackgroundJobs:
         pending = self.connection.scalar(
             select(func.count())
             .select_from(self.table)
-            .where(self.table.c.state.in_(["QUEUED", "RUNNING"]))
+            .where(
+                self.table.c.state.in_(["QUEUED", "RUNNING"]), self.table.c.experiment_id.is_(None)
+            )
         )
-        if pending is not None and pending >= self.max_pending_jobs:
+        if self.experiments is not None:
+            pending = (pending or 0) + int(
+                self.connection.scalar(
+                    select(func.count())
+                    .select_from(self.experiments)
+                    .where(
+                        self.experiments.c.dispatch_pending
+                        | self.experiments.c.runner_token.is_not(None)
+                    )
+                )
+                or 0
+            )
+        # Experiment-owned child stages share their admitted parent's slot.
+        if experiment_id is None and pending is not None and pending >= self.max_pending_jobs:
             raise ServiceError(ErrorCode.QUEUE_FULL, "Setup queue is at capacity.", 429)
         statement = insert(self.table).values(
             project_id=project_id,

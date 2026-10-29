@@ -4,8 +4,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ path: string[] }> };
 const id = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const readPaths = new RegExp("^(?:setup|fixtures/development-seed|projects(?:/" + id + "(?:/seeds|/targets)?)?|seeds/" + id + "(?:/masks(?:/" + id + "/revisions)?|/mask-review|/contracts)?|assets/" + id + "/content|jobs/" + id + "|contracts/" + id + "|mutations/" + id + "(?:/history)?)$");
-const writePaths = new RegExp("^(?:projects(?:/" + id + "/(?:seeds|targets))?|targets/" + id + "/check|seeds/" + id + "/(?:segment|contracts|masks(?:/acknowledgements|/" + id + "/(?:revisions|approve|retire))?)|mutations/" + id + "/review)$");
+const readPaths = new RegExp("^(?:setup|fixtures/development-seed|projects(?:/" + id + "(?:/seeds|/targets|/experiments)?)?|seeds/" + id + "(?:/masks(?:/" + id + "/revisions)?|/mask-review|/contracts)?|assets/" + id + "/content|jobs/" + id + "|contracts/" + id + "|experiments/" + id + "(?:/(?:mutations|findings|metrics|event-history))?|mutations/" + id + "(?:/history)?)$");
+const writePaths = new RegExp("^(?:projects(?:/" + id + "/(?:seeds|targets))?|targets/" + id + "/check|seeds/" + id + "/(?:segment|contracts|masks(?:/acknowledgements|/" + id + "/(?:revisions|approve|retire))?)|experiments(?:/" + id + "/(?:pause|resume|cancel))?|findings/" + id + "/(?:confirm|demo-approve)|mutations/" + id + "/review)$");
 async function proxy(request: NextRequest, context: Context) {
   if (!authenticated(request)) return errorResponse("Owner authentication is required.", 401);
   if (request.method !== "GET" && !sameOrigin(request)) return errorResponse("This request must come from the configured app origin.", 403);
@@ -14,7 +14,9 @@ async function proxy(request: NextRequest, context: Context) {
   const relative = path.join("/");
   if (!(request.method === "GET" ? readPaths : writePaths).test(relative)) return errorResponse("Route was not found.", 404);
   const query = request.nextUrl.searchParams;
-  if ([...query.keys()].some(key => !["limit", "cursor"].includes(key)) ||
+  const allowedQuery = relative.endsWith("/event-history") ? ["limit", "after"] : ["limit", "cursor"];
+  if ([...query.keys()].some(key => !allowedQuery.includes(key)) ||
+      (query.has("after") && !/^(?:0|[1-9][0-9]{0,17})$/.test(query.get("after")!)) ||
       (query.has("limit") && !/^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!)) ||
       (query.get("cursor")?.length || 0) > 512) return errorResponse("Query could not be accepted.", 422);
   try {

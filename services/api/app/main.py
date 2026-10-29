@@ -36,6 +36,7 @@ from counterforge_contracts.responses import (
     Project,
     Seed,
     SetupCapabilities,
+    StoredExperimentEvent,
     Target,
     ValidationReport,
 )
@@ -52,6 +53,7 @@ from .db.readiness import probe_dependencies
 from .errors import NotImplementedOperation, ServiceError, envelope
 from .http import (
     Credentials,
+    ExperimentControlServices,
     MutationReviewServices,
     Services,
     base_app,
@@ -295,9 +297,26 @@ async def get_experiment(experiment_id: UUID, service: Services) -> ExperimentVi
 )
 async def get_events(
     experiment_id: UUID,
-    last_event_id: Annotated[int | None, Header(alias="Last-Event-ID", ge=0)] = None,
-) -> NoReturn:
-    disabled()
+    request: Request,
+    service: Services,
+    last_event_id: Annotated[
+        int | None, Header(alias="Last-Event-ID", ge=0, le=9223372036854775807)
+    ] = None,
+) -> StreamingResponse:
+    from .experiment_stream import stream
+
+    service.experiment(experiment_id)
+    return StreamingResponse(
+        stream(
+            request,
+            request.app.state.uow_factory,
+            service.settings,
+            experiment_id,
+            last_event_id or 0,
+        ),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get(
@@ -328,8 +347,10 @@ async def review_mutation(
     status_code=202,
     responses=ERRORS,
 )
-async def pause(experiment_id: UUID) -> NoReturn:
-    disabled()
+async def pause(experiment_id: UUID, service: ExperimentControlServices) -> ExperimentRef:
+    from .experiments import control
+
+    return control(service, experiment_id, "pause")
 
 
 @router.post(
@@ -338,8 +359,10 @@ async def pause(experiment_id: UUID) -> NoReturn:
     status_code=202,
     responses=ERRORS,
 )
-async def resume(experiment_id: UUID) -> NoReturn:
-    disabled()
+async def resume(experiment_id: UUID, service: ExperimentControlServices) -> ExperimentRef:
+    from .experiments import control
+
+    return control(service, experiment_id, "resume")
 
 
 @router.post(
@@ -348,8 +371,10 @@ async def resume(experiment_id: UUID) -> NoReturn:
     status_code=202,
     responses=ERRORS,
 )
-async def cancel(experiment_id: UUID) -> NoReturn:
-    disabled()
+async def cancel(experiment_id: UUID, service: ExperimentControlServices) -> ExperimentRef:
+    from .experiments import control
+
+    return control(service, experiment_id, "cancel")
 
 
 @router.get(
@@ -371,8 +396,14 @@ async def get_findings(
     status_code=202,
     responses=ERRORS,
 )
-async def confirm(finding_id: UUID, body: ConfirmRequest) -> NoReturn:
-    disabled()
+async def confirm(finding_id: UUID, body: ConfirmRequest, service: Services) -> JobRef:
+    from .experiments import canonical_confirmation, queue
+
+    job = canonical_confirmation(service, finding_id)
+    finding = service.finding(finding_id)
+    if service.experiment(finding["experiment_id"])["state"] in {"EVALUATING", "CONFIRMING"}:
+        queue(service, finding["experiment_id"])
+    return job
 
 
 @router.post(
@@ -424,8 +455,8 @@ async def retest(export_id: UUID, body: RetestRequest) -> NoReturn:
 @router.get(
     PREFIX + "/experiments/{experiment_id}/metrics", response_model=Metrics, responses=ERRORS
 )
-async def metrics(experiment_id: UUID) -> NoReturn:
-    disabled()
+async def metrics(experiment_id: UUID, service: Services) -> Metrics:
+    return service.experiment_dto(service.experiment(experiment_id)).metrics
 
 
 @public_router.get(PREFIX + "/public/demo", response_model=DemoManifest, responses=ERRORS)
@@ -491,6 +522,24 @@ async def revise_mask(
         await file.close()
     return service.mask_review.write(
         seed_id, data, notes=notes, mask_id=mask_id, key=idempotency_key
+    )
+
+
+@router.get(PREFIX + "/seeds/{seed_id}/contracts", response_model=Page[Contract], responses=ERRORS)
+async def list_contracts(
+    seed_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[Contract]:
+    service.seed(seed_id)
+    return service.page(
+        service.t.visual_contracts,
+        f"contracts:{seed_id}",
+        service.contract_dto,
+        [service.t.visual_contracts.c.seed_id == seed_id],
+        limit,
+        cursor,
     )
 
 
@@ -662,6 +711,71 @@ async def segment_mutation(
     mutation_id: UUID, body: CandidateSegmentationRequest, idempotency_key: Key, service: Services
 ) -> JobRef:
     return service.candidates.request_segmentation(mutation_id, body, idempotency_key)
+
+
+@router.get(
+    PREFIX + "/projects/{project_id}/experiments",
+    response_model=Page[ExperimentView],
+    responses=ERRORS,
+)
+async def project_experiments(
+    project_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[ExperimentView]:
+    service.project(project_id)
+    return service.page(
+        service.t.experiments,
+        f"experiments:{project_id}",
+        service.experiment_dto,
+        [service.t.experiments.c.project_id == project_id],
+        limit,
+        cursor,
+    )
+
+
+@router.post(
+    PREFIX + "/findings/{finding_id}/demo-approve", response_model=Finding, responses=ERRORS
+)
+async def demo_approve(finding_id: UUID, service: Services) -> Finding:
+    from .experiments import approve_demo
+
+    return approve_demo(service, finding_id)
+
+
+@router.get(
+    PREFIX + "/experiments/{experiment_id}/event-history",
+    response_model=list[StoredExperimentEvent],
+    responses=ERRORS,
+)
+async def event_history(
+    experiment_id: UUID,
+    service: Services,
+    after: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
+    limit: Limit = 100,
+) -> list[StoredExperimentEvent]:
+    service.experiment(experiment_id)
+    t = service.t.experiment_events
+    rows = (
+        service.db.execute(
+            select(t)
+            .where(t.c.experiment_id == experiment_id, t.c.id > after)
+            .order_by(t.c.id)
+            .limit(limit)
+        )
+        .mappings()
+        .all()
+    )
+    return [
+        StoredExperimentEvent(
+            id=row["id"],
+            experiment_id=experiment_id,
+            event=row["event_type"],
+            payload=row["payload_json"],
+        )
+        for row in rows
+    ]
 
 
 app = create_app()

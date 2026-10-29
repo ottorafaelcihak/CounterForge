@@ -221,6 +221,9 @@ class Candidates:
         return self.s.artifacts.read_verified(aid)
 
     def row(self, mutation_id: UUID, *, lock: bool = False) -> Any:
+        if lock:
+            probe = self.s.row(self.s.t.mutations, mutation_id)
+            self.s.row(self.s.t.experiments, probe["experiment_id"], lock=True)
         row = self.s.row(self.s.t.mutations, mutation_id, lock=lock)
         self.s.experiment(row["experiment_id"])
         return row
@@ -319,9 +322,30 @@ class Candidates:
             verdict=str(report.verdict),
             review=report.review_audit.model_dump(mode="json") if report.review_audit else None,
         )
+        from .experiments import event
+
+        event(
+            s,
+            row["experiment_id"],
+            "CANDIDATE_VALIDATED",
+            {
+                "mutation_id": str(row["id"]),
+                "verdict": str(report.verdict),
+                "revision": record["revision"],
+                "report_sha256": report.report_sha256,
+            },
+        )
         return record
 
-    def create(self, experiment_id: UUID, body: CreateMutation, key: str) -> Mutation:
+    def create(
+        self,
+        experiment_id: UUID,
+        body: CreateMutation,
+        key: str,
+        *,
+        source_plan_id: UUID | None = None,
+        automated: bool = False,
+    ) -> Mutation:
         from .service import canonical_json, fingerprint
 
         s = self.s
@@ -336,11 +360,28 @@ class Candidates:
             raise ServiceError(
                 ErrorCode.INVALID_INPUT, "Mutation plan is not approved by the contract.", 422
             ) from None
+        if source_plan_id is not None:
+            origin = s.row(s.t.mutation_plans, source_plan_id)
+            if origin["experiment_id"] != experiment_id:
+                raise ServiceError(
+                    ErrorCode.FORBIDDEN, "Planner proposal belongs to another experiment.", 403
+                )
+            origin_plan = approve_plan(
+                vtc, self.clean_plan(MutationPlan.model_validate(origin["plan_json"]))
+            )
+            if origin_plan.plan_json != approved.plan_json:
+                raise ServiceError(
+                    ErrorCode.INVALID_INPUT,
+                    "Candidate differs from retained planner proposal.",
+                    422,
+                )
         request = {
             "plan": approved.plan_json,
             "rng_seed": body.rng_seed,
             "background_job_id": str(body.background_job_id) if body.background_job_id else None,
         }
+        if source_plan_id is not None:
+            request["source_plan_id"] = str(source_plan_id)
         identity = fingerprint(request)
         aliased = self.aliased(experiment_id, key, identity)
         if aliased is not None:
@@ -500,17 +541,21 @@ class Candidates:
             result = s.job(body.background_job_id)["result_json"]
             assets["provider_background"] = result["original_background_asset_id"]
             hashes["provider_background"] = result["original_background_sha256"]
-        plan_id = s.db.scalar(
-            s.t.mutation_plans.insert()
-            .values(
-                experiment_id=experiment_id,
-                planner_model="OWNER_APPROVED",
-                strategy="RANDOM" if experiment["mode"] == "RANDOM_BASELINE" else "META_ADAPTIVE",
-                hypothesis=self.clean(body.plan.hypothesis),
-                plan_json=__import__("json").loads(approved.plan_json),
+        plan_id = source_plan_id
+        if plan_id is None:
+            plan_id = s.db.scalar(
+                s.t.mutation_plans.insert()
+                .values(
+                    experiment_id=experiment_id,
+                    planner_model="EXPERIMENT_SCHEDULER" if automated else "OWNER_APPROVED",
+                    strategy="RANDOM"
+                    if experiment["mode"] == "RANDOM_BASELINE"
+                    else "META_ADAPTIVE",
+                    hypothesis=self.clean(body.plan.hypothesis),
+                    plan_json=__import__("json").loads(approved.plan_json),
+                )
+                .returning(s.t.mutation_plans.c.id)
             )
-            .returning(s.t.mutation_plans.c.id)
-        )
         row = (
             s.db.execute(
                 s.t.mutations.insert()

@@ -43,3 +43,23 @@ def test_strict_scene_rejects_truncated_and_multiframe_media():
         normalize_image(
             b"x" * (10 * 1024 * 1024 + 1), "image/png", strict_opaque=True, expected_size=(12, 8)
         )
+
+
+def test_background_geometry_is_explicit_deterministic_cover_in_decoder():
+    from services.api.app.artifacts import normalize_background
+
+    image = Image.new("RGB", (24, 8), "red")
+    for x in range(8, 16):
+        for y in range(8):
+            image.putpixel((x, y), (0, 0, 255))
+    body = io.BytesIO()
+    image.save(body, "PNG")
+    mapped = normalize_background(body.getvalue(), "image/png", size=(8, 8))
+    assert (mapped.width, mapped.height) == (8, 8)
+    assert (mapped.original_width, mapped.original_height) == (24, 8)
+    assert mapped.policy.startswith("background-cover-center-bicubic-v1")
+    assert mapped.png == normalize_background(body.getvalue(), "image/png", size=(8, 8)).png
+    with Image.open(io.BytesIO(mapped.png)) as result:
+        assert result.getcolors() == [(64, (0, 0, 255))]
+    with pytest.raises(InvalidImage):
+        normalize_background(png("RGBA", color=(0, 0, 0, 0)), "image/png", size=(8, 8))

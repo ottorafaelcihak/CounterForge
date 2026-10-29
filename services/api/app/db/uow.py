@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from types import TracebackType
+from uuid import UUID
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Connection, Engine, RootTransaction
@@ -41,7 +42,10 @@ class UnitOfWork:
         self._entered = True
         self.connection = self.engine.connect()
         self._transaction = self.connection.begin()
-        self.background_jobs = BackgroundJobs(self.connection, self.tables.background_jobs)
+        self.background_jobs = BackgroundJobs(
+            self.connection, self.tables.background_jobs, self.tables.experiments
+        )
+        self.new_experiment_ids: list[UUID] = []
         return self
 
     def commit(self) -> None:

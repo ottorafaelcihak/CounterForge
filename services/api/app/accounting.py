@@ -694,6 +694,12 @@ class Budget:
         self.db.execute(
             experiments.update().where(experiments.c.id == experiment["id"]).values(**values)
         )
+        if values.get("state") == "PAUSED":
+            self._event(
+                experiment["id"],
+                "EXPERIMENT_STATE_CHANGED",
+                {"state": "PAUSED", "reason": "UNRESOLVED_PROVIDER_CHARGE"},
+            )
         self._event(
             experiment["id"],
             "UNKNOWN_CHARGE_RECORDED",

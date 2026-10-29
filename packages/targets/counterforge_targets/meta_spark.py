@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from typing import Any
 
 from counterforge_contracts.providers import TargetResult
 from counterforge_contracts.versions import TargetOutcome
@@ -11,6 +12,27 @@ from counterforge_verification.counting import parse_count
 from pydantic import JsonValue
 
 TARGET_TEMPLATE = "target-count-v1"
+
+
+def decode_reply(
+    data: Any, outcome: str, expected_count: int
+) -> tuple[str, int | None, TargetOutcome]:
+    """Normalize fresh and retained responses identically, including malformed content."""
+    raw = ""
+    if outcome == "COMPLETED":
+        try:
+            text = data["choices"][0]["message"]["content"]
+            if isinstance(text, str):
+                raw = text
+        except (KeyError, IndexError, TypeError):
+            pass
+    parsed = parse_count(raw) if outcome == "COMPLETED" else None
+    status = TargetOutcome.UNKNOWN
+    if outcome in {"PROVIDER_ERROR", "NOT_DISPATCHED", "RATE_LIMITED"}:
+        status = TargetOutcome.PROVIDER_ERROR
+    elif parsed is not None:
+        status = TargetOutcome.CORRECT if parsed == expected_count else TargetOutcome.INCORRECT
+    return raw, parsed, status
 
 
 class MetaSparkTarget:
@@ -60,22 +82,7 @@ class MetaSparkTarget:
             temperature=sampling.get("temperature"),
             top_p=sampling.get("top_p"),
         )
-        raw = ""
-        if response.outcome == "COMPLETED":
-            try:
-                text = response.data["choices"][0]["message"]["content"]
-                if isinstance(text, str):
-                    raw = text
-            except (KeyError, IndexError, TypeError):
-                pass
-        parsed = parse_count(raw) if response.outcome == "COMPLETED" else None
-        status = TargetOutcome.UNKNOWN
-        if response.outcome in {"PROVIDER_ERROR", "NOT_DISPATCHED", "RATE_LIMITED"}:
-            status = TargetOutcome.PROVIDER_ERROR
-        elif parsed is not None:
-            status = (
-                TargetOutcome.CORRECT if parsed == self.expected_count else TargetOutcome.INCORRECT
-            )
+        raw, parsed, status = decode_reply(response.data, response.outcome, self.expected_count)
         return TargetResult(
             raw_text=raw,
             parsed_answer=parsed,

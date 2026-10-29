@@ -23,7 +23,8 @@ from counterforge_mutations.registry import approve_plan
 from counterforge_verification.invariants import HUMAN_CODES, verify_candidate
 from sqlalchemy import func, select
 
-from services.api.app.artifacts import normalize_image
+from services.api.app.accounting import Budget
+from services.api.app.artifacts import normalize_background
 from services.api.app.errors import ServiceError
 from services.api.app.masks import BinaryMask, decode_mask
 from services.api.app.provider_accounting import Accounting
@@ -57,7 +58,7 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
         if remaining <= 0:
             raise ServiceError(ErrorCode.BUDGET_EXCEEDED, "Job runtime limit was reached.")
         if job["experiment_id"] is not None:
-            raise ValueError("PREPARATORY_JOB_REQUIRED")
+            Budget(uow)._require_runnable(s.experiment(job["experiment_id"]))
         s.project(job["project_id"])
         if job["kind"] == "SCENE":
             snapshot = request["snapshot"]
@@ -100,6 +101,11 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
             image = generated.png
             width, height = generated.recipe.width, generated.recipe.height
             instruction = s.candidates.clean(contract.protected.label)
+        prices = PriceBook.load(settings.pricing_path)
+        if job["experiment_id"] is not None:
+            from .experiments import experiment_prices
+
+            prices = experiment_prices(s.experiment(job["experiment_id"])["config_snapshot"])
         expected = contract.expected.value
     if synthetic:
         # Candidate SAM may register only the exact retained candidate derived
@@ -120,7 +126,7 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
             if synthetic
             else settings.model_api_key.get_secret_value(),
             accounting=accounting,
-            prices=PriceBook.load(settings.pricing_path),
+            prices=prices,
             http_transport=mock_transport(
                 sam_candidate_body=image if job["kind"] == "MUTATION_SAM" else None
             )
@@ -131,11 +137,10 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
             if job["kind"] == "SCENE":
                 raw = await SceneGenerator(transport=transport).create_scene(image, instruction)
                 normalized = await asyncio.to_thread(
-                    normalize_image,
+                    normalize_background,
                     raw,
                     media_type(raw),
-                    strict_opaque=True,
-                    expected_size=(width, height),
+                    size=(width, height),
                 )
                 with factory() as uow:
                     if fenced(uow, job) is None:
@@ -149,7 +154,16 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
                         "source_job_id": str(job["id"]),
                         "source_sha256": request["source_sha256"],
                         "synthetic": synthetic,
-                        "preparatory_usage": True,
+                        "preparatory_usage": job["experiment_id"] is None,
+                        "experiment_id": str(job["experiment_id"])
+                        if job["experiment_id"]
+                        else None,
+                        "geometry_policy": normalized.policy,
+                        "provider_original_size": [
+                            normalized.original_width,
+                            normalized.original_height,
+                        ],
+                        "mapped_size": [width, height],
                     }
                     original = s.artifacts.put(
                         job["project_id"],
@@ -179,6 +193,18 @@ async def execute_preparation(factory: Any, settings: Any, job: dict[str, Any]) 
                         background_sha256=output.sha256,
                         original_background_asset_id=original.id,
                         original_background_sha256=original.sha256,
+                        background_geometry={
+                            "policy": normalized.policy,
+                            "provider_original_size": [
+                                normalized.original_width,
+                                normalized.original_height,
+                            ],
+                            "mapped_size": [width, height],
+                            "experiment_id": str(job["experiment_id"])
+                            if job["experiment_id"]
+                            else None,
+                            "preparatory_usage": job["experiment_id"] is None,
+                        },
                         evidence_asset_ids=[original.id, output.id],
                     )
                     complete(s, job, result)
@@ -325,5 +351,5 @@ def complete(service: Service, job: dict[str, Any], result: JobResult) -> None:
         job["id"],
         kind=job["kind"],
         synthetic=result.synthetic,
-        preparatory_usage=True,
+        preparatory_usage=job["experiment_id"] is None,
     )

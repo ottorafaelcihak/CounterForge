@@ -38,7 +38,7 @@ class Accounting:
         purpose: str,
         synthetic: bool = False,
     ) -> None:
-        if not re.fullmatch(r"[A-Z_]{1,30}", purpose):
+        if not re.fullmatch(r"[A-Z_0-9]{1,30}", purpose):
             raise ValueError("Invalid operation purpose")
         if synthetic != (settings.provider_mode == "FIXTURE"):
             raise ValueError("Provider accounting mode mismatch")
@@ -71,18 +71,35 @@ class Accounting:
     async def reserve(self, intent: CallIntent) -> Ticket:
         key = f"{self.job_id}:{self.delivery}:{self.purpose}:{intent.attempt}"
         with self.factory() as uow:
-            self.owned_job(uow)
+            job = self.owned_job(uow)
             if self.settings.provider_mode == "DISABLED":
                 raise ServiceError(ErrorCode.INVALID_STATE, "Providers are disabled.")
-            reservation = Budget(uow).reserve_job_operation(
-                self.job_id,
-                key,
-                intent.category,
-                Decimal(0) if self.synthetic else intent.upper_bound_usd,
-                provider="FIXTURE" if self.synthetic else "META",
-                model_id=intent.model,
-                semantic_sha256=intent.semantic_sha256,
-            )
+            if job["experiment_id"] is None:
+                reservation = Budget(uow).reserve_job_operation(
+                    self.job_id,
+                    key,
+                    intent.category,
+                    Decimal(0) if self.synthetic else intent.upper_bound_usd,
+                    provider="FIXTURE" if self.synthetic else "META",
+                    model_id=intent.model,
+                    semantic_sha256=intent.semantic_sha256,
+                )
+            else:
+                reservation = Budget(uow).reserve_operation(
+                    job["experiment_id"],
+                    key,
+                    intent.category,
+                    Decimal(0) if self.synthetic else intent.upper_bound_usd,
+                    provider="FIXTURE" if self.synthetic else "META",
+                    model_id=intent.model,
+                    semantic_sha256=intent.semantic_sha256,
+                )
+                usage_table = uow.tables.usage_events
+                uow.connection.execute(
+                    usage_table.update()
+                    .where(usage_table.c.operation_key == key)
+                    .values(background_job_id=self.job_id)
+                )
             usage = uow.tables.usage_events
             prior = (
                 uow.connection.execute(select(usage).where(usage.c.operation_key == key))
@@ -305,3 +322,153 @@ class Ticket:
             )
         finally:
             self.release()
+
+
+class ExperimentAccounting(Accounting):
+    """Same execution port and Ticket settlement, attributed to an experiment."""
+
+    def __init__(
+        self,
+        factory: Callable[[], UnitOfWork],
+        settings: Settings,
+        *,
+        experiment_id: UUID,
+        token: UUID,
+        delivery: int,
+        purpose: str,
+        mutation_id: UUID | None = None,
+        invocation_sha256: str | None = None,
+    ) -> None:
+        super().__init__(
+            factory,
+            settings,
+            job_id=experiment_id,
+            claim_token=token,
+            delivery=delivery,
+            purpose=purpose,
+            synthetic=settings.provider_mode == "FIXTURE",
+        )
+        self.mutation_id = mutation_id
+        self.invocation_sha256 = invocation_sha256
+
+    def owned_job(self, uow: UnitOfWork, *, fence: bool = True) -> Any:
+        from .service import Service
+
+        s = Service(uow, self.settings)
+        row = s.row(uow.tables.experiments, self.job_id, lock=True)
+        s.project(row["project_id"])
+        if fence:
+            from .experiments import require_provider_mode
+
+            require_provider_mode(s, row)
+            if (
+                row["runner_token"] != self.claim_token
+                or row["delivery_no"] != self.delivery
+                or row["lease_expires_at"] is None
+                or row["lease_expires_at"] <= uow.connection.scalar(select(func.clock_timestamp()))
+            ):
+                raise ServiceError(ErrorCode.INVALID_STATE, "Experiment runner fence expired.")
+            Budget(uow)._require_runnable(row)
+            if self.mutation_id is not None:
+                candidate = s.require_valid_candidate(self.mutation_id)
+                if candidate.experiment_id != self.job_id:
+                    raise ServiceError(ErrorCode.FORBIDDEN, "Candidate experiment mismatch.", 403)
+        return row
+
+    async def reserve(self, intent: CallIntent) -> Ticket:
+        key = f"{self.job_id}:{self.purpose}:{self.mutation_id or 'seed'}:{intent.attempt}"
+        with self.factory() as uow:
+            self.owned_job(uow)
+            # Only a provably unsent VOID slot can acquire a fresh reservation.
+            base_key = key
+            suffix = 0
+            usage_table = uow.tables.usage_events
+            while True:
+                prior = (
+                    uow.connection.execute(
+                        select(usage_table).where(usage_table.c.operation_key == key)
+                    )
+                    .mappings()
+                    .one_or_none()
+                )
+                if prior is None or not (
+                    prior["status"] == "VOID" and prior["dispatched_at"] is None
+                ):
+                    break
+                suffix += 1
+                key = f"{base_key}:safe{suffix}"
+            if (
+                prior is not None
+                and self.invocation_sha256 is not None
+                and (prior["metadata_json"].get("invocation_sha256") != self.invocation_sha256)
+            ):
+                raise ServiceError(ErrorCode.REVIEW_REQUIRED, "Retained target invocation differs.")
+            if self.settings.provider_mode == "DISABLED":
+                raise ServiceError(ErrorCode.INVALID_STATE, "Providers are disabled.")
+            # Convert one slot of the atomic confirmation hold to the real attempt.
+            # Parent lock is still held, so another reservation cannot steal a slot.
+            from .service import Service
+
+            s = Service(uow, self.settings)
+            experiment = s.experiment(self.job_id)
+            batch = experiment["checkpoint_json"].get("confirmation_batch")
+            remainder = None
+            if self.purpose.startswith("CONFIRMATION_") and batch and prior is None:
+                Budget(uow).void_operation(batch["key"])
+                remainder = batch["remaining"] - 1
+            Budget(uow).reserve_operation(
+                self.job_id,
+                key,
+                intent.category,
+                Decimal(0) if self.synthetic else intent.upper_bound_usd,
+                target_calls=1 if intent.category == "TARGET" else 0,
+                provider="FIXTURE" if self.synthetic else "META",
+                model_id=intent.model,
+                semantic_sha256=intent.semantic_sha256,
+            )
+            if remainder is not None:
+                next_batch = None
+                if remainder:
+                    next_key = batch["key"] + f":r{remainder}"
+                    Budget(uow).reserve_operation(
+                        self.job_id,
+                        next_key,
+                        "TARGET",
+                        Decimal(batch["per_usd"]) * remainder,
+                        target_calls=remainder,
+                        provider="BATCH_HOLD",
+                        model_id=intent.model,
+                    )
+                    next_batch = {**batch, "key": next_key, "remaining": remainder}
+                uow.connection.execute(
+                    uow.tables.experiments.update()
+                    .where(uow.tables.experiments.c.id == self.job_id)
+                    .values(
+                        checkpoint_json={
+                            **experiment["checkpoint_json"],
+                            "confirmation_batch": next_batch,
+                        }
+                    )
+                )
+            usage = uow.tables.usage_events
+            uow.connection.execute(
+                usage.update()
+                .where(usage.c.operation_key == key)
+                .values(pricing_revision=intent.pricing_revision, attempt_no=intent.attempt)
+            )
+            if self.invocation_sha256 is not None:
+                metadata = uow.connection.scalar(
+                    select(usage.c.metadata_json).where(usage.c.operation_key == key)
+                )
+                uow.connection.execute(
+                    usage.update()
+                    .where(usage.c.operation_key == key)
+                    .values(
+                        metadata_json={
+                            **(metadata or {}),
+                            "invocation_sha256": self.invocation_sha256,
+                        }
+                    )
+                )
+            uow.commit()
+        return Ticket(self, key, intent)

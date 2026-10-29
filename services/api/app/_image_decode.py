@@ -8,6 +8,7 @@ import sys
 import warnings
 
 from PIL import Image, ImageOps, features
+from PIL import __version__ as pillow_version
 
 
 def main() -> None:
@@ -44,6 +45,17 @@ def main() -> None:
                 normalized.paste(rgba, mask=rgba.getchannel("A"))
             else:
                 normalized = oriented.convert("RGB")
+            geometry_policy = None
+            if len(sys.argv) > 3:
+                if sys.argv[2:4] != ["strict", "background-cover"] or len(sys.argv) != 6:
+                    raise ValueError
+                size = (int(sys.argv[4]), int(sys.argv[5]))
+                if any(not 1 <= v <= 4096 for v in size) or size[0] * size[1] > 16_000_000:
+                    raise ValueError
+                normalized = ImageOps.fit(
+                    normalized, size, method=Image.Resampling.BICUBIC, centering=(0.5, 0.5)
+                )
+                geometry_policy = "background-cover-center-bicubic-v1:Pillow-" + pillow_version
             pixels = normalized.tobytes()
             clean = Image.frombytes("RGB", normalized.size, pixels)
             output = io.BytesIO()
@@ -55,6 +67,8 @@ def main() -> None:
                 "original_height": image.height,
                 "pixel_sha256": hashlib.sha256(pixels).hexdigest(),
             }
+            if geometry_policy:
+                header["geometry_policy"] = geometry_policy
             sys.stdout.buffer.write(json.dumps(header).encode() + b"\n" + output.getvalue())
 
 

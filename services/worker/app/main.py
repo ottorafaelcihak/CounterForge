@@ -9,8 +9,9 @@ from rq.serializers import JSONSerializer
 from services.api.app.config import Settings
 from services.api.app.db import create_database_engine, create_uow_factory
 
+from .experiments import recover_experiments
 from .jobs import recover_jobs
-from .queue import enqueue_ids
+from .queue import enqueue_experiments, enqueue_ids
 
 
 def main() -> None:
@@ -21,6 +22,7 @@ def main() -> None:
     engine = create_database_engine(settings)
     try:
         enqueue_ids(settings, recover_jobs(create_uow_factory(engine), settings))
+        enqueue_experiments(settings, recover_experiments(create_uow_factory(engine), settings))
         if not args.recover_only:
             with Redis.from_url(settings.redis_url.get_secret_value()) as connection:
                 Worker(

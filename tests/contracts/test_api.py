@@ -80,6 +80,7 @@ async def test_openapi_registers_real_typed_contracts(client):
         "/api/v1/projects/00000000-0000-0000-0000-000000000001/targets",
         "/api/v1/seeds/00000000-0000-0000-0000-000000000001",
         "/api/v1/seeds/00000000-0000-0000-0000-000000000001/masks",
+        "/api/v1/seeds/00000000-0000-0000-0000-000000000001/contracts",
         "/api/v1/contracts/00000000-0000-0000-0000-000000000001",
         "/api/v1/jobs/00000000-0000-0000-0000-000000000001",
         "/api/v1/findings/00000000-0000-0000-0000-000000000001",
@@ -92,7 +93,12 @@ async def test_private_read_routes_require_owner(client, path):
     assert response.json()["error"]["code"] == "UNAUTHORIZED"
 
 
-async def test_scheduler_controls_remain_explicitly_unimplemented(client):
+async def test_scheduler_controls_require_persistence_and_owner(client):
     response = await client.post("/api/v1/experiments/00000000-0000-0000-0000-000000000001/cancel")
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "DEPENDENCY_UNAVAILABLE"
+    denied = await client.post(
+        "/api/v1/experiments/00000000-0000-0000-0000-000000000001/cancel",
+        headers={"Authorization": ""},
+    )
+    assert denied.status_code == 401

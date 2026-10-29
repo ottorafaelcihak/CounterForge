@@ -216,6 +216,7 @@ class MetaTransport:
         max_completion_tokens: int = 512,
         temperature: float | None = None,
         top_p: float | None = None,
+        reasoning_effort: str | None = None,
     ) -> CallResponse:
         model = "muse-spark-1.3"
         self.prices.upper(model, max_completion_tokens)
@@ -233,6 +234,10 @@ class MetaTransport:
                 ):
                     raise ValueError("invalid sampling option")
                 options[key] = value
+        if reasoning_effort is not None:
+            if reasoning_effort not in {"minimal", "low", "medium", "high", "xhigh", "max"}:
+                raise ValueError("invalid reasoning effort")
+            options["reasoning_effort"] = reasoning_effort
         if response_format is not None:
             options["response_format"] = response_format
 

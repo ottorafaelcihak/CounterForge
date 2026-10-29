@@ -624,3 +624,36 @@ async def test_target_cannot_assert_a_count_without_confirmed_spark_model():
         )
     assert result.parsed_answer is None and result.status == TargetOutcome.UNKNOWN
     assert ledger.finishes[0][1].kind == "UNKNOWN"
+
+
+async def test_planner_reasoning_setting_is_bounded_sent_and_fingerprinted():
+    import json
+
+    from counterforge_meta.transport import MetaTransport
+
+    ledger, sent = Ledger(), []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json=chat_body())
+
+    async with MetaTransport(
+        api_key="fixture-key",
+        accounting=ledger,
+        prices=prices(),
+        http_transport=httpx.MockTransport(handler),
+    ) as wire:
+        await wire.chat(
+            messages=[{"role": "user", "content": "plan"}],
+            category="PLANNER",
+            template_version="planner-v2-low-4096",
+            max_completion_tokens=4096,
+            reasoning_effort="low",
+        )
+        with pytest.raises(ValueError, match="invalid reasoning effort"):
+            await wire.chat(
+                messages=[], category="PLANNER", template_version="invalid", reasoning_effort="none"
+            )
+    assert len(ledger.intents) == 1
+    assert sent[0]["reasoning_effort"] == "low" and sent[0]["max_completion_tokens"] == 4096
+    assert ledger.intents[0].upper_bound_usd == prices().upper("muse-spark-1.3", 4096)

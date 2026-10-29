@@ -79,7 +79,7 @@ def test_fresh_migrations_preserve_baseline_and_map_original_names(migrated_engi
     with migrated_engine.connect() as connection:
         assert (
             connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0004_candidate_evidence"
+            == "0005_experiment_pipeline"
         )
         tables = load_tables(connection)
         names = set(inspect(connection).get_table_names()) - {"alembic_version"}

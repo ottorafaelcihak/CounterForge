@@ -60,3 +60,36 @@ label { display:flex; flex-direction:column; gap:.4rem; font-size:.94rem; font-w
  .evidence-navigation button { margin-left:0; }
  .evidence-image figcaption { flex-wrap:wrap; }
 }
+
+.experiment-setup { margin:2rem 0 3rem; border-top:1px solid var(--line); padding-top:2rem; }
+.experiment-setup .limit-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.run-list { list-style:none; margin:0; padding:0; max-height:30rem; overflow:auto; }
+.run-list li { border-top:1px solid var(--line); }
+.run-list a { display:block; padding:1rem 0; text-decoration:none; }
+.run-list span { display:block; font-size:.85rem; color:var(--muted); margin-top:.3rem; }
+.run-controls { display:flex; flex-wrap:wrap; gap:.7rem; align-items:center; margin:0 0 1.5rem; }
+.run-controls>span { margin-left:auto; }
+.baseline-strip { display:flex; flex-wrap:wrap; gap:.7rem 2rem; background:#fff; padding:1.1rem 1.3rem; border:1px solid var(--line); border-left:4px solid var(--cyan); margin-bottom:1.2rem; }
+.baseline-strip>span { color:var(--muted); font-size:.9rem; }
+.run-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin-bottom:2.5rem; }
+.run-metrics article { display:flex; flex-direction:column; gap:.5rem; padding:1.2rem; border:1px solid var(--line); background:#fff; border-radius:8px; }
+.run-metrics article>span { color:var(--muted); font-size:.85rem; }
+.run-metrics strong { font-size:1.6rem; font-variant-numeric:tabular-nums; line-height:1.2; overflow-wrap:anywhere; }
+.run-metrics small { color:var(--muted); font-size:.8rem; }
+.candidate-run-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.cockpit>section { margin-bottom:2.2rem; }
+.cockpit .review-warning p { margin:0 0 .4rem; }
+.run-timeline { padding:0; margin:0; list-style:none; }
+.run-timeline>li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.5rem 1rem; padding:1rem 0; border-top:1px solid var(--line); }
+.run-timeline>li>span { color:var(--muted); font-size:.8rem; }
+.run-timeline strong { font-size:.9rem; overflow-wrap:anywhere; }
+.run-timeline pre { grid-column:1/-1; white-space:pre-wrap; overflow-wrap:anywhere; margin:0; font-size:.75rem; color:var(--muted); max-height:15rem; overflow:auto; }
+@media (max-width:760px) {
+  .run-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .candidate-run-list { grid-template-columns:1fr; }
+  .run-controls>span { margin-left:0; width:100%; }
+}
+@media (max-width:480px) {
+  .run-metrics { grid-template-columns:1fr; }
+  .run-timeline>li { grid-template-columns:1fr; }
+}

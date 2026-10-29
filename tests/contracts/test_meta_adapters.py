@@ -62,6 +62,8 @@ async def test_planner_generated_strict_schema_and_independent_vtc_validation(vt
     planner = SparkPlanner(transport=transport)
     contract = VisualTestContract.model_validate(vtc_payload)
     plans = await planner.plan(contract, [], Limits())
+    assert transport.calls[0]["max_completion_tokens"] == 4096
+    assert transport.calls[0]["reasoning_effort"] == "low"
     assert len(plans) == 1
     assert plans[0].family == "background_clutter"
     schema = transport.calls[0]["response_format"]["json_schema"]

@@ -108,6 +108,7 @@ export function MutationEvidence({ mutationId }: { mutationId: string }) {
   const samMasks = Object.entries(assets).filter(([role]) => role.startsWith("sam_mask:"));
   return <main className="workspace mutation-workspace">
     <nav className="evidence-navigation"><Link href="/">Projects</Link>
+      <Link href={"/experiments/" + candidate.experiment_id}>Experiment</Link>
       {candidate.source_seed_id && <Link href={"/seeds/" + candidate.source_seed_id + "/masks"}>Source mask review</Link>}
       <button className="quiet" onClick={reload} disabled={busy}>Reload evidence</button></nav>
     <div className="page-heading"><div><h1>Candidate evidence</h1><p>{candidate.family.replaceAll("_", " ")} · Strength {candidate.strength} · Revision {candidate.validation_revision ?? "unavailable"}</p></div>

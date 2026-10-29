@@ -198,6 +198,8 @@ _ALLOWED = frozenset(
         "author",
         "fallback_reason",
         "raw_proposal",
+        "max_completion_tokens",
+        "reasoning_effort",
     }
 )
 _UNSAFE = re.compile(

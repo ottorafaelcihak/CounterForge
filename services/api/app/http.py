@@ -5,6 +5,7 @@ import os
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Annotated, cast
+from uuid import UUID
 
 from counterforge_contracts.requests import MutationReviewRequest
 from counterforge_contracts.versions import ErrorCode
@@ -74,10 +75,15 @@ async def service_for(request: Request) -> AsyncIterator[Service]:
         yield Service(uow, settings)
         uow.commit()
         pending = list(uow.background_jobs.new_job_ids)
+        experiments = list(uow.new_experiment_ids)
     if settings.enqueue_jobs and pending:
         from services.worker.app.queue import enqueue_ids
 
         enqueue_ids(settings, pending)
+    if settings.enqueue_jobs and experiments:
+        from services.worker.app.queue import enqueue_experiments
+
+        enqueue_experiments(settings, experiments)
 
 
 Services = Annotated[Service, Depends(service_for, scope="function")]
@@ -92,6 +98,18 @@ async def mutation_review_service_for(
 
 
 MutationReviewServices = Annotated[Service, Depends(mutation_review_service_for, scope="function")]
+
+
+async def experiment_control_service_for(
+    request: Request, experiment_id: UUID
+) -> AsyncIterator[Service]:
+    async with asynccontextmanager(service_for)(request) as service:
+        yield service
+
+
+ExperimentControlServices = Annotated[
+    Service, Depends(experiment_control_service_for, scope="function")
+]
 
 
 def base_app(settings: Settings | None, engine: Engine | None) -> FastAPI:

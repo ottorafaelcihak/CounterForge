@@ -79,3 +79,22 @@ API/worker Docker images copy root pricing and the original development fixture.
 See the [phase 03 handoff](phase-03-handoff.md) for final commands, independently inspected evidence, review rulings and team participation. Default tests block provider sockets. The real-process browser test uses its own schema, Redis queue, artifact root and zero-dollar fixture allowance, then removes those owned resources.
 
 **UNMET:** live entitlement/credit, accessible/invocable SKU verification, authorized real-provider smoke and TS-AT-18. No model catalog was implemented; curated IDs are configuration choices, not access claims. No live Meta API call was dispatched. An automated fixture approval is test evidence, not a production human sign-off.
+
+
+## Phase 05 live verification update — 2026-10-29
+
+The [Phase 05 handoff](phase-05-handoff.md) records later authorized real Meta
+requests: Spark baseline/planning/screening, Muse Image generation and SAM
+segmentation. Total 13 application calls cost USD 0.041512 from retained usage and
+published standard prices. The reviewed candidate returned the correct count 5;
+no real model weakness is claimed. The first planner truncated at 1024 hidden
+reasoning/output tokens; the revised bounded request selects low reasoning and
+4096 output tokens. Each run retains its actual template, response and outcome.
+
+Real access is now demonstrated. SAM returned zero instance proposals for this
+illustration, preserved as INCOMPLETE supporting evidence and resolved only by
+explicit independent human semantics/visibility review. This is a documented
+TS-AT-18 deviation for usable segmentation quality, not proof of successful
+instance detection. The source count/masks and accepted candidate have explicit
+user approval; the Phase 04 calibration specimens retain their separate pending
+actual-human/calibration status. No Phase 03 historical result is rewritten.

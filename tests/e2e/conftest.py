@@ -14,7 +14,7 @@ from uuid import uuid4
 
 import pytest
 from redis import Redis
-from rq import Queue
+from rq import Queue, Worker
 from sqlalchemy import text
 
 from services.api.app.accounting import Budget
@@ -134,7 +134,9 @@ def setup_stack(migrated_engine, tmp_path):
             ],
         )
         wait_http(f"http://127.0.0.1:{api_port}/api/v1/health/live", api_process)
-        start("worker", [str(ROOT / ".venv/bin/python"), "-m", "services.worker.app.main"])
+        worker_process = start(
+            "worker", [str(ROOT / ".venv/bin/python"), "-m", "services.worker.app.main"]
+        )
         web_process = start(
             "web",
             [
@@ -148,6 +150,16 @@ def setup_stack(migrated_engine, tmp_path):
             ROOT / "apps/web",
         )
         wait_http(origin + "/api/session", web_process)
+        # Startup recovery must finish before a test provisions intentionally
+        # unnotified manual Phase04 intents. Otherwise recovery can pick them up.
+        deadline = time.monotonic() + 30
+        with Redis.from_url(raw_redis, socket_connect_timeout=1, socket_timeout=2) as connection:
+            while not any(
+                queue_name in worker.queue_names() for worker in Worker.all(connection=connection)
+            ):
+                if worker_process.poll() is not None or time.monotonic() >= deadline:
+                    pytest.fail("Owned RQ worker did not register after startup recovery.")
+                time.sleep(0.1)
         yield SimpleNamespace(
             origin=origin, owner=owner, factory=factory, settings=settings, tmp_path=tmp_path
         )

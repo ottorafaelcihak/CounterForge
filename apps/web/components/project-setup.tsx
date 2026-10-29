@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, allPages, assetURL, jsonPost, type components } from "@/lib/client-api";
 import { JobStatus, type Job } from "./job-status";
+import { ExperimentSetup } from "./experiment-setup";
 type Project = components["schemas"]["Project"];
 type Seed = components["schemas"]["Seed"];
 type Target = components["schemas"]["Target"];
@@ -63,6 +64,7 @@ export function ProjectSetup({ projectId }: { projectId: string }) {
   }
   return <main className="workspace"><Link href="/" className="breadcrumb">Projects</Link><div className="page-heading"><div><h1>{project?.name || "Project setup"}</h1><p>{project?.description || "Prepare your source evidence, then review the object masks."}</p></div><span className="badge">{capabilities?.provider_mode === "FIXTURE" ? "Synthetic fixture mode" : capabilities?.provider_mode === "LIVE" ? "Live calls gated" : "Provider calls disabled"}</span></div>
     {error && <p className="error" role="alert">{error}</p>}
+    <ExperimentSetup projectId={projectId} setupRevision={seeds.length + ":" + targets.length} />
     <section className="seed-section"><h2>Source seeds</h2>{seeds.length ? <div className="seed-grid">{seeds.map(seed => <article className="seed-tile" key={seed.id}><img loading="lazy" src={assetURL(seed.image_asset_id)} alt={"Source image: " + seed.question} /><div><h3>{seed.question}</h3><p>Human count <strong>{seed.expected.value}</strong> · Reviewer {seed.expected.reviewer}</p><Link className="button primary" href={"/seeds/" + seed.id + "/masks"}>Review masks</Link></div></article>)}</div> : <p className="empty-state">Upload a rights-cleared image to begin.</p>}</section>
     <div className="setup-columns"><form className="form-panel" onSubmit={upload}><h2>Add a source seed</h2><label>Source image<input name="file" type="file" accept="image/png,image/jpeg,image/webp" required={!fixture} onChange={() => setFixture(null)} /></label>
       {capabilities?.synthetic_fixture_enabled && <div className="fixture-picker"><button type="button" className="secondary" onClick={loadFixture}>Load development seed</button><p className="muted">Original CC0 illustration with five containers. Synthetic test material; inspect it and confirm the count yourself.</p>{fixture && <p role="status">Selected {fixture.name}</p>}</div>}
