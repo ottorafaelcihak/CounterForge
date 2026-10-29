@@ -1,10 +1,10 @@
 # CounterForge implementation roadmap
 
-**Status:** Phases 01–02 and the phase 03 implementation are verified with fixtures. Phase 03 live entitlement/smoke (TS-AT-18) remains unmet; phases 04–11 remain planned. No real-model success or evaluation measurement is claimed.
+**Status:** Phases 01–04 are implemented and verified with fixtures. Live entitlement/smoke (TS-AT-18), actual human specimen acceptance and automatic threshold calibration remain unmet. Phases 05–11 remain planned. No real-model success or evaluation measurement is claimed. See the [Phase 04 handoff](phase-04-handoff.md).
 
 Read these plans in order. Each phase produces a testable deliverable and carries
 forward the evidence needed by later phases. Checkboxes describe future work;
-completed checkboxes in phases 01–03 reflect their verification handoffs. The outstanding real-provider gate and future benchmark measurements remain separate from fixture success.
+completed checkboxes in phases 01–04 reflect their verification handoffs. The outstanding real-provider and human-review gates and future benchmark measurements remain separate from fixture success.
 
 ## Sources and authority
 

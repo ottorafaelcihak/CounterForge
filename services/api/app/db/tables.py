@@ -25,6 +25,7 @@ class Tables:
     mutation_plans: Table
     mutations: Table
     mutation_validations: Table
+    mutation_request_aliases: Table
     model_observations: Table
     findings: Table
     regression_exports: Table

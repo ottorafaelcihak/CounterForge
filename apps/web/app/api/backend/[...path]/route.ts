@@ -4,8 +4,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ path: string[] }> };
 const id = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const readPaths = new RegExp("^(?:setup|fixtures/development-seed|projects(?:/" + id + "(?:/seeds|/targets)?)?|seeds/" + id + "(?:/masks(?:/" + id + "/revisions)?|/mask-review|/contracts)?|assets/" + id + "/content|jobs/" + id + "|contracts/" + id + ")$");
-const writePaths = new RegExp("^(?:projects(?:/" + id + "/(?:seeds|targets))?|targets/" + id + "/check|seeds/" + id + "/(?:segment|contracts|masks(?:/acknowledgements|/" + id + "/(?:revisions|approve|retire))?))$");
+const readPaths = new RegExp("^(?:setup|fixtures/development-seed|projects(?:/" + id + "(?:/seeds|/targets)?)?|seeds/" + id + "(?:/masks(?:/" + id + "/revisions)?|/mask-review|/contracts)?|assets/" + id + "/content|jobs/" + id + "|contracts/" + id + "|mutations/" + id + "(?:/history)?)$");
+const writePaths = new RegExp("^(?:projects(?:/" + id + "/(?:seeds|targets))?|targets/" + id + "/check|seeds/" + id + "/(?:segment|contracts|masks(?:/acknowledgements|/" + id + "/(?:revisions|approve|retire))?)|mutations/" + id + "/review)$");
 async function proxy(request: NextRequest, context: Context) {
   if (!authenticated(request)) return errorResponse("Owner authentication is required.", 401);
   if (request.method !== "GET" && !sameOrigin(request)) return errorResponse("This request must come from the configured app origin.", 403);

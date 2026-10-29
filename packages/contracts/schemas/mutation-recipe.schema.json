@@ -1,0 +1,270 @@
+{
+  "$defs": {
+    "MutationFamily": {
+      "enum": [
+        "background_replacement",
+        "background_clutter",
+        "brightness_shift"
+      ],
+      "title": "MutationFamily",
+      "type": "string"
+    },
+    "Parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "enum": [
+            "solid_rgb_v1",
+            "rectangles_v1",
+            "brightness_integer_v1",
+            "supplied_background_v1"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "blend_policy": {
+          "const": "strict_binary_original",
+          "default": "strict_binary_original",
+          "title": "Blend Policy",
+          "type": "string"
+        },
+        "brightness_denominator": {
+          "const": 1000,
+          "default": 1000,
+          "title": "Brightness Denominator",
+          "type": "integer"
+        },
+        "brightness_numerator": {
+          "maximum": 1500,
+          "minimum": 500,
+          "title": "Brightness Numerator",
+          "type": "integer"
+        },
+        "clipping": {
+          "const": "clamp_0_255",
+          "default": "clamp_0_255",
+          "title": "Clipping",
+          "type": "string"
+        },
+        "color_space": {
+          "const": "sRGB_encoded_integer",
+          "default": "sRGB_encoded_integer",
+          "title": "Color Space",
+          "type": "string"
+        },
+        "level": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Level",
+          "type": "integer"
+        },
+        "png_compress_level": {
+          "const": 9,
+          "default": 9,
+          "title": "Png Compress Level",
+          "type": "integer"
+        },
+        "png_metadata": {
+          "const": "strip_via_fresh_frombytes",
+          "default": "strip_via_fresh_frombytes",
+          "title": "Png Metadata",
+          "type": "string"
+        },
+        "png_optimize": {
+          "const": false,
+          "default": false,
+          "title": "Png Optimize",
+          "type": "boolean"
+        },
+        "prng": {
+          "const": "python.random.Random_MT19937",
+          "default": "python.random.Random_MT19937",
+          "title": "Prng",
+          "type": "string"
+        },
+        "replacement_mapping": {
+          "const": "floor((source*(1000-level)+sampled_rgb*level)/1000)",
+          "default": "floor((source*(1000-level)+sampled_rgb*level)/1000)",
+          "title": "Replacement Mapping",
+          "type": "string"
+        },
+        "ring_width": {
+          "const": 1,
+          "default": 1,
+          "title": "Ring Width",
+          "type": "integer"
+        },
+        "rounding": {
+          "const": "floor",
+          "default": "floor",
+          "title": "Rounding",
+          "type": "string"
+        },
+        "strength_mapping": {
+          "const": "floor(1000*strength); gain=500+level; rectangles=1+level//100",
+          "default": "floor(1000*strength); gain=500+level; rectangles=1+level//100",
+          "title": "Strength Mapping",
+          "type": "string"
+        },
+        "strength_quantization": {
+          "const": "decimal_4dp_ROUND_HALF_UP",
+          "default": "decimal_4dp_ROUND_HALF_UP",
+          "title": "Strength Quantization",
+          "type": "string"
+        }
+      },
+      "required": [
+        "algorithm",
+        "level",
+        "brightness_numerator"
+      ],
+      "title": "Parameters",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "background_sha256": {
+      "title": "Background Sha256",
+      "type": "string"
+    },
+    "contract_sha256": {
+      "title": "Contract Sha256",
+      "type": "string"
+    },
+    "diff_sha256": {
+      "title": "Diff Sha256",
+      "type": "string"
+    },
+    "family": {
+      "$ref": "#/$defs/MutationFamily"
+    },
+    "generator": {
+      "enum": [
+        "deterministic",
+        "supplied_background"
+      ],
+      "title": "Generator",
+      "type": "string"
+    },
+    "height": {
+      "exclusiveMinimum": 0,
+      "title": "Height",
+      "type": "integer"
+    },
+    "implementation_version": {
+      "const": "phase04-1",
+      "default": "phase04-1",
+      "title": "Implementation Version",
+      "type": "string"
+    },
+    "mask_asset_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Mask Asset Ids",
+      "type": "array"
+    },
+    "mask_sha256s": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mask Sha256S",
+      "type": "array"
+    },
+    "output_sha256": {
+      "title": "Output Sha256",
+      "type": "string"
+    },
+    "parameters": {
+      "$ref": "#/$defs/Parameters"
+    },
+    "plan_json": {
+      "title": "Plan Json",
+      "type": "string"
+    },
+    "protected_union_sha256": {
+      "title": "Protected Union Sha256",
+      "type": "string"
+    },
+    "rng_seed": {
+      "title": "Rng Seed",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "software": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Software",
+      "type": "array"
+    },
+    "source_asset_id": {
+      "format": "uuid",
+      "title": "Source Asset Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "strength": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Strength",
+      "type": "number"
+    },
+    "target_region": {
+      "enum": [
+        "background_only",
+        "full_image"
+      ],
+      "title": "Target Region",
+      "type": "string"
+    },
+    "width": {
+      "exclusiveMinimum": 0,
+      "title": "Width",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "family",
+    "strength",
+    "target_region",
+    "rng_seed",
+    "plan_json",
+    "contract_sha256",
+    "source_asset_id",
+    "source_sha256",
+    "output_sha256",
+    "background_sha256",
+    "mask_asset_ids",
+    "mask_sha256s",
+    "protected_union_sha256",
+    "diff_sha256",
+    "width",
+    "height",
+    "parameters",
+    "software",
+    "generator"
+  ],
+  "title": "MutationRecipe",
+  "type": "object"
+}

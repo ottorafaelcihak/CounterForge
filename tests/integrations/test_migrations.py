@@ -79,7 +79,7 @@ def test_fresh_migrations_preserve_baseline_and_map_original_names(migrated_engi
     with migrated_engine.connect() as connection:
         assert (
             connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0003_phase03_support"
+            == "0004_candidate_evidence"
         )
         tables = load_tables(connection)
         names = set(inspect(connection).get_table_names()) - {"alembic_version"}
@@ -271,3 +271,45 @@ def test_readiness_rejects_missing_or_behind_migrations(database_engine, tmp_pat
     )
     result = probe_dependencies(settings, database_engine)
     assert result.database is False and result.ready is False
+
+
+def test_phase04_backfills_ordered_legacy_reports_and_appends_next(database_engine):
+    from services.api.app.db.migrations import upgrade_database
+
+    upgrade_database(database_engine, "0003_phase03_support")
+    with database_engine.begin() as c:
+        graph = evidence(c)
+        for verdict in ("INVALID", "VALID"):
+            c.execute(
+                text(
+                    "INSERT INTO mutation_validations (mutation_id,verifier_version,verdict,evidence_json,created_at) VALUES (:m,'legacy',:v,'{}','2026-01-01')"
+                ),
+                {"m": graph["mutation"], "v": verdict},
+            )
+    upgrade_database(database_engine)
+    with database_engine.begin() as c:
+        rows = (
+            c.execute(
+                text(
+                    "SELECT id,revision,previous_validation_id FROM mutation_validations ORDER BY revision"
+                )
+            )
+            .mappings()
+            .all()
+        )
+        assert [r["revision"] for r in rows] == [1, 2]
+        assert (
+            rows[0]["previous_validation_id"] is None
+            and rows[1]["previous_validation_id"] == rows[0]["id"]
+        )
+        r = (
+            c.execute(
+                text(
+                    "INSERT INTO mutation_validations (mutation_id,verifier_version,verdict,evidence_json) VALUES (:m,'legacy','REVIEW_REQUIRED','{}') RETURNING revision,previous_validation_id"
+                ),
+                {"m": graph["mutation"]},
+            )
+            .mappings()
+            .one()
+        )
+        assert r["revision"] == 3 and r["previous_validation_id"] == rows[1]["id"]

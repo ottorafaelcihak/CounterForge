@@ -56,7 +56,13 @@ class NormalizedImage:
     policy: str = POLICY
 
 
-def normalize_image(data: bytes, media_type: str) -> NormalizedImage:
+def normalize_image(
+    data: bytes,
+    media_type: str,
+    *,
+    strict_opaque: bool = False,
+    expected_size: tuple[int, int] | None = None,
+) -> NormalizedImage:
     if (
         not data
         or len(data) > MAX_UPLOAD_BYTES
@@ -65,15 +71,24 @@ def normalize_image(data: bytes, media_type: str) -> NormalizedImage:
         raise InvalidImage("Unsupported or oversized image")
     try:
         process = subprocess.run(
-            [sys.executable, "-I", str(Path(__file__).with_name("_image_decode.py")), media_type],
+            [
+                sys.executable,
+                "-I",
+                str(Path(__file__).with_name("_image_decode.py")),
+                media_type,
+                "strict" if strict_opaque else "seed",
+            ],
             input=data,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             timeout=10,
+            env={},
             check=True,
         )
         header, png = process.stdout.split(b"\n", 1)
         info = json.loads(header)
+        if expected_size is not None and (info["width"], info["height"]) != expected_size:
+            raise ValueError
         if not png or len(png) > 64 * 1024 * 1024:
             raise ValueError
         return NormalizedImage(

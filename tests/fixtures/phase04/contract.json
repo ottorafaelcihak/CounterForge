@@ -1,0 +1,48 @@
+{
+  "allowed_mutations": [
+    "background_replacement",
+    "background_clutter",
+    "brightness_shift"
+  ],
+  "case_id": "phase04-synthetic-five",
+  "expected": {
+    "kind": "integer",
+    "reviewer": "SYNTHETIC_TEST_LABEL",
+    "value": 5,
+    "verification": "human"
+  },
+  "forbidden_mutations": [
+    "object_addition",
+    "object_removal",
+    "protected_region_repaint"
+  ],
+  "limits": {
+    "max_candidates": 20,
+    "max_estimated_usd": 10.0,
+    "max_runtime_seconds": 1200,
+    "max_target_calls": 60
+  },
+  "prompt": "How many blue rectangles are visible? Return only an integer.",
+  "protected": {
+    "expected_instances": 5,
+    "label": "blue rectangle",
+    "mask_asset_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002",
+      "00000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000004",
+      "00000000-0000-0000-0000-000000000005"
+    ],
+    "min_visible_fraction": 0.95
+  },
+  "reproduction": {
+    "attempts": 3,
+    "required_failures": 3
+  },
+  "schema_version": "1.0.0",
+  "task_type": "object_counting",
+  "validation_policy": {
+    "require_mask_review": true,
+    "uncertain": "REVIEW_REQUIRED"
+  }
+}

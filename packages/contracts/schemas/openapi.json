@@ -37,6 +37,23 @@
         "title": "AcknowledgeMaskMismatch",
         "type": "object"
       },
+      "BackgroundRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "limits": {
+            "$ref": "#/components/schemas/JobLimits"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/MutationPlan"
+          }
+        },
+        "required": [
+          "plan",
+          "limits"
+        ],
+        "title": "BackgroundRequest",
+        "type": "object"
+      },
       "Body_add_mask_api_v1_seeds__seed_id__masks_post": {
         "properties": {
           "file": {
@@ -126,11 +143,29 @@
         "title": "Body_upload_seed_api_v1_projects__project_id__seeds_post",
         "type": "object"
       },
+      "CandidateSegmentationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "limits": {
+            "$ref": "#/components/schemas/JobLimits"
+          }
+        },
+        "required": [
+          "limits"
+        ],
+        "title": "CandidateSegmentationRequest",
+        "type": "object"
+      },
       "CheckEvidence": {
         "additionalProperties": false,
         "properties": {
           "code": {
             "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
             "type": "string"
           },
           "expected": {
@@ -143,6 +178,25 @@
               }
             ],
             "title": "Expected"
+          },
+          "mandatory": {
+            "default": true,
+            "title": "Mandatory",
+            "type": "boolean"
+          },
+          "measurements": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "title": "Measurements",
+            "type": "object"
           },
           "observed": {
             "anyOf": [
@@ -274,6 +328,38 @@
           "contract_sha256"
         ],
         "title": "Contract",
+        "type": "object"
+      },
+      "CreateMutation": {
+        "additionalProperties": false,
+        "properties": {
+          "background_job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Job Id"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/MutationPlan"
+          },
+          "rng_seed": {
+            "maximum": 9.223372036854776e+18,
+            "minimum": -9.223372036854776e+18,
+            "title": "Rng Seed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan",
+          "rng_seed"
+        ],
+        "title": "CreateMutation",
         "type": "object"
       },
       "CreateProject": {
@@ -859,6 +945,36 @@
         "title": "FindingValidation",
         "type": "object"
       },
+      "GroundTruthAuditRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "resolved_check_codes": {
+            "items": {
+              "enum": [
+                "HUMAN_SEMANTICS",
+                "HUMAN_VISIBILITY"
+              ],
+              "type": "string"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Resolved Check Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "resolved_check_codes",
+          "note"
+        ],
+        "title": "GroundTruthAuditRequest",
+        "type": "object"
+      },
       "Health": {
         "additionalProperties": false,
         "properties": {
@@ -1014,6 +1130,29 @@
       "JobResult": {
         "additionalProperties": false,
         "properties": {
+          "background_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Asset Id"
+          },
+          "background_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Sha256"
+          },
           "detected_count": {
             "anyOf": [
               {
@@ -1060,6 +1199,29 @@
             },
             "title": "Mask Asset Ids",
             "type": "array"
+          },
+          "original_background_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Background Asset Id"
+          },
+          "original_background_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Background Sha256"
           },
           "outcome": {
             "title": "Outcome",
@@ -1638,6 +1800,21 @@
       "Mutation": {
         "additionalProperties": false,
         "properties": {
+          "asset_hashes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Asset Hashes",
+            "type": "object"
+          },
+          "assets": {
+            "additionalProperties": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Assets",
+            "type": "object"
+          },
           "experiment_id": {
             "format": "uuid",
             "title": "Experiment Id",
@@ -1645,6 +1822,17 @@
           },
           "family": {
             "$ref": "#/components/schemas/MutationFamily"
+          },
+          "human_expected_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Expected Count"
           },
           "id": {
             "format": "uuid",
@@ -1663,6 +1851,14 @@
             ],
             "title": "Image Asset Id"
           },
+          "mask_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Mask Snapshot",
+            "type": "array"
+          },
           "parent_mutation_id": {
             "anyOf": [
               {
@@ -1675,6 +1871,41 @@
             ],
             "title": "Parent Mutation Id"
           },
+          "protected_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protected Label"
+          },
+          "recipe": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipe"
+          },
+          "source_seed_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Seed Id"
+          },
           "state": {
             "$ref": "#/components/schemas/MutationState"
           },
@@ -1683,6 +1914,11 @@
             "minimum": 0.0,
             "title": "Strength",
             "type": "number"
+          },
+          "synthetic": {
+            "default": false,
+            "title": "Synthetic",
+            "type": "boolean"
           },
           "validation": {
             "anyOf": [
@@ -1693,6 +1929,17 @@
                 "type": "null"
               }
             ]
+          },
+          "validation_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Revision"
           }
         },
         "required": [
@@ -1714,6 +1961,127 @@
         "title": "MutationFamily",
         "type": "string"
       },
+      "MutationPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "estimated_cost_usd": {
+            "minimum": 0.0,
+            "title": "Estimated Cost Usd",
+            "type": "number"
+          },
+          "family": {
+            "$ref": "#/components/schemas/MutationFamily"
+          },
+          "hypothesis": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Hypothesis",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "requires_muse_image": {
+            "title": "Requires Muse Image",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "strength": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "type": "number"
+          },
+          "target_region": {
+            "default": "background_only",
+            "enum": [
+              "background_only",
+              "full_image"
+            ],
+            "title": "Target Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hypothesis",
+          "family",
+          "strength",
+          "prompt",
+          "requires_muse_image",
+          "estimated_cost_usd"
+        ],
+        "title": "MutationPlan",
+        "type": "object"
+      },
+      "MutationReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_hashes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Evidence Hashes",
+            "type": "object"
+          },
+          "ground_truth_audit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroundTruthAuditRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Notes",
+            "type": "string"
+          },
+          "prior_report_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Prior Report Sha256",
+            "type": "string"
+          },
+          "semantic": {
+            "enum": [
+              "consistent",
+              "additional_object",
+              "removed_object",
+              "ambiguous"
+            ],
+            "title": "Semantic",
+            "type": "string"
+          },
+          "visibility": {
+            "enum": [
+              "clear",
+              "ambiguous",
+              "destroyed"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prior_report_sha256",
+          "evidence_hashes",
+          "semantic",
+          "visibility",
+          "notes"
+        ],
+        "title": "MutationReviewRequest",
+        "type": "object"
+      },
       "MutationState": {
         "enum": [
           "PLANNED",
@@ -1732,6 +2100,100 @@
         ],
         "title": "MutationState",
         "type": "string"
+      },
+      "MutationValidationRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "ground_truth_audit": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ground Truth Audit"
+          },
+          "ground_truth_audit_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ground Truth Audit Asset Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mutation_id": {
+            "format": "uuid",
+            "title": "Mutation Id",
+            "type": "string"
+          },
+          "previous_validation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Validation Id"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Asset Id"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "mutation_id",
+          "revision",
+          "previous_validation_id",
+          "report",
+          "report_asset_id",
+          "created_at"
+        ],
+        "title": "MutationValidationRevision",
+        "type": "object"
       },
       "Page_ExportRef_": {
         "additionalProperties": false,
@@ -1843,6 +2305,34 @@
           "items"
         ],
         "title": "Page[Mask]",
+        "type": "object"
+      },
+      "Page_MutationValidationRevision_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MutationValidationRevision"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[MutationValidationRevision]",
         "type": "object"
       },
       "Page_Mutation_": {
@@ -2072,6 +2562,63 @@
           "target_config_id"
         ],
         "title": "RetestRequest",
+        "type": "object"
+      },
+      "ReviewAudit": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "ground_truth_audit_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ground Truth Audit Sha256"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "previous_report_sha256": {
+            "title": "Previous Report Sha256",
+            "type": "string"
+          },
+          "previous_verdict": {
+            "$ref": "#/components/schemas/ValidityVerdict"
+          },
+          "reviewed_evidence_hashes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Reviewed Evidence Hashes",
+            "type": "object"
+          },
+          "semantic": {
+            "title": "Semantic",
+            "type": "string"
+          },
+          "visibility": {
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor",
+          "note",
+          "previous_verdict",
+          "previous_report_sha256",
+          "reviewed_evidence_hashes",
+          "semantic",
+          "visibility"
+        ],
+        "title": "ReviewAudit",
         "type": "object"
       },
       "ReviewDecision": {
@@ -2451,6 +2998,46 @@
             },
             "title": "Evidence Asset Ids",
             "type": "array"
+          },
+          "evidence_hashes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Evidence Hashes",
+            "type": "object"
+          },
+          "policy_version": {
+            "default": "legacy-unversioned",
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "report_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Sha256"
+          },
+          "review_audit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewAudit"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "verdict": {
             "$ref": "#/components/schemas/ValidityVerdict"
@@ -2974,6 +3561,162 @@
           }
         ],
         "summary": "Get Contract"
+      }
+    },
+    "/api/v1/contracts/{contract_id}/backgrounds": {
+      "post": {
+        "operationId": "prepare_background_api_v1_contracts__contract_id__backgrounds_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contract_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Contract Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Prepare Background"
       }
     },
     "/api/v1/experiments": {
@@ -4037,6 +4780,160 @@
           }
         ],
         "summary": "Get Mutations"
+      },
+      "post": {
+        "operationId": "create_mutation_api_v1_experiments__experiment_id__mutations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMutation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Create Mutation"
       }
     },
     "/api/v1/experiments/{experiment_id}/pause": {
@@ -5396,6 +6293,305 @@
         "summary": "Get Job"
       }
     },
+    "/api/v1/mutations/{mutation_id}": {
+      "get": {
+        "operationId": "get_mutation_api_v1_mutations__mutation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mutation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mutation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Get Mutation"
+      }
+    },
+    "/api/v1/mutations/{mutation_id}/history": {
+      "get": {
+        "operationId": "mutation_history_api_v1_mutations__mutation_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mutation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mutation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MutationValidationRevision_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Mutation History"
+      }
+    },
     "/api/v1/mutations/{mutation_id}/review": {
       "post": {
         "operationId": "review_mutation_api_v1_mutations__mutation_id__review_post",
@@ -5415,7 +6611,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewDecision"
+                "$ref": "#/components/schemas/MutationReviewRequest"
               }
             }
           },
@@ -5539,6 +6735,162 @@
           }
         ],
         "summary": "Review Mutation"
+      }
+    },
+    "/api/v1/mutations/{mutation_id}/segment": {
+      "post": {
+        "operationId": "segment_mutation_api_v1_mutations__mutation_id__segment_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mutation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mutation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateSegmentationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Segment Mutation"
       }
     },
     "/api/v1/projects": {

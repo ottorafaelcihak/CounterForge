@@ -1,0 +1,12 @@
+{
+  "absolute_channel_delta": 600,
+  "inner_ring_changed": 0,
+  "inner_ring_pixels": 160,
+  "interior_changed": 0,
+  "interior_pixels": 200,
+  "max_channel_delta": 1,
+  "outer_ring_changed": 200,
+  "outer_ring_pixels": 200,
+  "protected_changed": 0,
+  "protected_pixels": 360
+}

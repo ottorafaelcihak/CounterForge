@@ -3,9 +3,13 @@ from uuid import UUID
 
 from counterforge_contracts.requests import (
     AcknowledgeMaskMismatch,
+    BackgroundRequest,
+    CandidateSegmentationRequest,
     ConfirmRequest,
+    CreateMutation,
     CreateProject,
     CreateTargetConfig,
+    MutationReviewRequest,
     RetestRequest,
     ReviewDecision,
     SegmentationRequest,
@@ -27,6 +31,7 @@ from counterforge_contracts.responses import (
     MaskRevision,
     Metrics,
     Mutation,
+    MutationValidationRevision,
     Page,
     Project,
     Seed,
@@ -45,7 +50,14 @@ from .artifacts import MAX_UPLOAD_BYTES, InvalidImage
 from .config import Settings
 from .db.readiness import probe_dependencies
 from .errors import NotImplementedOperation, ServiceError, envelope
-from .http import Credentials, Services, base_app, require_owner, settings_for
+from .http import (
+    Credentials,
+    MutationReviewServices,
+    Services,
+    base_app,
+    require_owner,
+    settings_for,
+)
 
 router = APIRouter(dependencies=[Depends(require_owner)])
 public_router = APIRouter()
@@ -295,16 +307,19 @@ async def get_events(
 )
 async def get_mutations(
     experiment_id: UUID,
+    service: Services,
     limit: Limit = 20,
     cursor: Annotated[str | None, Query(max_length=512)] = None,
     status: MutationState | None = None,
-) -> NoReturn:
-    disabled()
+) -> Page[Mutation]:
+    return service.candidates.list(experiment_id, limit, cursor, status)
 
 
 @router.post(PREFIX + "/mutations/{mutation_id}/review", response_model=Mutation, responses=ERRORS)
-async def review_mutation(mutation_id: UUID, body: ReviewDecision) -> NoReturn:
-    disabled()
+async def review_mutation(
+    mutation_id: UUID, body: MutationReviewRequest, service: MutationReviewServices
+) -> Mutation:
+    return service.candidates.review(mutation_id, body)
 
 
 @router.post(
@@ -592,6 +607,61 @@ async def acknowledge_masks(
     seed_id: UUID, body: AcknowledgeMaskMismatch, service: Services
 ) -> MaskReviewState:
     return service.mask_review.acknowledge(seed_id, body)
+
+
+@router.post(
+    PREFIX + "/experiments/{experiment_id}/mutations",
+    response_model=Mutation,
+    status_code=201,
+    responses=ERRORS,
+)
+async def create_mutation(
+    experiment_id: UUID, body: CreateMutation, idempotency_key: Key, service: Services
+) -> Mutation:
+    return service.candidates.create(experiment_id, body, idempotency_key)
+
+
+@router.get(PREFIX + "/mutations/{mutation_id}", response_model=Mutation, responses=ERRORS)
+async def get_mutation(mutation_id: UUID, service: Services) -> Mutation:
+    return service.candidates.dto(service.candidates.row(mutation_id))
+
+
+@router.get(
+    PREFIX + "/mutations/{mutation_id}/history",
+    response_model=Page[MutationValidationRevision],
+    responses=ERRORS,
+)
+async def mutation_history(
+    mutation_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[MutationValidationRevision]:
+    return service.candidates.history(mutation_id, limit, cursor)
+
+
+@router.post(
+    PREFIX + "/contracts/{contract_id}/backgrounds",
+    response_model=JobRef,
+    status_code=202,
+    responses=ERRORS,
+)
+async def prepare_background(
+    contract_id: UUID, body: BackgroundRequest, idempotency_key: Key, service: Services
+) -> JobRef:
+    return service.candidates.request_background(contract_id, body, idempotency_key)
+
+
+@router.post(
+    PREFIX + "/mutations/{mutation_id}/segment",
+    response_model=JobRef,
+    status_code=202,
+    responses=ERRORS,
+)
+async def segment_mutation(
+    mutation_id: UUID, body: CandidateSegmentationRequest, idempotency_key: Key, service: Services
+) -> JobRef:
+    return service.candidates.request_segmentation(mutation_id, body, idempotency_key)
 
 
 app = create_app()

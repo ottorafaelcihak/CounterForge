@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from counterforge_contracts.events import ExperimentEvent
+from counterforge_contracts.mutations import MutationRecipe
 from counterforge_contracts.plans import MutationPlan, PlannerProposal
 from counterforge_contracts.providers import ProviderResult, SegmentationResult, TargetResult
 from counterforge_contracts.vtc import VisualTestContract
@@ -19,6 +20,7 @@ def render_schemas() -> dict[str, dict[str, Any]]:
     return {
         "vtc.schema.json": VisualTestContract.model_json_schema(),
         "mutation-plan.schema.json": MutationPlan.model_json_schema(),
+        "mutation-recipe.schema.json": MutationRecipe.model_json_schema(),
         "planner-proposal.schema.json": PlannerProposal.model_json_schema(),
         "segmentation-result.schema.json": SegmentationResult.model_json_schema(),
         "target-result.schema.json": TargetResult.model_json_schema(),
@@ -34,7 +36,7 @@ def main() -> None:
         (SCHEMAS / name).write_text(
             json.dumps(schema, sort_keys=True, indent=2, allow_nan=False) + "\n"
         )
-    print("Exported 8 deterministic application schemas (no provider calls).")
+    print("Exported 9 deterministic application schemas (no provider calls).")
 
 
 if __name__ == "__main__":

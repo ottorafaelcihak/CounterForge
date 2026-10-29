@@ -6,12 +6,15 @@ CounterForge is a visual-model reliability laboratory for controlled image chang
 independent ground-truth checks, repeated evaluation and portable regression tests.
 The initial task is single-image object counting.
 
-Phases 01–03 implement typed contracts, PostgreSQL evidence storage, atomic spend
+Phases 01–04 implement typed contracts, PostgreSQL evidence storage, atomic spend
 accounting, bounded Meta adapters, durable setup jobs and an owner workspace for
-seed upload, target checks and audited mask correction. Experiment scheduling,
-mutation verification and regression ZIP creation belong to the following phases.
+seed upload, target checks and audited mask correction, plus controlled mutations,
+independent verification and candidate review. Experiment scheduling and regression
+ZIP creation belong to the following phases.
 Live entitlement and the real-provider smoke gate remain **unmet**; fixtures do
-not establish live access or a real model weakness.
+not establish live access or a real model weakness. Phase 04 specimens have only
+simulated acceptance decisions; actual human acceptance and automatic threshold
+calibration remain outstanding.
 
 ## Development setup
 
@@ -90,6 +93,41 @@ approved mask per expected object. Locked historical contracts and started runs
 retain their precise asset revisions; a new run rechecks current review and source
 integrity. Lists use signed scoped cursors with at most 100 items.
 
+## Generate and review a candidate
+
+Use the authenticated API to create an experiment intent with an approved VTC
+and target, then `POST /api/v1/experiments/{id}/mutations` with an
+`Idempotency-Key`, typed `plan` and `rng_seed`. Supported families are
+`background_replacement`, `background_clutter` and `brightness_shift`.
+The Phase 05 experiment scheduler is not enabled yet.
+
+For a generative background, first request
+`POST /api/v1/contracts/{id}/backgrounds` with the generative plan and explicit
+finite job limits. After that job succeeds, supply its `background_job_id` with
+the same plan when creating the candidate. Original approved foreground pixels
+are copied exactly onto the normalized background. Candidate segmentation via
+`POST /api/v1/mutations/{id}/segment` is optional supporting evidence and uses the
+same bounded setup-job accounting. Preparation usage is separate from experiment
+spend until Phase 05 integrates orchestration.
+
+Open `/mutations/{id}` in the owner workspace to inspect original, candidate,
+background, protected union, pixel diff, source masks, recipe and revision history.
+New candidates require human semantic and visibility decisions. A required FAIL
+means INVALID; an unresolved required check means REVIEW_REQUIRED. SAM agreement
+cannot approve a candidate. Confirmed visibility destruction is INVALID;
+ambiguous visibility stays REVIEW_REQUIRED.
+
+Review binds the current report and exact evidence hashes. A stale decision is
+rejected; reload and review again. Resolving a prior human rejection requires an
+explicit ground-truth audit with notes and named failed checks. Structural failures
+cannot be overridden. Identical retained candidate images within one experiment
+share the original recipe and review history, including rejections.
+
+Recipes record exact parameters and runtime versions. Strength is specific to
+each family: brightness `0.5` is the identity, replacement `0` is the identity,
+and clutter `0` already draws one rectangle. It is not a universal severity scale.
+See the [Phase 04 handoff](docs/plans/phase-04-handoff.md) for integration rules.
+
 ## Provider modes and offline fixtures
 
 `PROVIDER_MODE=DISABLED` is the default. Manual seed and mask review work without
@@ -165,8 +203,9 @@ make test-e2e
 Database tests create and drop only their random schemas, retaining test `pgcrypto`
 in `public`. Browser verification creates its own schema, queue, artifact root,
 service processes and zero-dollar fixture allowance, then cleans up those owned
-resources. It checks the complete five-object review flow, revision history,
-unchanged expected count, session privacy, CSRF and mobile overflow. It never
+resources. It checks five-object seed setup, candidate verdicts, explicit audits,
+stale evidence, missing images, revision history, session renewal, privacy, CSRF
+and mobile overflow. It never
 falls back to application `DATABASE_URL` or flushes shared Redis data. CI runs
 unit, contract, database and browser suites with live Meta calls disabled.
 
@@ -181,23 +220,25 @@ docker compose exec api python -m scripts.maintain_artifacts --delete
 
 Migration `0001` executes the supplied SQL byte for byte. `0002` adds workflow and
 budget support; `0003` adds explicit billing provenance, job fencing and append-only
-mask history. Downgrades refuse to discard evidence. Asset reads verify paths,
+mask history; `0004` adds immutable candidate evidence, request aliases and ordered
+append-only validation history. Downgrades refuse to discard evidence. Asset reads verify paths,
 size and SHA; content-addressed blobs are fsynced and atomically installed before
 transactional registration.
 
 ## Project structure
 
 ```text
-apps/web/          Owner setup, mask editor and generated API types
+apps/web/          Owner setup, mask editor, candidate evidence and API types
 services/api/      Authenticated API, database, artifacts and accounting
 services/worker/   Durable setup jobs, fixture transport and recovery
 packages/          Shared contracts, adapters and later-phase boundaries
 fixtures/phase03/  Original CC0 development seed and manifest
 scripts/           Contract generation, smoke and operator maintenance
 tests/             Offline, PostgreSQL and real-process browser checks
+tests/fixtures/phase04/  Labeled synthetic candidate evidence specimens
 docs/plans/        Ordered phases and verification handoffs
 ```
 
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
-and [phase 03 handoff](docs/plans/phase-03-handoff.md). The PRD, technical
+and [phase 04 handoff](docs/plans/phase-04-handoff.md). The PRD, technical
 specification and supplied SQL remain the source documents.

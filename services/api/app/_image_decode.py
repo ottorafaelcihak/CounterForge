@@ -34,6 +34,12 @@ def main() -> None:
             oriented = ImageOps.exif_transpose(image)
             if "A" in oriented.getbands() or "transparency" in oriented.info:
                 rgba = oriented.convert("RGBA")
+                if (
+                    len(sys.argv) > 2
+                    and sys.argv[2] == "strict"
+                    and rgba.getchannel("A").getextrema() != (255, 255)
+                ):
+                    raise ValueError
                 normalized = Image.new("RGB", oriented.size, "white")
                 normalized.paste(rgba, mask=rgba.getchannel("A"))
             else:

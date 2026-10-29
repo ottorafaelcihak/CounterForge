@@ -2,7 +2,9 @@
 name = "counterforge-mutations"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["counterforge-contracts"]
+# Pinned exactly: recipes record the Pillow build, and raster replay/geometry
+# recomputation must stay reproducible against the same rasterizer.
+dependencies = ["counterforge-contracts", "pillow==13.0.0"]
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]

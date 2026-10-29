@@ -1,0 +1,24 @@
+{
+  "actor": "SYNTHETIC_TEST_REVIEWER",
+  "evidence_hashes": {
+    "background": "31bfbddb8c20ffd9935f5adf155da16124ebf66b39a0ef39b4bfef7f1465db26",
+    "contract": "5ef4e5e73569d18c66cea83d52188d23ccc97ea3dfaf89294462f28ae30019cb",
+    "diff": "a619696ca406a4ddf83b7ad4fc5f3432fe3995f621d2b4772f76e85869375bd7",
+    "mask:00000000-0000-0000-0000-000000000001": "b332102ab59876b23da3d60122851358e9554496231d7acda1fafb25b5da4b18",
+    "mask:00000000-0000-0000-0000-000000000002": "b964abdc563c7465c87bf4848b1fe9e97f00b648c5a163401856cd7b024e083f",
+    "mask:00000000-0000-0000-0000-000000000003": "f0642074d13b815a95d301a4ef63c364bb64bcd57f82c20cd8dd0b89dc90d853",
+    "mask:00000000-0000-0000-0000-000000000004": "a9c979d0e1efaf90f4e51b9bc6074f004d6b6768ac7e577366b90d7458535008",
+    "mask:00000000-0000-0000-0000-000000000005": "5db9335b2b98f5b1716929dbbb0dd6732d06b3f988494adede9c9691bfaa3deb",
+    "output": "31bfbddb8c20ffd9935f5adf155da16124ebf66b39a0ef39b4bfef7f1465db26",
+    "policy": "7e2ba6d1977717f7b9b9387e29bb46e090a37037a223a1a0ff84036921ffd17b",
+    "protected_union": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6",
+    "recipe": "c43eacfc84fc96974c9056470c07c88f9f1604b65fb39eff29080b94571ccc24",
+    "seed_identity": "053decbae1b0a54e44334886d65214b9593af0adf44a83271e334c508f69e5a3",
+    "source": "26938f215415981ffa7b8e50e8e4dca9157308b1af6a91119526b061c2df48b6"
+  },
+  "ground_truth_audit": null,
+  "note": "Simulated test decision only; no real human reviewed this fixture.",
+  "prior_report_sha256": "261ff510674f9ab18e6c09b38d98c323fc773493cec749c20acb128e1264a78d",
+  "semantic": "consistent",
+  "visibility": "ambiguous"
+}

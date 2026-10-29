@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import Field
@@ -154,6 +154,20 @@ class CheckEvidence(ContractModel):
     value: FiniteNumber | None = None
     observed: int | None = None
     expected: int | None = None
+    mandatory: bool = True
+    detail: str = ""
+    measurements: dict[str, int | str] = Field(default_factory=dict)
+
+
+class ReviewAudit(ContractModel):
+    actor: str
+    note: str
+    previous_verdict: ValidityVerdict
+    previous_report_sha256: str
+    reviewed_evidence_hashes: dict[str, str]
+    semantic: str
+    visibility: str
+    ground_truth_audit_sha256: str | None = None
 
 
 class ValidationReport(ContractModel):
@@ -162,6 +176,11 @@ class ValidationReport(ContractModel):
     checks: list[CheckEvidence]
     confidence_note: str
     evidence_asset_ids: list[UUID]
+    policy_version: str = "legacy-unversioned"
+    reason_codes: list[str] = Field(default_factory=list)
+    evidence_hashes: dict[str, str] = Field(default_factory=dict)
+    report_sha256: str | None = None
+    review_audit: ReviewAudit | None = None
 
 
 class Metrics(ContractModel):
@@ -197,6 +216,27 @@ class Mutation(ContractModel):
     strength: FiniteNumber = Field(ge=0, le=1)
     state: MutationState
     validation: ValidationReport | None = None
+    validation_revision: int | None = None
+    human_expected_count: int | None = None
+    protected_label: str | None = None
+    source_seed_id: UUID | None = None
+    recipe: dict[str, Any] | None = None
+    assets: dict[str, UUID] = Field(default_factory=dict)
+    asset_hashes: dict[str, str] = Field(default_factory=dict)
+    mask_snapshot: list[dict[str, Any]] = Field(default_factory=list)
+    synthetic: bool = False
+
+
+class MutationValidationRevision(ContractModel):
+    id: UUID
+    mutation_id: UUID
+    revision: int = Field(ge=1)
+    previous_validation_id: UUID | None
+    report: ValidationReport | None
+    report_asset_id: UUID | None
+    ground_truth_audit_asset_id: UUID | None = None
+    ground_truth_audit: dict[str, Any] | None = None
+    created_at: datetime
 
 
 class ModelIdentity(ContractModel):
@@ -298,6 +338,10 @@ class JobUsage(ContractModel):
 
 class JobResult(ContractModel):
     outcome: str
+    background_asset_id: UUID | None = None
+    background_sha256: str | None = None
+    original_background_asset_id: UUID | None = None
+    original_background_sha256: str | None = None
     synthetic: bool = False
     detected_count: int | None = Field(default=None, ge=0)
     expected_count: int | None = Field(default=None, ge=0)

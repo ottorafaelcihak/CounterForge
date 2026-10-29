@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection, RowMapping
 
 from ..errors import ServiceError
 
-JobKind = Literal["SEGMENT", "TARGET_CHECK", "EXPORT", "RETEST", "CONFIRM"]
+JobKind = Literal["SEGMENT", "TARGET_CHECK", "EXPORT", "RETEST", "CONFIRM", "SCENE", "MUTATION_SAM"]
 
 
 class IdempotencyConflict(ValueError):

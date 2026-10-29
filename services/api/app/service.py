@@ -48,6 +48,7 @@ from sqlalchemy.engine import RowMapping
 from sqlalchemy.sql.elements import ColumnElement
 
 from .artifacts import ArtifactStore, normalize_image
+from .candidates import Candidates
 from .config import Settings
 from .db.repositories import IdempotencyConflict
 from .db.uow import UnitOfWork
@@ -74,6 +75,7 @@ class Service:
         self.settings = settings
         self.artifacts = ArtifactStore(uow, settings.artifact_root)
         self.mask_review = MaskReview(self)
+        self.candidates = Candidates(self)
 
     def row(self, table: Table, entity_id: UUID, *, lock: bool = False) -> RowMapping:
         query = select(table).where(table.c.id == entity_id)
@@ -747,6 +749,10 @@ class Service:
         )
         return self.experiment_ref(row)
 
+    def require_valid_candidate(self, mutation_id: UUID) -> Any:
+        """Phase05 target-dispatch gate: current sealed report and retained assets."""
+        return self.candidates.require_valid_candidate(mutation_id)
+
     def experiment(self, experiment_id: UUID) -> RowMapping:
         row = self.row(self.t.experiments, experiment_id)
         self.project(row["project_id"])
@@ -776,7 +782,7 @@ class Service:
             select(validations.c.mutation_id, validations.c.verdict)
             .distinct(validations.c.mutation_id)
             .order_by(
-                validations.c.mutation_id, validations.c.created_at.desc(), validations.c.id.desc()
+                validations.c.mutation_id, validations.c.revision.desc(), validations.c.id.desc()
             )
             .subquery()
         )
@@ -983,7 +989,7 @@ class Service:
                 select(self.t.mutation_validations)
                 .where(self.t.mutation_validations.c.mutation_id == mutation["id"])
                 .order_by(
-                    self.t.mutation_validations.c.created_at.desc(),
+                    self.t.mutation_validations.c.revision.desc(),
                     self.t.mutation_validations.c.id.desc(),
                 )
                 .limit(1)

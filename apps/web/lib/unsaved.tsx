@@ -8,7 +8,7 @@ export function useUnsaved() {
   return value;
 }
 export function confirmDiscard(dirty: boolean) {
-  return !dirty || window.confirm("Discard the unsaved mask correction?");
+  return !dirty || window.confirm("Discard the unsaved changes?");
 }
 type NavigationSurface = EventTarget & { currentEntry?: { index: number } };
 function navigationSurface() { return (window as Window & { navigation?: NavigationSurface }).navigation; }

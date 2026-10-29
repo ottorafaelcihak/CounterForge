@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/contracts/{contract_id}/backgrounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare Background */
+        post: operations["prepare_background_api_v1_contracts__contract_id__backgrounds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/experiments": {
         parameters: {
             query?: never;
@@ -167,7 +184,8 @@ export interface paths {
         /** Get Mutations */
         get: operations["get_mutations_api_v1_experiments__experiment_id__mutations_get"];
         put?: never;
-        post?: never;
+        /** Create Mutation */
+        post: operations["create_mutation_api_v1_experiments__experiment_id__mutations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -361,6 +379,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mutations/{mutation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mutation */
+        get: operations["get_mutation_api_v1_mutations__mutation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mutations/{mutation_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mutation History */
+        get: operations["mutation_history_api_v1_mutations__mutation_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mutations/{mutation_id}/review": {
         parameters: {
             query?: never;
@@ -372,6 +424,23 @@ export interface paths {
         put?: never;
         /** Review Mutation */
         post: operations["review_mutation_api_v1_mutations__mutation_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mutations/{mutation_id}/segment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Segment Mutation */
+        post: operations["segment_mutation_api_v1_mutations__mutation_id__segment_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -706,6 +775,11 @@ export interface components {
             /** Notes */
             notes: string;
         };
+        /** BackgroundRequest */
+        BackgroundRequest: {
+            limits: components["schemas"]["JobLimits"];
+            plan: components["schemas"]["MutationPlan"];
+        };
         /** Body_add_mask_api_v1_seeds__seed_id__masks_post */
         Body_add_mask_api_v1_seeds__seed_id__masks_post: {
             /** File */
@@ -735,12 +809,30 @@ export interface components {
             /** Question */
             question: string;
         };
+        /** CandidateSegmentationRequest */
+        CandidateSegmentationRequest: {
+            limits: components["schemas"]["JobLimits"];
+        };
         /** CheckEvidence */
         CheckEvidence: {
             /** Code */
             code: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
             /** Expected */
             expected?: number | null;
+            /**
+             * Mandatory
+             * @default true
+             */
+            mandatory: boolean;
+            /** Measurements */
+            measurements?: {
+                [key: string]: number | string;
+            };
             /** Observed */
             observed?: number | null;
             /**
@@ -788,6 +880,14 @@ export interface components {
             seed_id: string;
             /** Version */
             version: number;
+        };
+        /** CreateMutation */
+        CreateMutation: {
+            /** Background Job Id */
+            background_job_id?: string | null;
+            plan: components["schemas"]["MutationPlan"];
+            /** Rng Seed */
+            rng_seed: number;
         };
         /** CreateProject */
         CreateProject: {
@@ -1024,6 +1124,13 @@ export interface components {
             /** Verifier Version */
             verifier_version: string;
         };
+        /** GroundTruthAuditRequest */
+        GroundTruthAuditRequest: {
+            /** Note */
+            note: string;
+            /** Resolved Check Codes */
+            resolved_check_codes: ("HUMAN_SEMANTICS" | "HUMAN_VISIBILITY")[];
+        };
         /** Health */
         Health: {
             /**
@@ -1096,6 +1203,10 @@ export interface components {
         };
         /** JobResult */
         JobResult: {
+            /** Background Asset Id */
+            background_asset_id?: string | null;
+            /** Background Sha256 */
+            background_sha256?: string | null;
             /** Detected Count */
             detected_count?: number | null;
             /** Diagnostics */
@@ -1106,6 +1217,10 @@ export interface components {
             expected_count?: number | null;
             /** Mask Asset Ids */
             mask_asset_ids?: string[];
+            /** Original Background Asset Id */
+            original_background_asset_id?: string | null;
+            /** Original Background Sha256 */
+            original_background_sha256?: string | null;
             /** Outcome */
             outcome: string;
             /** Parsed Count */
@@ -1361,12 +1476,22 @@ export interface components {
         };
         /** Mutation */
         Mutation: {
+            /** Asset Hashes */
+            asset_hashes?: {
+                [key: string]: string;
+            };
+            /** Assets */
+            assets?: {
+                [key: string]: string;
+            };
             /**
              * Experiment Id
              * Format: uuid
              */
             experiment_id: string;
             family: components["schemas"]["MutationFamily"];
+            /** Human Expected Count */
+            human_expected_count?: number | null;
             /**
              * Id
              * Format: uuid
@@ -1374,23 +1499,121 @@ export interface components {
             id: string;
             /** Image Asset Id */
             image_asset_id?: string | null;
+            /** Mask Snapshot */
+            mask_snapshot?: {
+                [key: string]: unknown;
+            }[];
             /** Parent Mutation Id */
             parent_mutation_id?: string | null;
+            /** Protected Label */
+            protected_label?: string | null;
+            /** Recipe */
+            recipe?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Seed Id */
+            source_seed_id?: string | null;
             state: components["schemas"]["MutationState"];
             /** Strength */
             strength: number;
+            /**
+             * Synthetic
+             * @default false
+             */
+            synthetic: boolean;
             validation?: components["schemas"]["ValidationReport"] | null;
+            /** Validation Revision */
+            validation_revision?: number | null;
         };
         /**
          * MutationFamily
          * @enum {string}
          */
         MutationFamily: "background_replacement" | "background_clutter" | "brightness_shift";
+        /** MutationPlan */
+        MutationPlan: {
+            /** Estimated Cost Usd */
+            estimated_cost_usd: number;
+            family: components["schemas"]["MutationFamily"];
+            /** Hypothesis */
+            hypothesis: string;
+            /** Prompt */
+            prompt: string;
+            /** Requires Muse Image */
+            requires_muse_image: boolean;
+            /**
+             * Schema Version
+             * @default 1.0.0
+             * @constant
+             */
+            schema_version: "1.0.0";
+            /** Strength */
+            strength: number;
+            /**
+             * Target Region
+             * @default background_only
+             * @enum {string}
+             */
+            target_region: "background_only" | "full_image";
+        };
+        /** MutationReviewRequest */
+        MutationReviewRequest: {
+            /** Evidence Hashes */
+            evidence_hashes: {
+                [key: string]: string;
+            };
+            ground_truth_audit?: components["schemas"]["GroundTruthAuditRequest"] | null;
+            /** Notes */
+            notes: string;
+            /** Prior Report Sha256 */
+            prior_report_sha256: string;
+            /**
+             * Semantic
+             * @enum {string}
+             */
+            semantic: "consistent" | "additional_object" | "removed_object" | "ambiguous";
+            /**
+             * Visibility
+             * @enum {string}
+             */
+            visibility: "clear" | "ambiguous" | "destroyed";
+        };
         /**
          * MutationState
          * @enum {string}
          */
         MutationState: "PLANNED" | "GENERATED" | "VALIDATING" | "VALID" | "INVALID" | "REVIEW_REQUIRED" | "TESTED_CORRECT" | "SUSPECTED_FAILURE" | "EVALUATION_UNKNOWN" | "STABLE" | "INTERMITTENT" | "NOT_REPRODUCED" | "EXPORTED";
+        /** MutationValidationRevision */
+        MutationValidationRevision: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Ground Truth Audit */
+            ground_truth_audit?: {
+                [key: string]: unknown;
+            } | null;
+            /** Ground Truth Audit Asset Id */
+            ground_truth_audit_asset_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Mutation Id
+             * Format: uuid
+             */
+            mutation_id: string;
+            /** Previous Validation Id */
+            previous_validation_id: string | null;
+            report: components["schemas"]["ValidationReport"] | null;
+            /** Report Asset Id */
+            report_asset_id: string | null;
+            /** Revision */
+            revision: number;
+        };
         /** Page[ExportRef] */
         Page_ExportRef_: {
             /** Items */
@@ -1416,6 +1639,13 @@ export interface components {
         Page_Mask_: {
             /** Items */
             items: components["schemas"]["Mask"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** Page[MutationValidationRevision] */
+        Page_MutationValidationRevision_: {
+            /** Items */
+            items: components["schemas"]["MutationValidationRevision"][];
             /** Next Cursor */
             next_cursor?: string | null;
         };
@@ -1502,6 +1732,26 @@ export interface components {
              * Format: uuid
              */
             target_config_id: string;
+        };
+        /** ReviewAudit */
+        ReviewAudit: {
+            /** Actor */
+            actor: string;
+            /** Ground Truth Audit Sha256 */
+            ground_truth_audit_sha256?: string | null;
+            /** Note */
+            note: string;
+            /** Previous Report Sha256 */
+            previous_report_sha256: string;
+            previous_verdict: components["schemas"]["ValidityVerdict"];
+            /** Reviewed Evidence Hashes */
+            reviewed_evidence_hashes: {
+                [key: string]: string;
+            };
+            /** Semantic */
+            semantic: string;
+            /** Visibility */
+            visibility: string;
         };
         /** ReviewDecision */
         ReviewDecision: {
@@ -1679,6 +1929,20 @@ export interface components {
             confidence_note: string;
             /** Evidence Asset Ids */
             evidence_asset_ids: string[];
+            /** Evidence Hashes */
+            evidence_hashes?: {
+                [key: string]: string;
+            };
+            /**
+             * Policy Version
+             * @default legacy-unversioned
+             */
+            policy_version: string;
+            /** Reason Codes */
+            reason_codes?: string[];
+            /** Report Sha256 */
+            report_sha256?: string | null;
+            review_audit?: components["schemas"]["ReviewAudit"] | null;
             verdict: components["schemas"]["ValidityVerdict"];
             /** Verifier Version */
             verifier_version: string;
@@ -1969,6 +2233,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Contract"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    prepare_background_api_v1_contracts__contract_id__backgrounds_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackgroundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
                 };
             };
             /** @description Unauthorized */
@@ -2767,6 +3149,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_Mutation_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_mutation_api_v1_experiments__experiment_id__mutations_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMutation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mutation"];
                 };
             };
             /** @description Unauthorized */
@@ -4001,6 +4501,233 @@ export interface operations {
             };
         };
     };
+    get_mutation_api_v1_mutations__mutation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mutation"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    mutation_history_api_v1_mutations__mutation_id__history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_MutationValidationRevision_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     review_mutation_api_v1_mutations__mutation_id__review_post: {
         parameters: {
             query?: never;
@@ -4012,7 +4739,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReviewDecision"];
+                "application/json": components["schemas"]["MutationReviewRequest"];
             };
         };
         responses: {
@@ -4023,6 +4750,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Mutation"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    segment_mutation_api_v1_mutations__mutation_id__segment_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateSegmentationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
                 };
             };
             /** @description Unauthorized */

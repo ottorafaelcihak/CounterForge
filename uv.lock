@@ -132,10 +132,14 @@ version = "0.1.0"
 source = { editable = "packages/mutations" }
 dependencies = [
     { name = "counterforge-contracts" },
+    { name = "pillow" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "counterforge-contracts", editable = "packages/contracts" }]
+requires-dist = [
+    { name = "counterforge-contracts", editable = "packages/contracts" },
+    { name = "pillow", specifier = "==13.0.0" },
+]
 
 [[package]]
 name = "counterforge-regression"
@@ -171,10 +175,16 @@ version = "0.1.0"
 source = { editable = "packages/verification" }
 dependencies = [
     { name = "counterforge-contracts" },
+    { name = "counterforge-mutations" },
+    { name = "pillow" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "counterforge-contracts", editable = "packages/contracts" }]
+requires-dist = [
+    { name = "counterforge-contracts", editable = "packages/contracts" },
+    { name = "counterforge-mutations", editable = "packages/mutations" },
+    { name = "pillow", specifier = "==13.0.0" },
+]
 
 [[package]]
 name = "counterforge-workspace"

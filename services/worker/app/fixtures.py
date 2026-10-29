@@ -49,14 +49,16 @@ def sam_events() -> list[dict[str, object]]:
     ]
 
 
-def mock_transport() -> httpx.MockTransport:
+def mock_transport(*, sam_candidate_body: bytes | None = None) -> httpx.MockTransport:
     def handler(request: httpx.Request) -> httpx.Response:
         body = request.content
         headers = {"x-request-id": "synthetic-fixture"}
         if request.url.path == "/v1/responses":
             payload = json.loads(body)
             media = payload["input"][0]["content"][1]["image_url"]
-            require_seed(base64.b64decode(media.split(",", 1)[1], validate=True))
+            decoded = base64.b64decode(media.split(",", 1)[1], validate=True)
+            if sam_candidate_body is None or decoded != sam_candidate_body:
+                require_seed(decoded)
             stream = "".join("data: " + json.dumps(event) + "\n\n" for event in sam_events())
             return httpx.Response(
                 200, headers={**headers, "content-type": "text/event-stream"}, content=stream

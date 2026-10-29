@@ -3,8 +3,10 @@
 import hmac
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import Annotated, cast
 
+from counterforge_contracts.requests import MutationReviewRequest
 from counterforge_contracts.versions import ErrorCode
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -79,6 +81,17 @@ async def service_for(request: Request) -> AsyncIterator[Service]:
 
 
 Services = Annotated[Service, Depends(service_for, scope="function")]
+
+
+async def mutation_review_service_for(
+    request: Request, body: MutationReviewRequest
+) -> AsyncIterator[Service]:
+    """Validate the strict review before opening persistence (including offline API contract tests)."""
+    async with asynccontextmanager(service_for)(request) as service:
+        yield service
+
+
+MutationReviewServices = Annotated[Service, Depends(mutation_review_service_for, scope="function")]
 
 
 def base_app(settings: Settings | None, engine: Engine | None) -> FastAPI:

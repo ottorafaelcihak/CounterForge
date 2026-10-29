@@ -1,0 +1,171 @@
+{
+  "checks": [
+    {
+      "code": "MEDIA",
+      "detail": "Bounded, opaque, single-frame PNGs with consistent dimensions.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {},
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "PROVENANCE",
+      "detail": "Byte hashes and source/contract identity must match retained artifacts.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {},
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "RECIPE",
+      "detail": "Complete versioned plan, integer mapping, software and deterministic replay.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {},
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "MASKS",
+      "detail": "Distinct, human-approved binary masks bound to this seed and contract.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {},
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "GEOMETRY",
+      "detail": "Exact reconstructed protected mask geometry; no resize or feathering.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {
+        "protected_pixels": 360
+      },
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "PROTECTED_PIXELS",
+      "detail": "Exact recorded transform and measured interior/one-pixel contour differences.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {
+        "absolute_channel_delta": 101280,
+        "inner_ring_changed": 0,
+        "inner_ring_pixels": 160,
+        "interior_changed": 0,
+        "interior_pixels": 200,
+        "max_channel_delta": 25,
+        "outer_ring_changed": 200,
+        "outer_ring_pixels": 200,
+        "protected_changed": 0,
+        "protected_pixels": 360
+      },
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "SAM_COUNT",
+      "detail": "Supporting evidence only; missing, mismatched or uncertain detector count requires independent human resolution.",
+      "expected": null,
+      "mandatory": false,
+      "measurements": {
+        "expected": 5,
+        "observed": "unknown",
+        "outcome": "missing"
+      },
+      "observed": null,
+      "status": "UNKNOWN",
+      "value": null
+    },
+    {
+      "code": "HUMAN_SEMANTICS",
+      "detail": "Human review: consistent.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {},
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    },
+    {
+      "code": "HUMAN_VISIBILITY",
+      "detail": "Human review: clear.",
+      "expected": null,
+      "mandatory": true,
+      "measurements": {
+        "inner_ring_changed": 0,
+        "min_visible_fraction": "0.95",
+        "newly_saturated_channels": 0,
+        "outer_ring_changed": 200
+      },
+      "observed": null,
+      "status": "PASS",
+      "value": null
+    }
+  ],
+  "confidence_note": "Human decision bound to exact evidence; structural failures remain mandatory.",
+  "evidence_asset_ids": [
+    "00000000-0000-0000-0000-000000000014",
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
+    "00000000-0000-0000-0000-000000000004",
+    "00000000-0000-0000-0000-000000000005"
+  ],
+  "evidence_hashes": {
+    "background": "219f637e13cea244bfbb9c1e00b8c00e769da7de156446b2e9a5ae2647132f69",
+    "contract": "5ef4e5e73569d18c66cea83d52188d23ccc97ea3dfaf89294462f28ae30019cb",
+    "diff": "620f4e534b4684d039d48edc5cef359b3a1d5d9aa37eb22f5d7731a44394397e",
+    "mask:00000000-0000-0000-0000-000000000001": "b332102ab59876b23da3d60122851358e9554496231d7acda1fafb25b5da4b18",
+    "mask:00000000-0000-0000-0000-000000000002": "b964abdc563c7465c87bf4848b1fe9e97f00b648c5a163401856cd7b024e083f",
+    "mask:00000000-0000-0000-0000-000000000003": "f0642074d13b815a95d301a4ef63c364bb64bcd57f82c20cd8dd0b89dc90d853",
+    "mask:00000000-0000-0000-0000-000000000004": "a9c979d0e1efaf90f4e51b9bc6074f004d6b6768ac7e577366b90d7458535008",
+    "mask:00000000-0000-0000-0000-000000000005": "5db9335b2b98f5b1716929dbbb0dd6732d06b3f988494adede9c9691bfaa3deb",
+    "output": "6b640897dd16782e5ca6f9f8097b0966b2fa70a8b0678e8d2747f9a09e3bfe6d",
+    "policy": "7e2ba6d1977717f7b9b9387e29bb46e090a37037a223a1a0ff84036921ffd17b",
+    "protected_union": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6",
+    "recipe": "06edcd65c8b4cdbe2d31ae444423f8452a4c415969033f69f2076ef0d395a05c",
+    "seed_identity": "053decbae1b0a54e44334886d65214b9593af0adf44a83271e334c508f69e5a3",
+    "source": "26938f215415981ffa7b8e50e8e4dca9157308b1af6a91119526b061c2df48b6"
+  },
+  "policy_version": "strict-binary-human-gates-1",
+  "reason_codes": [],
+  "report_sha256": "db384a0d05f39c428b4dbb9b2d9981c2421d8f9ba22567f84680a8aff29bcaa6",
+  "review_audit": {
+    "actor": "SYNTHETIC_TEST_REVIEWER",
+    "ground_truth_audit_sha256": null,
+    "note": "Simulated test decision only; no real human reviewed this fixture.",
+    "previous_report_sha256": "3b7485ad8cc1baa3662dbabab05bb8b15485a915788c64a0d87fbad10da26193",
+    "previous_verdict": "REVIEW_REQUIRED",
+    "reviewed_evidence_hashes": {
+      "background": "219f637e13cea244bfbb9c1e00b8c00e769da7de156446b2e9a5ae2647132f69",
+      "contract": "5ef4e5e73569d18c66cea83d52188d23ccc97ea3dfaf89294462f28ae30019cb",
+      "diff": "620f4e534b4684d039d48edc5cef359b3a1d5d9aa37eb22f5d7731a44394397e",
+      "mask:00000000-0000-0000-0000-000000000001": "b332102ab59876b23da3d60122851358e9554496231d7acda1fafb25b5da4b18",
+      "mask:00000000-0000-0000-0000-000000000002": "b964abdc563c7465c87bf4848b1fe9e97f00b648c5a163401856cd7b024e083f",
+      "mask:00000000-0000-0000-0000-000000000003": "f0642074d13b815a95d301a4ef63c364bb64bcd57f82c20cd8dd0b89dc90d853",
+      "mask:00000000-0000-0000-0000-000000000004": "a9c979d0e1efaf90f4e51b9bc6074f004d6b6768ac7e577366b90d7458535008",
+      "mask:00000000-0000-0000-0000-000000000005": "5db9335b2b98f5b1716929dbbb0dd6732d06b3f988494adede9c9691bfaa3deb",
+      "output": "6b640897dd16782e5ca6f9f8097b0966b2fa70a8b0678e8d2747f9a09e3bfe6d",
+      "policy": "7e2ba6d1977717f7b9b9387e29bb46e090a37037a223a1a0ff84036921ffd17b",
+      "protected_union": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6",
+      "recipe": "06edcd65c8b4cdbe2d31ae444423f8452a4c415969033f69f2076ef0d395a05c",
+      "seed_identity": "053decbae1b0a54e44334886d65214b9593af0adf44a83271e334c508f69e5a3",
+      "source": "26938f215415981ffa7b8e50e8e4dca9157308b1af6a91119526b061c2df48b6"
+    },
+    "semantic": "consistent",
+    "visibility": "clear"
+  },
+  "verdict": "VALID",
+  "verifier_version": "phase04-1"
+}

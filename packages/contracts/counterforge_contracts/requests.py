@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import Field, StrictInt
 
 from .base import ContractModel, FiniteNumber
+from .plans import MutationPlan
 from .versions import ValidityVerdict
 from .vtc import Limits
 
@@ -76,3 +77,34 @@ class AcknowledgeMaskMismatch(ContractModel):
     detected_count: StrictInt | None = Field(default=None, ge=0, le=1000)
     human_count: StrictInt = Field(ge=1, le=16)
     notes: str = Field(min_length=10, max_length=2000)
+
+
+class CreateMutation(ContractModel):
+    plan: MutationPlan
+    rng_seed: StrictInt = Field(ge=-(2**63), le=2**63 - 1)
+    background_job_id: UUID | None = None
+
+
+class GroundTruthAuditRequest(ContractModel):
+    resolved_check_codes: list[Literal["HUMAN_SEMANTICS", "HUMAN_VISIBILITY"]] = Field(
+        min_length=1, max_length=2
+    )
+    note: str = Field(min_length=1, max_length=2000)
+
+
+class MutationReviewRequest(ContractModel):
+    prior_report_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    evidence_hashes: dict[str, str]
+    semantic: Literal["consistent", "additional_object", "removed_object", "ambiguous"]
+    visibility: Literal["clear", "ambiguous", "destroyed"]
+    notes: str = Field(min_length=1, max_length=2000)
+    ground_truth_audit: GroundTruthAuditRequest | None = None
+
+
+class BackgroundRequest(ContractModel):
+    plan: MutationPlan
+    limits: JobLimits
+
+
+class CandidateSegmentationRequest(ContractModel):
+    limits: JobLimits

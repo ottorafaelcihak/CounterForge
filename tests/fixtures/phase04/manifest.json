@@ -1,0 +1,110 @@
+{
+  "actual_human_review": "PENDING",
+  "contract_sha256": "5ef4e5e73569d18c66cea83d52188d23ccc97ea3dfaf89294462f28ae30019cb",
+  "limitations": [
+    "Synthetic raster fixtures; no live provider calls.",
+    "Approval strings and simulated reports exercise code paths only.",
+    "Real human acceptance and threshold calibration are outstanding.",
+    "Seam-only comparative evaluation is reserved for Phase 08."
+  ],
+  "live_provider": false,
+  "masks": [
+    {
+      "asset_id": "00000000-0000-0000-0000-000000000001",
+      "file": "mask-1.png",
+      "sha256": "b332102ab59876b23da3d60122851358e9554496231d7acda1fafb25b5da4b18"
+    },
+    {
+      "asset_id": "00000000-0000-0000-0000-000000000002",
+      "file": "mask-2.png",
+      "sha256": "b964abdc563c7465c87bf4848b1fe9e97f00b648c5a163401856cd7b024e083f"
+    },
+    {
+      "asset_id": "00000000-0000-0000-0000-000000000003",
+      "file": "mask-3.png",
+      "sha256": "f0642074d13b815a95d301a4ef63c364bb64bcd57f82c20cd8dd0b89dc90d853"
+    },
+    {
+      "asset_id": "00000000-0000-0000-0000-000000000004",
+      "file": "mask-4.png",
+      "sha256": "a9c979d0e1efaf90f4e51b9bc6074f004d6b6768ac7e577366b90d7458535008"
+    },
+    {
+      "asset_id": "00000000-0000-0000-0000-000000000005",
+      "file": "mask-5.png",
+      "sha256": "5db9335b2b98f5b1716929dbbb0dd6732d06b3f988494adede9c9691bfaa3deb"
+    }
+  ],
+  "policy_version": "strict-binary-human-gates-1",
+  "schema_version": "1.0.0",
+  "seed": {
+    "asset_id": "00000000-0000-0000-0000-000000000014",
+    "seed_id": "00000000-0000-0000-0000-00000000001e",
+    "sha256": "26938f215415981ffa7b8e50e8e4dca9157308b1af6a91119526b061c2df48b6"
+  },
+  "specimens": [
+    {
+      "actual_human_review": "PENDING",
+      "expected_after_simulated_review": "VALID",
+      "expected_automatic_verdict": "REVIEW_REQUIRED",
+      "files": {
+        "accepted-after-simulated-review/automatic-report.json": "aaf7ad7d45e7c49014160adb763c151314fce046fdeb908a636be732dff83500",
+        "accepted-after-simulated-review/background.png": "219f637e13cea244bfbb9c1e00b8c00e769da7de156446b2e9a5ae2647132f69",
+        "accepted-after-simulated-review/diff.png": "620f4e534b4684d039d48edc5cef359b3a1d5d9aa37eb22f5d7731a44394397e",
+        "accepted-after-simulated-review/image.png": "6b640897dd16782e5ca6f9f8097b0966b2fa70a8b0678e8d2747f9a09e3bfe6d",
+        "accepted-after-simulated-review/metrics.json": "78a7cd28e6390025af3ef09cedd489cadb4c75dae8c74d1e38bdacda392a09fa",
+        "accepted-after-simulated-review/recipe.json": "5ae4c58a0b57ff1437caa519accec58a1cd5582e84bd1a5eebaaced687606d00",
+        "accepted-after-simulated-review/simulated-report.json": "fd7e0bd4109f9b17f592451dd92feb63c8d48ca74d68a2add1d6d5d85b7d9c28",
+        "accepted-after-simulated-review/simulated-review.json": "572f157f50be8789e8e0db842e98a2a235df7cb996305a62a5251cdf749631bc",
+        "accepted-after-simulated-review/union.png": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6"
+      },
+      "name": "accepted-after-simulated-review"
+    },
+    {
+      "actual_human_review": "PENDING",
+      "expected_automatic_verdict": "INVALID",
+      "files": {
+        "object-removal/automatic-report.json": "73f433c85ecaca048f455db8754864f6c51c23ab89e5e4f11d71a28140962287",
+        "object-removal/background.png": "219f637e13cea244bfbb9c1e00b8c00e769da7de156446b2e9a5ae2647132f69",
+        "object-removal/diff.png": "7662c3d90ef9b97e179e9d2418a8a2047ec881ff58aa9437c94ceda8f4063b12",
+        "object-removal/image.png": "d4e6fa24dc58123472a1e0c0e3f61f392a7588305b457e52d231120954221293",
+        "object-removal/metrics.json": "da62e8620893f1dde67080acc5e5e92f65a28fe491fa06c064550e663ebd03d5",
+        "object-removal/recipe.json": "ecb5b1a02fcefd8463502490330245b744fe429100c9951871240e5797ab2ce6",
+        "object-removal/union.png": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6"
+      },
+      "name": "object-removal"
+    },
+    {
+      "actual_human_review": "PENDING",
+      "expected_after_simulated_review": "REVIEW_REQUIRED",
+      "expected_automatic_verdict": "REVIEW_REQUIRED",
+      "files": {
+        "ambiguous-visibility/automatic-report.json": "8461d79e489d58d53da5fddd8975e2e8a6323edf6ec10fe0952d79f2132ce1b9",
+        "ambiguous-visibility/background.png": "31bfbddb8c20ffd9935f5adf155da16124ebf66b39a0ef39b4bfef7f1465db26",
+        "ambiguous-visibility/diff.png": "a619696ca406a4ddf83b7ad4fc5f3432fe3995f621d2b4772f76e85869375bd7",
+        "ambiguous-visibility/image.png": "31bfbddb8c20ffd9935f5adf155da16124ebf66b39a0ef39b4bfef7f1465db26",
+        "ambiguous-visibility/metrics.json": "c8368b0f5e81adbcb7b9161f66c7cf385daf834659d0e63fa0a48d62c88e2595",
+        "ambiguous-visibility/recipe.json": "f8b701cdb0d41ae525bd827442f4a731f0103d46f449efd29d1c5408c9fcc830",
+        "ambiguous-visibility/simulated-report.json": "57b3e66c6ae78a35f0d6521c755eaf58afedd30b325954c9e7cd20b94b100130",
+        "ambiguous-visibility/simulated-review.json": "ac1432ab0a2cd5d66ee59ef4893b5ad9503ec7288957b667ae2ef7050dcb5d21",
+        "ambiguous-visibility/union.png": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6"
+      },
+      "name": "ambiguous-visibility"
+    },
+    {
+      "actual_human_review": "PENDING",
+      "expected_automatic_verdict": "REVIEW_REQUIRED",
+      "files": {
+        "seam-only-control/automatic-report.json": "6a11bcea6bd37ceb66b6eb087ba1381a293a0bf7388d81ea31a07e57ded8abc6",
+        "seam-only-control/background.png": "d25265b629ab5eea2e53494216e37255387bf8c8d933f0713d27c97d557b2be8",
+        "seam-only-control/diff.png": "74cc68710621a1454b84ca5f20b5caa0d830226f828008d53414c77d195799cc",
+        "seam-only-control/image.png": "d25265b629ab5eea2e53494216e37255387bf8c8d933f0713d27c97d557b2be8",
+        "seam-only-control/metrics.json": "0e47e1a8c5287638e33f8467a548e606db0c92e1c2f3eaa138af0068cd2724a4",
+        "seam-only-control/recipe.json": "d764f1849f03a9b8353c2a9f83bae2934245a129f08201ee276bce6f59d1a721",
+        "seam-only-control/union.png": "f33efc2d698113f2d0bbab0acd3875ddc9e5a4f071e67df44b51f244c7d79fa6"
+      },
+      "name": "seam-only-control"
+    }
+  ],
+  "synthetic": true
+}
