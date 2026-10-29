@@ -282,6 +282,53 @@ class FindingAssets(ContractModel):
     mutated_image_id: UUID
 
 
+class AssetLink(ContractModel):
+    asset_id: UUID
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    content_url: LocalLink = Field(pattern=r"^/api/v1/assets/[0-9a-f-]+/content$")
+
+
+class FindingObservation(ContractModel):
+    id: UUID
+    phase: Literal["SEED_BASELINE", "SCREENING", "CONFIRMATION", "RETEST"]
+    attempt_no: int = Field(ge=1, le=20)
+    raw_text: str
+    parsed_count: int | None
+    outcome: TargetOutcome
+    image_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    prompt: str
+    sampling_options: dict[str, JsonValue]
+    model_id: str
+    model_revision: str
+    provenance: Literal["LOCAL_FIXTURE", "REAL_PROVIDER"]
+    latency_ms: int | None = None
+    recorded_at: datetime
+
+
+class FindingValidationRevision(ContractModel):
+    revision: int
+    report: ValidationReport
+    created_at: datetime
+
+
+class FindingEvidence(ContractModel):
+    finding_id: UUID
+    mutation_id: UUID
+    experiment_id: UUID
+    project_id: UUID
+    question: str
+    sampling_options: dict[str, JsonValue]
+    provenance: Literal["LOCAL_FIXTURE", "REAL_PROVIDER"]
+    validation: ValidationReport
+    validation_history: list[FindingValidationRevision]
+    assets: dict[str, AssetLink]
+    observations: list[FindingObservation]
+    usage: "FindingUsage"
+    export_eligible: bool
+    export_blocked_reasons: list[str]
+    qualification: str
+
+
 class Finding(ContractModel):
     id: UUID
     mutation_id: UUID | None = None
@@ -293,6 +340,7 @@ class Finding(ContractModel):
     confirmation: Confirmation
     assets: FindingAssets
     qualification: str
+    evidence: FindingEvidence | None = None
     demo_approved: bool = False
     demo_approved_by: str | None = None
     demo_approved_at: datetime | None = None
@@ -309,6 +357,13 @@ class ExportRef(ContractModel):
     export_id: UUID
     state: Literal["QUEUED", "RUNNING", "READY", "FAILED", "REVOKED"]
     links: ExportLinks
+    finding_id: UUID | None = None
+    job_id: UUID | None = None
+    provenance: Literal["LOCAL_FIXTURE", "REAL_PROVIDER"] | None = None
+    bundle_sha256: str | None = None
+    manifest_sha256: str | None = None
+    runner_version: str | None = None
+    error_code: str | None = None
 
 
 class DemoManifest(ContractModel):
@@ -347,6 +402,14 @@ class JobUsage(ContractModel):
     estimated_usd: FiniteNumber = Field(default=0.0, ge=0)
     unresolved_usd: FiniteNumber = Field(default=0.0, ge=0)
     reserved_usd: FiniteNumber = Field(default=0.0, ge=0)
+
+
+class FindingUsage(JobUsage):
+    calls: int = Field(ge=0)
+    target_calls: int = Field(ge=0)
+    known_tokens_in: int = Field(ge=0)
+    known_tokens_out: int = Field(ge=0)
+    unknown_token_calls: int = Field(ge=0)
 
 
 class JobResult(ContractModel):

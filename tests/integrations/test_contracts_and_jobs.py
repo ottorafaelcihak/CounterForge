@@ -285,11 +285,7 @@ async def test_public_asset_access_requires_explicit_whitelist(api, vtc_payload)
     ).status_code == 401
 
 
-async def test_finding_reads_are_sanitized_and_pending_export_ids_survive_completion(
-    api, vtc_payload
-):
-    import zipfile
-
+async def test_finding_reads_are_sanitized_and_unsealed_legacy_export_is_rejected(api, vtc_payload):
     seed, _, vtc = await contract(api, vtc_payload)
     config = await target(api)
     started = await api.client.post(
@@ -371,31 +367,18 @@ async def test_finding_reads_are_sanitized_and_pending_export_ids_survive_comple
     queued = await api.client.post(
         f"/api/v1/findings/{finding}/exports", headers={"Idempotency-Key": "bundle-once"}
     )
-    assert queued.status_code == 202, queued.text
-    export_id = queued.json()["export_id"]
-    assert queued.json()["state"] == "QUEUED" and queued.json()["links"]["download"] is None
-    assert (await api.client.get(f"/api/v1/exports/{export_id}")).json() == queued.json()
-    assert (await api.client.get(f"/api/v1/exports/{export_id}/download")).status_code == 409
-    assert (await api.client.get("/api/v1/regressions")).json()["items"] == [queued.json()]
+    # Legacy count-only rows remain readable but cannot manufacture portable proof.
+    assert queued.status_code == 409, queued.text
     with api.factory() as uow:
         assert uow.connection.execute(select(uow.tables.regression_exports)).all() == []
-        zipped = io.BytesIO()
-        with zipfile.ZipFile(zipped, "w") as archive:
-            archive.writestr("manifest.json", "{}")
-        store = ArtifactStore(uow, api.root)
-        bundle = store.put(
-            UUID(api.project_id), zipped.getvalue(), "REGRESSION_ZIP", "application/zip"
+        assert (
+            uow.connection.execute(
+                select(uow.tables.background_jobs).where(
+                    uow.tables.background_jobs.c.kind == "EXPORT"
+                )
+            ).all()
+            == []
         )
-        manifest = store.put(UUID(api.project_id), b"{}", "MANIFEST", "application/json")
-        result = Service(uow, api.settings).complete_export(
-            UUID(export_id), bundle.id, manifest.id, "0.1.0"
-        )
-        assert str(result.export_id) == export_id
-        uow.commit()
-    ready = await api.client.get(f"/api/v1/exports/{export_id}")
-    assert ready.json()["state"] == "READY" and ready.json()["links"]["download"]
-    assert (await api.client.get(ready.json()["links"]["download"])).content == zipped.getvalue()
-    assert len((await api.client.get("/api/v1/regressions")).json()["items"]) == 1
 
 
 async def test_duplicate_blob_writes_and_rollback_leave_only_safe_orphans(api):

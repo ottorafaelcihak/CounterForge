@@ -24,6 +24,7 @@ from counterforge_contracts.responses import (
     ExperimentView,
     ExportRef,
     Finding,
+    FindingEvidence,
     Health,
     JobRef,
     Mask,
@@ -175,6 +176,18 @@ async def get_asset(
             raise ServiceError(
                 ErrorCode.FORBIDDEN, "This asset cannot be published.", 403
             ) from None
+    if row["kind"] in {"REGRESSION_ZIP", "MANIFEST"}:
+        exports = service.t.regression_exports
+        ids = list(
+            service.db.scalars(
+                select(exports.c.id).where(
+                    (exports.c.bundle_asset_id == asset_id)
+                    | (exports.c.manifest_asset_id == asset_id)
+                )
+            )
+        )
+        if not ids or not any(service.get_export(x).state == "READY" for x in ids):
+            raise ServiceError(ErrorCode.INVALID_STATE, "Export asset is not currently eligible.")
     data = service.artifacts.read_verified(asset_id)
     return Response(
         content=data,
@@ -565,9 +578,16 @@ async def get_job(job_id: UUID, service: Services) -> JobRef:
     return service.job_dto(service.job(job_id))
 
 
+@router.get(
+    PREFIX + "/findings/{finding_id}/evidence", response_model=FindingEvidence, responses=ERRORS
+)
+async def get_finding_evidence(finding_id: UUID, service: Services) -> FindingEvidence:
+    return service.finding_evidence(finding_id)
+
+
 @router.get(PREFIX + "/findings/{finding_id}", response_model=Finding, responses=ERRORS)
 async def get_finding(finding_id: UUID, service: Services) -> Finding:
-    return service.finding_dto(service.finding(finding_id))
+    return service.finding_dto(service.finding(finding_id), include_evidence=True)
 
 
 @router.get(PREFIX + "/regressions", response_model=Page[ExportRef], responses=ERRORS)

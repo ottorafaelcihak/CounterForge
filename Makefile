@@ -63,3 +63,7 @@ recover-jobs:
 test-e2e:
 	@test -n "$$COUNTERFORGE_TEST_DATABASE_URL" && test -n "$$COUNTERFORGE_TEST_REDIS_URL" || { echo "Explicit disposable PostgreSQL and loopback Redis /15 URLs are required." >&2; exit 2; }
 	RUN_COUNTERFORGE_E2E=1 $(RUN) pytest tests/e2e
+
+.PHONY: verify-export
+verify-export:
+	$(PYTHON) -m scripts.verify_export

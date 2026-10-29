@@ -61,6 +61,7 @@ class StartExperiment(ContractModel):
     contract_id: UUID
     target_config_id: UUID
     mode: Literal["ADAPTIVE", "RANDOM_BASELINE"] = "ADAPTIVE"
+    random_seed: StrictInt | None = Field(default=None, ge=0, le=2**63 - 1)
     limits: Limits = Field(default_factory=Limits)
 
 

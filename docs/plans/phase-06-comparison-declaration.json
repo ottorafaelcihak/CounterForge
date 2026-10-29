@@ -1,0 +1,98 @@
+{
+  "format_version": "1.0.0",
+  "declared_at": "2026-10-29T18:19:59.714688+00:00",
+  "code_revision": "df20bfa90fcd1aa9595f9168c710f5002140009b+source-1f40eb56328c4cdb85b252ca8214605f490ece748646d56c9ca89969bf7bd842",
+  "sample_size": 1,
+  "configuration": {
+    "seed": {
+      "id": "6fbba36b-b347-4a89-9506-d3197718d29c",
+      "provenance": {
+        "icc_policy": "discard_no_color_conversion",
+        "pixel_sha256": "8aa6c7e8601e56d01d87b1e5a08577c3da9ff4aa31a6bc75e5e6da2c3e4b1d80",
+        "original_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+        "normalized_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+        "original_asset_id": "a704dc03-c4d4-4f14-ae12-2d2a1d114ca4",
+        "normalized_asset_id": "a704dc03-c4d4-4f14-ae12-2d2a1d114ca4",
+        "rights_acknowledged": true,
+        "normalization_policy": "exif-rgb-png-strip-metadata-v1"
+      },
+      "image_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+      "image_asset_id": "a704dc03-c4d4-4f14-ae12-2d2a1d114ca4"
+    },
+    "mask_sha256": [
+      "1f19743e8a76af16ad3c82c187064c66d693001a3bd9ef6aec187bfe17b8eb52",
+      "21f31bed75e420564338d3d37ccd8cea9403e40b4a160c5e90c952f2b7a9ce0d",
+      "46579b7158aa89b3caa271d53a69c2ca567044efe379c822e551946257ea11c6",
+      "56d7033f6806d4e87de72f6da06a47691601fbfa23beab21ad1ae1dfc075660e",
+      "bf97457dc736056a9bc3e2f73293d273df6f9d6380abefa063c3b486c2b4c120"
+    ],
+    "contract_sha256": "8b2bf408fab7631c3f1fce990476755acac34e8ff30aeda205368773fa9451c3",
+    "target": {
+      "model_id": "muse-spark-1.3",
+      "provider": "META",
+      "adapter_key": "META_SPARK",
+      "model_revision": "provider-managed",
+      "prompt_template": "How many blue containers are visible? Return only an integer.",
+      "inference_options": {
+        "top_p": null,
+        "temperature": 0.0,
+        "max_output_tokens": 512
+      }
+    },
+    "target_sha256": "82436d25535c27d8a96ba96f4ad7e71f92d2ea1bfe650e2065940e3ead8a5030",
+    "limits": {
+      "max_candidates": 1,
+      "max_target_calls": 7,
+      "max_estimated_usd": 7.5,
+      "max_runtime_seconds": 7200
+    },
+    "provider_mode": "LIVE",
+    "verifier_version": "phase04-1",
+    "policy_version": "strict-binary-human-gates-1",
+    "pricing_revision": "meta-standard-2026-10-28-v1:c94e52584bdf1645",
+    "allowed_mutations": [
+      "background_replacement",
+      "background_clutter",
+      "brightness_shift"
+    ],
+    "strength_range": [
+      0,
+      1
+    ],
+    "reproduction": {
+      "attempts": 3,
+      "required_failures": 3
+    },
+    "expected": {
+      "kind": "integer",
+      "value": 5,
+      "reviewer": "Otto, explicit source/count/five-mask approval in Codex 2026-10-29",
+      "verification": "human"
+    }
+  },
+  "input_resolution": [
+    480,
+    240
+  ],
+  "arms": [
+    {
+      "mode": "ADAPTIVE",
+      "experiment_id": "120518e7-cb79-4627-9e4a-dc21a56d8ddb",
+      "random_seed": 20261030,
+      "strategy_revision": "spark-initial-v1"
+    },
+    {
+      "mode": "RANDOM_BASELINE",
+      "experiment_id": "5cd3a391-8f8d-4846-972e-774df4704b8d",
+      "random_seed": 20261030,
+      "strategy_revision": "random-initial-v2"
+    }
+  ],
+  "limitations": [
+    "One approved development seed per arm; no statistical superiority claim.",
+    "Same available families and [0,1] strength range; Spark chooses strengths, random samples uniformly.",
+    "Both arms retain the same independent validity and three-fresh confirmation gates.",
+    "All planning, generation, SAM, baseline, screening and confirmation expenses are included."
+  ],
+  "manifest_sha256": "d07e6cc861a617a4b263f4bb0c62ccbfce7d39cb44b9c0a3983a9e47933a2d1d"
+}

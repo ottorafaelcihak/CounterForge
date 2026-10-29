@@ -37,6 +37,33 @@
         "title": "AcknowledgeMaskMismatch",
         "type": "object"
       },
+      "AssetLink": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "content_url": {
+            "pattern": "^/api/v1/assets/[0-9a-f-]+/content$",
+            "title": "Content Url",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "sha256",
+          "content_url"
+        ],
+        "title": "AssetLink",
+        "type": "object"
+      },
       "BackgroundRequest": {
         "additionalProperties": false,
         "properties": {
@@ -830,13 +857,96 @@
       "ExportRef": {
         "additionalProperties": false,
         "properties": {
+          "bundle_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bundle Sha256"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
           "export_id": {
             "format": "uuid",
             "title": "Export Id",
             "type": "string"
           },
+          "finding_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
           "links": {
             "$ref": "#/components/schemas/ExportLinks"
+          },
+          "manifest_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifest Sha256"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "LOCAL_FIXTURE",
+                  "REAL_PROVIDER"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "runner_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runner Version"
           },
           "state": {
             "enum": [
@@ -894,6 +1004,16 @@
               }
             ],
             "title": "Demo Approved By"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FindingEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ground_truth": {
             "$ref": "#/components/schemas/FindingTruth"
@@ -967,6 +1087,111 @@
         "title": "FindingAssets",
         "type": "object"
       },
+      "FindingEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "assets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AssetLink"
+            },
+            "title": "Assets",
+            "type": "object"
+          },
+          "experiment_id": {
+            "format": "uuid",
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "export_blocked_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Export Blocked Reasons",
+            "type": "array"
+          },
+          "export_eligible": {
+            "title": "Export Eligible",
+            "type": "boolean"
+          },
+          "finding_id": {
+            "format": "uuid",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "mutation_id": {
+            "format": "uuid",
+            "title": "Mutation Id",
+            "type": "string"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/FindingObservation"
+            },
+            "title": "Observations",
+            "type": "array"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "provenance": {
+            "enum": [
+              "LOCAL_FIXTURE",
+              "REAL_PROVIDER"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          },
+          "qualification": {
+            "title": "Qualification",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "sampling_options": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Sampling Options",
+            "type": "object"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/FindingUsage"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          },
+          "validation_history": {
+            "items": {
+              "$ref": "#/components/schemas/FindingValidationRevision"
+            },
+            "title": "Validation History",
+            "type": "array"
+          }
+        },
+        "required": [
+          "finding_id",
+          "mutation_id",
+          "experiment_id",
+          "project_id",
+          "question",
+          "sampling_options",
+          "provenance",
+          "validation",
+          "validation_history",
+          "assets",
+          "observations",
+          "usage",
+          "export_eligible",
+          "export_blocked_reasons",
+          "qualification"
+        ],
+        "title": "FindingEvidence",
+        "type": "object"
+      },
       "FindingMutation": {
         "additionalProperties": false,
         "properties": {
@@ -985,6 +1210,115 @@
           "strength"
         ],
         "title": "FindingMutation",
+        "type": "object"
+      },
+      "FindingObservation": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_no": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Attempt No",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Image Sha256",
+            "type": "string"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "model_revision": {
+            "title": "Model Revision",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/TargetOutcome"
+          },
+          "parsed_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parsed Count"
+          },
+          "phase": {
+            "enum": [
+              "SEED_BASELINE",
+              "SCREENING",
+              "CONFIRMATION",
+              "RETEST"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "provenance": {
+            "enum": [
+              "LOCAL_FIXTURE",
+              "REAL_PROVIDER"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          },
+          "raw_text": {
+            "title": "Raw Text",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "sampling_options": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Sampling Options",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "phase",
+          "attempt_no",
+          "raw_text",
+          "parsed_count",
+          "outcome",
+          "image_sha256",
+          "prompt",
+          "sampling_options",
+          "model_id",
+          "model_revision",
+          "provenance",
+          "recorded_at"
+        ],
+        "title": "FindingObservation",
         "type": "object"
       },
       "FindingStatus": {
@@ -1026,6 +1360,69 @@
         "title": "FindingTruth",
         "type": "object"
       },
+      "FindingUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "actual_usd": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Actual Usd",
+            "type": "number"
+          },
+          "calls": {
+            "minimum": 0.0,
+            "title": "Calls",
+            "type": "integer"
+          },
+          "estimated_usd": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Estimated Usd",
+            "type": "number"
+          },
+          "known_tokens_in": {
+            "minimum": 0.0,
+            "title": "Known Tokens In",
+            "type": "integer"
+          },
+          "known_tokens_out": {
+            "minimum": 0.0,
+            "title": "Known Tokens Out",
+            "type": "integer"
+          },
+          "reserved_usd": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Reserved Usd",
+            "type": "number"
+          },
+          "target_calls": {
+            "minimum": 0.0,
+            "title": "Target Calls",
+            "type": "integer"
+          },
+          "unknown_token_calls": {
+            "minimum": 0.0,
+            "title": "Unknown Token Calls",
+            "type": "integer"
+          },
+          "unresolved_usd": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Unresolved Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "calls",
+          "target_calls",
+          "known_tokens_in",
+          "known_tokens_out",
+          "unknown_token_calls"
+        ],
+        "title": "FindingUsage",
+        "type": "object"
+      },
       "FindingValidation": {
         "additionalProperties": false,
         "properties": {
@@ -1051,6 +1448,30 @@
           "evidence_ids"
         ],
         "title": "FindingValidation",
+        "type": "object"
+      },
+      "FindingValidationRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/components/schemas/ValidationReport"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "report",
+          "created_at"
+        ],
+        "title": "FindingValidationRevision",
         "type": "object"
       },
       "GroundTruthAuditRequest": {
@@ -3034,6 +3455,19 @@
             "format": "uuid",
             "title": "Project Id",
             "type": "string"
+          },
+          "random_seed": {
+            "anyOf": [
+              {
+                "maximum": 9.223372036854776e+18,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Random Seed"
           },
           "target_config_id": {
             "format": "uuid",
@@ -6270,6 +6704,141 @@
           }
         ],
         "summary": "Demo Approve"
+      }
+    },
+    "/api/v1/findings/{finding_id}/evidence": {
+      "get": {
+        "operationId": "get_finding_evidence_api_v1_findings__finding_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Finding Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingEvidence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Get Finding Evidence"
       }
     },
     "/api/v1/findings/{finding_id}/exports": {

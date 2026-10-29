@@ -842,7 +842,7 @@ async def test_random_baseline_skips_spark_but_retains_bounded_plan(api, vtc_pay
             .mappings()
             .one()
         )
-        assert plan["strategy"] == "RANDOM" and plan["strategy_revision"] == "random-initial-v1"
+        assert plan["strategy"] == "RANDOM" and plan["strategy_revision"] == "random-initial-v2"
         assert plan["evidence_json"]["author"] == "RANDOM_BASELINE"
         assert (
             uow.connection.scalar(

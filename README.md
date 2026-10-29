@@ -2,19 +2,21 @@
 
 Find the failure. Prove the weakness. Prevent the regression.
 
-CounterForge is a visual-model reliability laboratory for controlled image changes,
-independent ground-truth checks, repeated evaluation and portable regression tests.
-The initial task is single-image object counting.
+CounterForge is a visual-model reliability laboratory developed for the **Meta
+hackathon**. It combines Meta's AI models with controlled image changes,
+human-verified ground truth and repeated evaluation. Its goal is to turn
+reproducible visual-model failures into portable regression tests, starting with
+single-image object counting.
 
-Phases 01–05 implement typed contracts, PostgreSQL evidence storage, atomic spend
+Phases 01–06 implement typed contracts, PostgreSQL evidence storage, atomic spend
 accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
-independent verification, durable experiment scheduling and an owner cockpit.
-Three correct seed checks precede search; only VALID candidates reach screening,
-and a stable finding requires three fresh incorrect confirmations. Regression
-ZIP creation belongs to Phase 06. See the [Phase 05 handoff](docs/plans/phase-05-handoff.md)
-for verification, live-test usage and remaining human-review gates. Fixtures and
-Phase 04 simulated acceptance specimens do not establish a real model weakness;
-automatic threshold calibration remains outstanding.
+independent verification, durable experiments and portable regression ZIPs. Three
+correct seed checks precede search; only VALID candidates reach screening, and a
+stable finding requires three fresh incorrect confirmations. Owner evidence pages
+and a regression library show provenance, reproduction, costs and verified
+downloads. See the [Phase 06 handoff](docs/plans/phase-06-handoff.md) for checks,
+live comparison usage and remaining gates. Fixture success does not establish a
+real model weakness; automatic threshold calibration remains outstanding.
 
 ## Development setup
 
@@ -138,7 +140,10 @@ following an uncertain reply, inspect Previous runs before creating another run.
 
 ADAPTIVE records a one-shot Spark plan (`spark-initial-v1`); invalid proposals
 use an explicitly labeled deterministic fallback. RANDOM_BASELINE uses a seeded
-proposal without a planner call. The initial scheduler processes one bounded
+proposal without a planner call. New runs retain the actual PRNG seed and
+`random-initial-v2` revision in their immutable snapshot; an optional
+`random_seed` on the start request makes the proposal reproducible. Both
+strategies have the same permitted families and full `[0,1]` strength range. The initial scheduler processes one bounded
 proposal; later phases add feedback exploration. Generated candidates pause for
 human semantics/visibility review. Review the retained comparison evidence, record
 a decision, return to the experiment and resume. Paused time counts toward runtime.
@@ -149,6 +154,64 @@ cover all fresh confirmations before their first dispatch. Actual usage, estimat
 and unresolved charges are components of committed exposure, not additive totals.
 Recovery reuses retained target receipts and never blindly repeats an ambiguous
 paid request. SSE replay remains private and uses no credentials in URLs.
+
+## Inspect and export a finding
+
+Open a finding from the experiment cockpit to inspect its exact original,
+candidate, difference and protected mask, current validity and review history,
+baseline/screening/fresh observations, target settings and API usage. A regression
+export requires sealed current VALID evidence, a correct three-call seed baseline,
+a separate incorrect screen and three canonical fresh incorrect confirmations.
+Human showcase approval is a separate action.
+
+Request the export once, then follow its queued/running status. The worker builds
+and verifies the ZIP before marking it READY; CPU-only exports also work with
+providers disabled. The owner-only Regression library retains the ZIP/manifest
+SHA-256 and runner instructions. Library rows show Registered; choose Verify bundle
+for download to recheck current evidence before receiving its download link. Later
+invalidation revokes download eligibility,
+including direct bundle/manifest asset access, while retaining historical bytes.
+Fixture bundles are prominently labeled `LOCAL_FIXTURE`.
+
+After downloading, compare the ZIP SHA-256 with the library value, extract into a
+new directory, and verify its members before trusting the runner. Keep the Python
+environment outside that directory:
+
+```bash
+sha256sum -c sha256sums.txt
+python3.12 -m venv /tmp/counterforge-regression-env
+/tmp/counterforge-regression-env/bin/python -m pip install -r requirements.txt
+COUNTERFORGE_RUN_MODE=replay /tmp/counterforge-regression-env/bin/python -m pytest -q tests
+```
+
+Recorded replay is offline and preserves the historical incorrect response, so
+its correctness assertion fails with expected/actual values. A healthy target
+passes; transport, refusal, parser and integrity problems are execution errors.
+A real-provider bundle supports explicit `--live` execution with `MODEL_API_KEY`
+in the environment: one bounded provider call, no automatic retries. Provider
+behavior may change. `make verify-export` checks the healthy/broken/replay/tamper
+pair offline and succeeds only when each fails or passes for the intended reason.
+
+## Declare a small strategy comparison
+
+Create one ADAPTIVE and one RANDOM_BASELINE intent against the same approved
+seed/contract/target with identical limits and an explicit `random_seed`. Keep
+queue dispatch disabled until the declaration is saved. The operator command
+checks matched snapshots and refuses prior provider reservations:
+
+```bash
+python -m scripts.compare_strategies declare --adaptive ADAPTIVE_UUID --random RANDOM_UUID \
+  --code-revision SOURCE_REVISION --output comparison-declaration.json
+# After the bounded runs and independent candidate review:
+python -m scripts.compare_strategies report --manifest comparison-declaration.json \
+  --output comparison-report.json
+```
+
+These commands read the owner's database and never dispatch a provider. Reports
+retain zero discoveries, unfinished/stopped arms, invalid/review-required outputs,
+baseline/screening/confirmation denominators and all category costs, including
+estimates and unknown charges. A single development seed supports a descriptive
+check; it does not establish that one strategy outperforms another.
 
 ## Provider modes and offline fixtures
 
@@ -228,7 +291,7 @@ in `public`. Browser verification creates its own schema, queue, artifact root,
 service processes and zero-dollar fixture allowance, then cleans up those owned
 resources. It checks five-object seed setup, candidate verdicts, explicit audits,
 stale evidence, missing images, revision history, session renewal, privacy, CSRF
-and mobile overflow. It never
+authenticated finding exports, revocation, portable runners and mobile overflow. It never
 falls back to application `DATABASE_URL` or flushes shared Redis data. CI runs
 unit, contract, database and browser suites with live Meta calls disabled.
 
@@ -244,24 +307,26 @@ docker compose exec api python -m scripts.maintain_artifacts --delete
 Migration `0001` executes the supplied SQL byte for byte. `0002` adds workflow and
 budget support; `0003` adds explicit billing provenance, job fencing and append-only
 mask history; `0004` adds immutable candidate evidence, request aliases and ordered
-append-only validation history. Downgrades refuse to discard evidence. Asset reads verify paths,
+append-only validation history; `0005` adds frozen experiment snapshots, canonical
+confirmation and durable dispatch. Phase 06 uses that schema without changing the
+supplied SQL. Downgrades refuse to discard evidence. Asset reads verify paths,
 size and SHA; content-addressed blobs are fsynced and atomically installed before
 transactional registration.
 
 ## Project structure
 
 ```text
-apps/web/          Owner setup, mask editor, candidate evidence and API types
+apps/web/          Owner setup, evidence, regression library and API types
 services/api/      Authenticated API, database, artifacts and accounting
-services/worker/   Durable setup jobs, fixture transport and recovery
-packages/          Shared contracts, adapters and later-phase boundaries
+services/worker/   Durable experiments, CPU export jobs and recovery
+packages/          Contracts, adapters, verification and portable bundles
 fixtures/phase03/  Original CC0 development seed and manifest
-scripts/           Contract generation, smoke and operator maintenance
+scripts/           Contract generation, smoke, comparison and maintenance
 tests/             Offline, PostgreSQL and real-process browser checks
 tests/fixtures/phase04/  Labeled synthetic candidate evidence specimens
 docs/plans/        Ordered phases and verification handoffs
 ```
 
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
-and [phase 04 handoff](docs/plans/phase-04-handoff.md). The PRD, technical
+and [phase 06 handoff](docs/plans/phase-06-handoff.md). The PRD, technical
 specification and supplied SQL remain the source documents.

@@ -548,23 +548,27 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             }
         )
     if job["mode"] == "RANDOM_BASELINE":
-        import random
+        from .random_strategy import RANDOM_REVISION, random_plan
 
-        rng = random.Random(str(job["id"]))
-        family = rng.choice(contract.allowed_mutations)
+        strategy = snap.get("strategy")
+        if not strategy or strategy.get("revision") != RANDOM_REVISION:
+            raise ServiceError(
+                ErrorCode.REVIEW_REQUIRED,
+                "Random search requires a recorded strategy seed and revision.",
+            )
         plans = [
-            MutationPlan(
-                family=family,
-                strength=round(rng.uniform(0.1, 0.9), 4),
-                hypothesis="Seeded random baseline",
-                prompt="Change only the background. Preserve protected objects.",
-                requires_muse_image=family != "brightness_shift",
-                estimated_cost_usd=float(prices.upper("muse-image-1.0"))
-                if family != "brightness_shift"
-                else 0,
+            random_plan(
+                strategy["random_seed"],
+                contract.allowed_mutations,
+                float(prices.upper("muse-image-1.0")),
             )
         ]
-        evidence = {"author": "RANDOM_BASELINE", "synthetic": settings.provider_mode == "FIXTURE"}
+        evidence = {
+            "author": "RANDOM_BASELINE",
+            "synthetic": settings.provider_mode == "FIXTURE",
+            "random_seed": strategy["random_seed"],
+            "strength_range": strategy["strength_range"],
+        }
     else:
         port = accounting(factory, settings, job, "PLANNER")
         async with MetaTransport(
@@ -610,7 +614,7 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                     experiment_id=e["id"],
                     planner_model=evidence["author"],
                     strategy="RANDOM" if e["mode"] == "RANDOM_BASELINE" else "META_ADAPTIVE",
-                    strategy_revision="random-initial-v1"
+                    strategy_revision="random-initial-v2"
                     if e["mode"] == "RANDOM_BASELINE"
                     else "spark-initial-v1",
                     hypothesis=s.candidates.clean(plan.hypothesis),
@@ -629,7 +633,7 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             {
                 "strategy_revision": "spark-initial-v1"
                 if e["mode"] == "ADAPTIVE"
-                else "random-initial-v1",
+                else "random-initial-v2",
                 "author": evidence["author"],
             },
         )

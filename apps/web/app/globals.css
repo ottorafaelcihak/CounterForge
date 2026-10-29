@@ -93,3 +93,18 @@ label { display:flex; flex-direction:column; gap:.4rem; font-size:.94rem; font-w
   .run-metrics { grid-template-columns:1fr; }
   .run-timeline>li { grid-template-columns:1fr; }
 }
+
+.evidence-navigation { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+.export-list { display: grid; gap: 1rem; margin: 1.5rem 0; }
+.export-card { min-width: 0; }
+.export-checksum, .export-card code, .finding-workspace code { overflow-wrap: anywhere; word-break: break-word; }
+.button-link { display: inline-block; text-decoration: none; padding: .7rem 1rem; border-radius: .4rem; }
+.runner-instructions pre, .finding-workspace pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: var(--surface-muted, #f2f3f0); font-size: .85rem; }
+.evidence-image-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.evidence-image-grid figure { margin: 0; min-width: 0; }
+.evidence-image-grid figcaption { text-transform: capitalize; font-weight: 600; margin-bottom: .5rem; }
+.evidence-image-grid img { width: 100%; height: auto; max-height: 32rem; object-fit: contain; background: #e9ece7; border: 1px solid var(--line, #d7ddd3); }
+.evidence-checks { padding-left: 1.25rem; }
+.observation-card { border-top: 1px solid var(--line, #d7ddd3); padding-top: .7rem; margin-top: 1rem; }
+.evidence-prompt { white-space: pre-wrap; }
+@media (max-width: 650px) { .evidence-image-grid { grid-template-columns: 1fr; } .finding-workspace .actions { flex-wrap: wrap; } }

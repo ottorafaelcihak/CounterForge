@@ -27,6 +27,7 @@ from counterforge_contracts.responses import (
     ExportLinks,
     ExportRef,
     Finding,
+    FindingEvidence,
     JobLinks,
     JobRef,
     JobResult,
@@ -705,6 +706,15 @@ class Service:
                 "checked_at": prices.checked_at,
                 "models": prices.models,
             },
+            "strategy": {
+                "random_seed": body.random_seed
+                if body.random_seed is not None
+                else uuid4().int & (2**63 - 1),
+                "revision": "random-initial-v2"
+                if body.mode == "RANDOM_BASELINE"
+                else "spark-initial-v1",
+                "strength_range": [0, 1],
+            },
             "provider_dispatch_enabled": self.settings.provider_mode != "DISABLED",
             "provider_mode": self.settings.provider_mode,
         }
@@ -1020,7 +1030,7 @@ class Service:
         self.experiment(row["experiment_id"])
         return row
 
-    def finding_dto(self, row: RowMapping) -> Finding:
+    def finding_dto(self, row: RowMapping, *, include_evidence: bool = False) -> Finding:
         experiment = self.experiment(row["experiment_id"])
         mutation = self.row(self.t.mutations, row["mutation_id"])
         contract = self.contract(experiment["contract_id"])
@@ -1070,11 +1080,19 @@ class Service:
             )
         )
         pinned_target = experiment["config_snapshot"]["target"]
+        evidence = None
+        if include_evidence and "report" in validation["evidence_json"]:
+            try:
+                evidence = self.finding_evidence(row["id"])
+            except ServiceError as exc:
+                if exc.status != 409:
+                    raise
         # Build from authoritative evidence columns; arbitrary summary/provider JSON is private.
         return Finding(
             id=row["id"],
             mutation_id=row["mutation_id"],
             status=row["status"],
+            evidence=evidence,
             ground_truth={"value": contract["contract_json"]["expected"]["value"]},
             model={
                 "adapter": pinned_target["adapter_key"],
@@ -1118,8 +1136,13 @@ class Service:
             cursor,
         )
 
+    def finding_evidence(self, finding_id: UUID) -> "FindingEvidence":
+        from .exports import finding_evidence
+
+        return finding_evidence(self, finding_id)
+
     @staticmethod
-    def export_ref(export_id: UUID, state: str) -> ExportRef:
+    def export_ref(export_id: UUID, state: str, **details: Any) -> ExportRef:
         return ExportRef(
             export_id=export_id,
             state=state,
@@ -1127,9 +1150,14 @@ class Service:
                 self=f"/api/v1/exports/{export_id}",
                 download=f"/api/v1/exports/{export_id}/download" if state == "READY" else None,
             ),
+            **details,
         )
 
-    def get_export(self, export_id: UUID) -> ExportRef:
+    def get_export(self, export_id: UUID, *, verify_blobs: bool = True) -> ExportRef:
+        from counterforge_regression.manifest import RegressionManifest
+
+        from .artifacts import IntegrityError
+
         row = (
             self.db.execute(
                 select(self.t.regression_exports).where(self.t.regression_exports.c.id == export_id)
@@ -1137,24 +1165,83 @@ class Service:
             .mappings()
             .one_or_none()
         )
-        if row is not None:
-            self.finding(row["finding_id"])
-            return self.export_ref(export_id, row["status"])
         job = self.job(export_id)
-        if job["kind"] != "EXPORT":
+        if job["kind"] != "EXPORT" or job["finding_id"] is None:
             raise ServiceError(ErrorCode.NOT_FOUND, "Export was not found.", 404)
-        if job["state"] == "SUCCEEDED":
-            raise ServiceError(ErrorCode.INVALID_STATE, "Export evidence has not been registered.")
+        f = self.finding(job["finding_id"])
+        e = self.experiment(f["experiment_id"])
+        if job["project_id"] != e["project_id"] or job["experiment_id"] != e["id"]:
+            raise ServiceError(
+                ErrorCode.FORBIDDEN, "Export references are outside the finding.", 403
+            )
+        details = dict(
+            finding_id=f["id"],
+            job_id=job["id"],
+            provenance="LOCAL_FIXTURE"
+            if e["config_snapshot"].get("provider_mode") == "FIXTURE"
+            else "REAL_PROVIDER",
+            error_code=job["error_code"],
+        )
+        if row is not None:
+            if row["finding_id"] != f["id"]:
+                raise ServiceError(ErrorCode.FORBIDDEN, "Export finding reference differs.", 403)
+            state = row["status"]
+            bundle, manifest = (
+                self.asset(row["bundle_asset_id"]),
+                self.asset(row["manifest_asset_id"]),
+            )
+            if bundle["project_id"] != e["project_id"] or manifest["project_id"] != e["project_id"]:
+                raise ServiceError(
+                    ErrorCode.FORBIDDEN, "Export asset references are outside the finding.", 403
+                )
+            try:
+                frozen = RegressionManifest.model_validate_json(
+                    self.artifacts.read_verified(manifest["id"])
+                )
+                if verify_blobs:
+                    ev = self.finding_evidence(f["id"])
+                    current = (
+                        ev.export_eligible
+                        and frozen.invariant_verification.report_sha256
+                        == ev.validation.report_sha256
+                    )
+                else:
+                    from .exports import registered_export_is_current
+
+                    current = registered_export_is_current(self, f, frozen)
+                if not current:
+                    state = "REVOKED"
+                if frozen.finding_id != f["id"] or frozen.export_job_id != export_id:
+                    state = "REVOKED"
+                if verify_blobs:
+                    self.artifacts.read_verified(bundle["id"])
+            except (ServiceError, ValueError, IntegrityError):
+                state = "REVOKED"
+            result = self.export_ref(
+                export_id,
+                state,
+                **details,
+                bundle_sha256=bundle["sha256"],
+                manifest_sha256=manifest["sha256"],
+                runner_version=row["runner_version"],
+            )
+            if not verify_blobs:
+                result.links.download = None
+            return result
         return self.export_ref(
-            export_id, "FAILED" if job["state"] == "REVIEW_REQUIRED" else job["state"]
+            export_id,
+            "FAILED" if job["state"] in {"REVIEW_REQUIRED", "SUCCEEDED"} else job["state"],
+            **details,
         )
 
     def request_export(self, finding_id: UUID, key: str) -> ExportRef:
         finding = self.finding(finding_id)
-        self.finding_dto(finding)
-        if finding["status"] != "STABLE":
+        self.candidates.row(finding["mutation_id"], lock=True)
+        ev = self.finding_evidence(finding_id)
+        if not ev.export_eligible:
             raise ServiceError(
-                ErrorCode.REVIEW_REQUIRED, "Export requires a stable, validated finding."
+                ErrorCode.REVIEW_REQUIRED,
+                "Export requires complete current stable reviewed evidence.",
             )
         experiment = self.experiment(finding["experiment_id"])
         job_id = self.uow.background_jobs.enqueue(
@@ -1162,7 +1249,10 @@ class Service:
             experiment_id=experiment["id"],
             finding_id=finding_id,
             kind="EXPORT",
-            request_json={"finding_id": str(finding_id)},
+            request_json={
+                "finding_id": str(finding_id),
+                "validation_sha256": ev.validation.report_sha256,
+            },
             idempotency_key=key,
         )
         self.audit(
@@ -1171,17 +1261,31 @@ class Service:
         return self.get_export(job_id)
 
     def complete_export(
-        self, job_id: UUID, bundle_id: UUID, manifest_id: UUID, runner_version: str
+        self,
+        job_id: UUID,
+        bundle_id: UUID,
+        manifest_id: UUID,
+        runner_version: str,
+        *,
+        claim_token: UUID,
+        delivery_no: int,
     ) -> ExportRef:
         job = self.row(self.t.background_jobs, job_id, lock=True)
         self.project(job["project_id"])
         if (
             job["kind"] != "EXPORT"
             or job["finding_id"] is None
-            or job["state"] not in {"QUEUED", "RUNNING"}
+            or job["state"] != "RUNNING"
+            or job["claim_token"] != claim_token
+            or job["delivery_no"] != delivery_no
+            or job["lease_expires_at"] is None
+            or job["lease_expires_at"] <= self.db.scalar(select(func.now()))
         ):
             raise ServiceError(ErrorCode.INVALID_STATE, "Export job cannot complete in this state.")
         finding = self.finding(job["finding_id"])
+        # Match review's mutation -> finding lock order (its trigger updates finding).
+        self.candidates.row(finding["mutation_id"], lock=True)
+        finding = self.row(self.t.findings, finding["id"], lock=True)
         experiment = self.experiment(finding["experiment_id"])
         if (
             experiment["project_id"] != job["project_id"]
@@ -1204,6 +1308,31 @@ class Service:
                     ErrorCode.FORBIDDEN, "Export assets are outside the authorized evidence.", 403
                 )
             self.artifacts.read_verified(asset_id)
+        import io
+        from zipfile import ZipFile
+
+        from counterforge_regression.bundle import verify_bundle
+
+        from .exports import collect_export, configured_secrets
+
+        self.candidates.row(finding["mutation_id"], lock=True)
+        snapshot = collect_export(self, finding["id"], job_id)
+        manifest_bytes = self.artifacts.read_verified(manifest_id)
+        bundle_bytes = self.artifacts.read_verified(bundle_id)
+        verify_bundle(bundle_bytes, forbidden_values=configured_secrets(self.settings))
+        with ZipFile(io.BytesIO(bundle_bytes)) as archive:
+            if archive.read("manifest.json") != manifest_bytes:
+                raise ServiceError(ErrorCode.REVIEW_REQUIRED, "Export manifest and ZIP differ.")
+            from counterforge_regression.manifest import RegressionManifest
+
+            manifest = RegressionManifest.model_validate_json(manifest_bytes)
+            if manifest.model_dump(exclude={"sha256"}) != snapshot.manifest.model_dump(
+                exclude={"sha256"}
+            ) or any(archive.read(name) != data for name, data in snapshot.evidence.items()):
+                raise ServiceError(
+                    ErrorCode.REVIEW_REQUIRED,
+                    "Export bundle evidence differs from current finding.",
+                )
         self.db.execute(
             self.t.regression_exports.insert().values(
                 id=job_id,
@@ -1222,6 +1351,7 @@ class Service:
                 finished_at=func.now(),
                 updated_at=func.now(),
                 result_json={"export_id": str(job_id)},
+                lease_expires_at=None,
             )
         )
         self.audit(job["project_id"], "EXPORT_COMPLETED", "export", job_id)
@@ -1282,6 +1412,6 @@ class Service:
             query = query.where(combined.c.id > self._cursor_id(scope, cursor))
         rows = self.db.execute(query.order_by(combined.c.id).limit(limit + 1)).mappings().all()
         return Page(
-            items=[self.export_ref(row["id"], row["state"]) for row in rows[:limit]],
+            items=[self.get_export(row["id"], verify_blobs=False) for row in rows[:limit]],
             next_cursor=self._cursor(scope, rows[limit - 1]["id"]) if len(rows) > limit else None,
         )

@@ -328,6 +328,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/findings/{finding_id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Finding Evidence */
+        get: operations["get_finding_evidence_api_v1_findings__finding_id__evidence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/findings/{finding_id}/exports": {
         parameters: {
             query?: never;
@@ -827,6 +844,18 @@ export interface components {
             /** Notes */
             notes: string;
         };
+        /** AssetLink */
+        AssetLink: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Content Url */
+            content_url: string;
+            /** Sha256 */
+            sha256: string;
+        };
         /** BackgroundRequest */
         BackgroundRequest: {
             limits: components["schemas"]["JobLimits"];
@@ -1138,12 +1167,26 @@ export interface components {
         };
         /** ExportRef */
         ExportRef: {
+            /** Bundle Sha256 */
+            bundle_sha256?: string | null;
+            /** Error Code */
+            error_code?: string | null;
             /**
              * Export Id
              * Format: uuid
              */
             export_id: string;
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Job Id */
+            job_id?: string | null;
             links: components["schemas"]["ExportLinks"];
+            /** Manifest Sha256 */
+            manifest_sha256?: string | null;
+            /** Provenance */
+            provenance?: ("LOCAL_FIXTURE" | "REAL_PROVIDER") | null;
+            /** Runner Version */
+            runner_version?: string | null;
             /**
              * State
              * @enum {string}
@@ -1163,6 +1206,7 @@ export interface components {
             demo_approved_at?: string | null;
             /** Demo Approved By */
             demo_approved_by?: string | null;
+            evidence?: components["schemas"]["FindingEvidence"] | null;
             ground_truth: components["schemas"]["FindingTruth"];
             /**
              * Id
@@ -1191,11 +1235,105 @@ export interface components {
              */
             original_image_id: string;
         };
+        /** FindingEvidence */
+        FindingEvidence: {
+            /** Assets */
+            assets: {
+                [key: string]: components["schemas"]["AssetLink"];
+            };
+            /**
+             * Experiment Id
+             * Format: uuid
+             */
+            experiment_id: string;
+            /** Export Blocked Reasons */
+            export_blocked_reasons: string[];
+            /** Export Eligible */
+            export_eligible: boolean;
+            /**
+             * Finding Id
+             * Format: uuid
+             */
+            finding_id: string;
+            /**
+             * Mutation Id
+             * Format: uuid
+             */
+            mutation_id: string;
+            /** Observations */
+            observations: components["schemas"]["FindingObservation"][];
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "LOCAL_FIXTURE" | "REAL_PROVIDER";
+            /** Qualification */
+            qualification: string;
+            /** Question */
+            question: string;
+            /** Sampling Options */
+            sampling_options: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            usage: components["schemas"]["FindingUsage"];
+            validation: components["schemas"]["ValidationReport"];
+            /** Validation History */
+            validation_history: components["schemas"]["FindingValidationRevision"][];
+        };
         /** FindingMutation */
         FindingMutation: {
             family: components["schemas"]["MutationFamily"];
             /** Strength */
             strength: number;
+        };
+        /** FindingObservation */
+        FindingObservation: {
+            /** Attempt No */
+            attempt_no: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Image Sha256 */
+            image_sha256: string;
+            /** Latency Ms */
+            latency_ms?: number | null;
+            /** Model Id */
+            model_id: string;
+            /** Model Revision */
+            model_revision: string;
+            outcome: components["schemas"]["TargetOutcome"];
+            /** Parsed Count */
+            parsed_count: number | null;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "SEED_BASELINE" | "SCREENING" | "CONFIRMATION" | "RETEST";
+            /** Prompt */
+            prompt: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "LOCAL_FIXTURE" | "REAL_PROVIDER";
+            /** Raw Text */
+            raw_text: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Sampling Options */
+            sampling_options: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
         };
         /**
          * FindingStatus
@@ -1219,6 +1357,39 @@ export interface components {
              */
             verified_by: "human";
         };
+        /** FindingUsage */
+        FindingUsage: {
+            /**
+             * Actual Usd
+             * @default 0
+             */
+            actual_usd: number;
+            /** Calls */
+            calls: number;
+            /**
+             * Estimated Usd
+             * @default 0
+             */
+            estimated_usd: number;
+            /** Known Tokens In */
+            known_tokens_in: number;
+            /** Known Tokens Out */
+            known_tokens_out: number;
+            /**
+             * Reserved Usd
+             * @default 0
+             */
+            reserved_usd: number;
+            /** Target Calls */
+            target_calls: number;
+            /** Unknown Token Calls */
+            unknown_token_calls: number;
+            /**
+             * Unresolved Usd
+             * @default 0
+             */
+            unresolved_usd: number;
+        };
         /** FindingValidation */
         FindingValidation: {
             /** Evidence Ids */
@@ -1226,6 +1397,17 @@ export interface components {
             verdict: components["schemas"]["ValidityVerdict"];
             /** Verifier Version */
             verifier_version: string;
+        };
+        /** FindingValidationRevision */
+        FindingValidationRevision: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            report: components["schemas"]["ValidationReport"];
+            /** Revision */
+            revision: number;
         };
         /** GroundTruthAuditRequest */
         GroundTruthAuditRequest: {
@@ -1986,6 +2168,8 @@ export interface components {
              * Format: uuid
              */
             project_id: string;
+            /** Random Seed */
+            random_seed?: number | null;
             /**
              * Target Config Id
              * Format: uuid
@@ -4311,6 +4495,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Finding"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_finding_evidence_api_v1_findings__finding_id__evidence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingEvidence"];
                 };
             };
             /** @description Unauthorized */

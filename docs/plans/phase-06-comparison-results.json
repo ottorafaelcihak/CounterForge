@@ -1,0 +1,205 @@
+{
+  "format_version": "1.0.0",
+  "manifest_sha256": "d07e6cc861a617a4b263f4bb0c62ccbfce7d39cb44b9c0a3983a9e47933a2d1d",
+  "reported_at": "2026-10-29T18:29:10.799658+00:00",
+  "provenance": "REAL_PROVIDER",
+  "arms": [
+    {
+      "mode": "ADAPTIVE",
+      "experiment_id": "120518e7-cb79-4627-9e4a-dc21a56d8ddb",
+      "random_seed": 20261030,
+      "strategy_revision": "spark-initial-v1",
+      "state": "PAUSED",
+      "stop_reason": "EXPERIMENT_STAGE_REVIEW_REQUIRED",
+      "unfinished": true,
+      "unsettled_usage": true,
+      "proposed_plans": 1,
+      "generated_candidates": 0,
+      "candidate_validity": {
+        "VALID": 0,
+        "INVALID": 0,
+        "REVIEW_REQUIRED": 0
+      },
+      "target_calls_consumed": 3,
+      "target_cap": 7,
+      "observations_by_phase": {
+        "SEED_BASELINE": {
+          "observations": 3,
+          "outcomes": {
+            "CORRECT": 3
+          }
+        },
+        "SCREENING": {
+          "observations": 0,
+          "outcomes": {}
+        },
+        "CONFIRMATION": {
+          "observations": 0,
+          "outcomes": {}
+        }
+      },
+      "valid_screening_observations": 0,
+      "target_requests_by_phase": {
+        "SEED_BASELINE": 3,
+        "SCREENING": 0,
+        "CONFIRMATION": 0
+      },
+      "suspected_findings_total": 0,
+      "stable_findings": 0,
+      "finding_statuses": {},
+      "usage": {
+        "request_slots_total": 5,
+        "dispatched_requests": 5,
+        "actual_usd": "0.006098",
+        "estimated_usd": "0",
+        "unknown_usd": "0.012000",
+        "reserved_usd": "0"
+      },
+      "usage_by_category": {
+        "TARGET": {
+          "request_slots_total": 3,
+          "dispatched_requests": 3,
+          "actual_usd": "0.002656",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "PLANNER": {
+          "request_slots_total": 1,
+          "dispatched_requests": 1,
+          "actual_usd": "0.003442",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "IMAGE": {
+          "request_slots_total": 1,
+          "dispatched_requests": 1,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0.012000",
+          "reserved_usd": "0"
+        },
+        "SAM": {
+          "request_slots_total": 0,
+          "dispatched_requests": 0,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "OTHER": {
+          "request_slots_total": 0,
+          "dispatched_requests": 0,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        }
+      }
+    },
+    {
+      "mode": "RANDOM_BASELINE",
+      "experiment_id": "5cd3a391-8f8d-4846-972e-774df4704b8d",
+      "random_seed": 20261030,
+      "strategy_revision": "random-initial-v2",
+      "state": "COMPLETED",
+      "stop_reason": "BOUNDED_PLAN_COMPLETE",
+      "unfinished": false,
+      "unsettled_usage": false,
+      "proposed_plans": 1,
+      "generated_candidates": 1,
+      "candidate_validity": {
+        "VALID": 1,
+        "INVALID": 0,
+        "REVIEW_REQUIRED": 0
+      },
+      "target_calls_consumed": 4,
+      "target_cap": 7,
+      "observations_by_phase": {
+        "SEED_BASELINE": {
+          "observations": 3,
+          "outcomes": {
+            "CORRECT": 3
+          }
+        },
+        "SCREENING": {
+          "observations": 1,
+          "outcomes": {
+            "CORRECT": 1
+          }
+        },
+        "CONFIRMATION": {
+          "observations": 0,
+          "outcomes": {}
+        }
+      },
+      "valid_screening_observations": 1,
+      "target_requests_by_phase": {
+        "SEED_BASELINE": 3,
+        "SCREENING": 1,
+        "CONFIRMATION": 0
+      },
+      "suspected_findings_total": 0,
+      "stable_findings": 0,
+      "finding_statuses": {},
+      "usage": {
+        "request_slots_total": 5,
+        "dispatched_requests": 5,
+        "actual_usd": "0.005754",
+        "estimated_usd": "0",
+        "unknown_usd": "0",
+        "reserved_usd": "0"
+      },
+      "usage_by_category": {
+        "TARGET": {
+          "request_slots_total": 4,
+          "dispatched_requests": 4,
+          "actual_usd": "0.003254",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "PLANNER": {
+          "request_slots_total": 0,
+          "dispatched_requests": 0,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "IMAGE": {
+          "request_slots_total": 0,
+          "dispatched_requests": 0,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "SAM": {
+          "request_slots_total": 1,
+          "dispatched_requests": 1,
+          "actual_usd": "0.002500",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        },
+        "OTHER": {
+          "request_slots_total": 0,
+          "dispatched_requests": 0,
+          "actual_usd": "0",
+          "estimated_usd": "0",
+          "unknown_usd": "0",
+          "reserved_usd": "0"
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "One approved development seed per arm; no statistical superiority claim.",
+    "Same available families and [0,1] strength range; Spark chooses strengths, random samples uniformly.",
+    "Both arms retain the same independent validity and three-fresh confirmation gates.",
+    "All planning, generation, SAM, baseline, screening and confirmation expenses are included."
+  ],
+  "interpretation": "Descriptive tiny-sample comparison only; zero discoveries and unfinished arms are retained. No superiority claim."
+}

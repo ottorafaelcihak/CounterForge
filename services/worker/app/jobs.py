@@ -40,6 +40,7 @@ def claim_job(factory: Any, settings: Settings, job_id: UUID) -> dict[str, Any] 
             "TARGET_CHECK",
             "SCENE",
             "MUTATION_SAM",
+            "EXPORT",
         }:
             return None
         token = uuid4()
@@ -114,7 +115,9 @@ def recover_jobs(factory: Any, settings: Settings) -> list[UUID]:
                             uow.tables.projects.c.owner_label == settings.owner_label
                         )
                     ),
-                    table.c.kind.in_(["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM"]),
+                    table.c.kind.in_(
+                        ["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM", "EXPORT"]
+                    ),
                     table.c.lease_expires_at <= func.now(),
                 )
                 .with_for_update(skip_locked=True)
@@ -156,7 +159,9 @@ def recover_jobs(factory: Any, settings: Settings) -> list[UUID]:
                 .join(uow.tables.projects, uow.tables.projects.c.id == table.c.project_id)
                 .where(
                     table.c.state == "QUEUED",
-                    table.c.kind.in_(["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM"]),
+                    table.c.kind.in_(
+                        ["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM", "EXPORT"]
+                    ),
                     uow.tables.projects.c.owner_label == settings.owner_label,
                 )
             )
@@ -222,6 +227,11 @@ async def execute_job(factory: Any, settings: Settings, job_id: UUID) -> None:
     pulse = asyncio.create_task(heartbeat(factory, job))
     synthetic = settings.provider_mode == "FIXTURE"
     try:
+        if job["kind"] == "EXPORT":
+            from .export_jobs import execute_export
+
+            await execute_export(factory, settings, job)
+            return
         if job["kind"] in {"SCENE", "MUTATION_SAM"}:
             from .candidate_jobs import execute_preparation
 

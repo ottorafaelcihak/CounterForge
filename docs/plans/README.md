@@ -1,16 +1,18 @@
 # CounterForge implementation roadmap
 
-**Status:** Phases 01–05 are implemented and verified with fixtures. Phase 05's
-bounded real-provider search completed after explicit human candidate review,
-with 13 API calls / USD 0.041512 and no finding. The
-[Phase 05 handoff](phase-05-handoff.md) retains exact evidence and limitations:
-SAM returned no usable instances on this illustration. Phases 06–11 remain planned. Automatic threshold
-calibration and held-out evaluation remain unmet. No real-model weakness or
-benchmark measurement is implied by implementation.
+**Status:** Phases 01–06 are implemented with fixture verification. Phase 06 adds
+portable regression exports, evidence/library screens and a predeclared small
+comparison. Its real runs used 10 calls / USD 0.011852 confirmed, plus up to USD
+0.012 unresolved: random screening was correct; Spark paused after an ambiguous
+image timeout. No genuine stable failure or live regression export was demonstrated.
+See the [Phase 06 handoff](phase-06-handoff.md) and
+[comparison report](phase-06-comparison-results.md). Phase 05 separately used
+13 calls / USD 0.041512. Usable SAM masks on this illustration, automatic threshold
+calibration and held-out evaluation remain unmet. Phases 07–11 remain planned.
 
-Read these plans in order. Each phase produces a testable deliverable and carries
-forward the evidence needed by later phases. Checkboxes describe future work;
-completed checkboxes in phases 01–05 reflect their verification handoffs. The outstanding real-provider and human-review gates and future benchmark measurements remain separate from fixture success.
+Read plans in order. Checked implementation gates refer to their verification
+handoffs; fixture success never substitutes for the outstanding live/human gates
+or future benchmark measurements.
 
 ## Sources and authority
 

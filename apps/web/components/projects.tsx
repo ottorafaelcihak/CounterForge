@@ -16,7 +16,7 @@ export function Projects() {
       router.push("/projects/" + project.id);
     } catch (e) { setError(e instanceof Error ? e.message : "Project could not be created."); setBusy(false); }
   }
-  return <main className="workspace"><div className="page-heading"><div><h1>Your visual test projects</h1><p>Give each test a source image, a human count and reviewed instance masks.</p></div><span className="workspace-label">Owner workspace</span></div>
+  return <main className="workspace"><nav className="evidence-navigation"><Link href="/regressions">Regression library</Link></nav><div className="page-heading"><div><h1>Your visual test projects</h1><p>Give each test a source image, a human count and reviewed instance masks.</p></div><span className="workspace-label">Owner workspace</span></div>
     {error && <p className="error" role="alert">{error}</p>}
     <div className="project-layout"><section><h2>Projects</h2>{projects.length ? <ul className="project-list">{projects.map(project => <li key={project.id}><Link href={"/projects/" + project.id}><h3>{project.name}</h3><p>{project.description || "Open seed setup and target configuration."}</p><span>Open project</span></Link></li>)}</ul> : <div className="empty-state"><h3>No projects yet</h3><p>Create a project to prepare your first counting test.</p></div>}</section>
     <form onSubmit={create} className="form-panel"><h2>Create a project</h2><label>Project name<input name="name" required minLength={3} maxLength={160} placeholder="Warehouse container counts" /></label><label>Description<textarea name="description" maxLength={2000} rows={3} placeholder="What should this test protect?" /></label><button className="primary" disabled={busy}>{busy ? "Creating…" : "Create project"}</button></form></div></main>;

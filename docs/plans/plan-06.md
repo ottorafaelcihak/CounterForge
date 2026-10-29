@@ -12,6 +12,12 @@
 
 **Prerequisite:** [Phase 05](plan-05.md). **Next:** [Phase 07](plan-07.md). **Target:** October 30, 2026; P0 freeze.
 
+**Implementation record:** [Phase 06 handoff](phase-06-handoff.md) and
+[initial matched-cap comparison](phase-06-comparison-results.md). Portable fixture
+export gates pass. No genuine stable failure exists, so its live reproduction/export
+goal remains unmet. The Spark comparison arm is unfinished after an ambiguous image
+timeout; exact costs and censoring are retained.
+
 ## Global constraints
 
 - Regression format version is `1.0.0`; assert `parsed_count == expected.value`.
@@ -36,12 +42,12 @@
 
 **Interfaces:** `build_bundle(finding_id, export_job_id) -> ExportRef`; `RegressionManifest` follows technical specification §12.1 with version, ground truth, target/settings, validation/reviewer, screening/fresh confirmations, recipe, hashes and recorded timestamp.
 
-- [ ] Write tests for required files, tampered/missing evidence, unsafe member names, secrets in metadata and a finding whose validity was revoked.
-- [ ] Package manifest, instructions, normalized original, failing image, protected mask, comparison, target responses, validity report, vetted runner/tests, pinned requirements and `sha256sums.txt` as in §12.
-- [ ] Retain original upload bytes as an additional `original-source.<ext>` when different from the normalized original, and identify both hashes in the manifest. The regression input must be the exact retained bytes used in confirmation.
-- [ ] Generate manifests after collecting evidence and hash every packaged file except the checksum file itself, avoiding recursive self-hashes. Use only safe relative paths and static code templates.
-- [ ] Sanitize raw response records, allowlist export metadata and scan the complete ZIP for secrets/private references before marking it ready.
-- [ ] Verify `make test-unit` and bundle integrity tests; damaged evidence fails export rather than silently being omitted.
+- [x] Write tests for required files, tampered/missing evidence, unsafe member names, secrets in metadata and a finding whose validity was revoked.
+- [x] Package manifest, instructions, normalized original, failing image, protected mask, comparison, target responses, validity report, vetted runner/tests, pinned requirements and `sha256sums.txt` as in §12.
+- [x] Retain original upload bytes as an additional `original-source.<ext>` when different from the normalized original, and identify both hashes in the manifest. The regression input must be the exact retained bytes used in confirmation.
+- [x] Generate manifests after collecting evidence and hash every packaged file except the checksum file itself, avoiding recursive self-hashes. Use only safe relative paths and static code templates.
+- [x] Sanitize raw response records, allowlist export metadata and scan the complete ZIP for secrets/private references before marking it ready.
+- [x] Verify `make test-unit` and bundle integrity tests; damaged evidence fails export rather than silently being omitted.
 
 ### Task 2: Portable correctness runner and labeled replay
 
@@ -49,11 +55,11 @@
 
 **Interfaces:** Live execution reads provider credentials from environment, uses the manifest's model/prompt/options and returns a correctness assertion. `--replay-recorded` uses stored observations only and prints its offline/replay provenance.
 
-- [ ] Write runner integration tests with a healthy fixture returning 5 and broken fixture returning 4 for expected 5.
-- [ ] Verify checksums before any model invocation; reject unknown format versions and unsafe paths. Use the same strict count-parser semantics as the product.
-- [ ] Implement a clean extracted-bundle run with no imports from the repository or access to its database. Missing credentials/unknown output produce explicit execution diagnostics, not a fabricated mismatch.
-- [ ] Implement recorded replay without network access. Preserve the historic incorrect result; do not invert the test into asserting that the broken response is correct.
-- [ ] Verify `make verify-export`: healthy-target Pytest exits 0; broken-target Pytest exits 1 with an expected/actual assertion; checksum tampering blocks target invocation. The verification harness regards this pair of results as success.
+- [x] Write runner integration tests with a healthy fixture returning 5 and broken fixture returning 4 for expected 5.
+- [x] Verify checksums before any model invocation; reject unknown format versions and unsafe paths. Use the same strict count-parser semantics as the product.
+- [x] Implement a clean extracted-bundle run with no imports from the repository or access to its database. Missing credentials/unknown output produce explicit execution diagnostics, not a fabricated mismatch.
+- [x] Implement recorded replay without network access. Preserve the historic incorrect result; do not invert the test into asserting that the broken response is correct.
+- [x] Verify `make verify-export`: healthy-target Pytest exits 0; broken-target Pytest exits 1 with an expected/actual assertion; checksum tampering blocks target invocation. The verification harness regards this pair of results as success.
 
 ### Task 3: Idempotent export API and visible finding evidence
 
@@ -61,11 +67,11 @@
 
 **Interfaces:** Use §8's finding confirmation/export and export status/download routes. A queued ExportRef is backed by phase 02's background job; READY resolves to verified regression assets. Finding detail/read and regression list use the DTOs frozen in phase 02.
 
-- [ ] Test same-key export retry => same job/export ID; changed request => conflict; unauthorized/private downloads => deny.
-- [ ] Require current VALID evidence, stable completed confirmations and human review for showcased findings. Fixture exports remain available for tests but prominently identify `LOCAL_FIXTURE` throughout.
-- [ ] Show original/variant/diff/masks, validity check evidence, fresh responses with denominators, prompt/settings/model identity, reviewer and qualified reproducibility statement.
-- [ ] Add status polling, checksum/download instructions, runner usage and error/retry states. Never signal ready before ZIP/manifest are committed and verified.
-- [ ] Verify fixture-backed Playwright finding-to-download flow and authorization checks; scan browser network payloads for secret/private storage fields.
+- [x] Test same-key export retry => same job/export ID; changed request => conflict; unauthorized/private downloads => deny.
+- [x] Require current VALID evidence, stable completed confirmations and human review for showcased findings. Fixture exports remain available for tests but prominently identify `LOCAL_FIXTURE` throughout.
+- [x] Show original/variant/diff/masks, validity check evidence, fresh responses with denominators, prompt/settings/model identity, reviewer and qualified reproducibility statement.
+- [x] Add status polling, checksum/download instructions, runner usage and error/retry states. Never signal ready before ZIP/manifest are committed and verified.
+- [x] Verify fixture-backed Playwright finding-to-download flow and authorization checks; scan browser network payloads for secret/private storage fields.
 
 ### Task 4: Minimal random baseline and P0 evidence review
 
@@ -73,19 +79,19 @@
 
 **Interfaces:** `RANDOM_BASELINE` uses a recorded PRNG seed, the same available transform ranges, input resolution, target configuration, validity checks and confirmation rule. Store a strategy revision and total/valid screening/confirmation call counters separately.
 
-- [ ] Add a seeded random family/strength selector and compare it with the P0 one-shot Spark strategy on the same approved development seed pool under equal target-call caps.
-- [ ] Predeclare small caps using the authorized remaining allowance; report zero discoveries, rejected candidates, stopped/unfinished runs and all generation/planning costs honestly.
-- [ ] Review P0 end-to-end evidence: correct baseline, real Spark planning, SAM masks, Muse Image variation, independent review, target observations, confirmations if found and a runnable export.
+- [x] Add a seeded random family/strength selector and compare it with the P0 one-shot Spark strategy on the same approved development seed pool under equal target-call caps.
+- [x] Predeclare small caps using the authorized remaining allowance; report zero discoveries, rejected candidates, stopped/unfinished runs and all generation/planning costs honestly.
+- [x] Review P0 end-to-end evidence: correct baseline, real Spark planning, SAM masks, Muse Image variation, independent review, target observations, confirmations if found and a runnable export.
 - [ ] Run a genuine finding's bundle in a clean environment when such a finding exists. Retain the expected failing assertion and the live model metadata; disclose provider nondeterminism or changed behavior.
-- [ ] If no genuine stable failure exists, keep the pipeline's fixture demonstration labeled and record the discovery/export-live goal as unmet; do not declare that goal passed.
-- [ ] Verify `make verify-export`, fixture E2E and the initial comparison report, then commit with `feat: export verified regression bundles and complete MVP evidence`.
+- [x] If no genuine stable failure exists, keep the pipeline's fixture demonstration labeled and record the discovery/export-live goal as unmet; do not declare that goal passed.
+- [x] Verify `make verify-export`, fixture E2E and the initial comparison report, then commit with `feat: export verified regression bundles and complete MVP evidence`.
 
 ## Exit criteria and evidence
 
-- [ ] Healthy/broken runner self-tests and tamper/secret/path tests pass in a clean extracted environment.
-- [ ] Evidence and spend are visible with working authenticated export/download.
-- [ ] A small matched-budget random comparison is retained with exact denominators.
-- [ ] Record the P0 gate outcome: genuine reproduced failure/export demonstrated, or a precise unmet-goal/deviation statement. Targets are not guaranteed results.
+- [x] Healthy/broken runner self-tests and tamper/secret/path tests pass in a clean extracted environment.
+- [x] Evidence and spend are visible with working authenticated export/download.
+- [x] A small matched-budget random comparison is retained with exact denominators.
+- [x] Record the P0 gate outcome: genuine reproduced failure/export demonstrated, or a precise unmet-goal/deviation statement. Targets are not guaranteed results.
 
 ## Handoff
 
