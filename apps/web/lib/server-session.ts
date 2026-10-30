@@ -43,7 +43,9 @@ export function clearSession(response: NextResponse) {
     secure: (process.env.WEB_ORIGIN || "").startsWith("https://"), path: "/", maxAge: 0 });
 }
 export function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: { message } }, { status, headers: { "Cache-Control": "no-store" } });
+  const correlation_id = randomBytes(16).toString("hex");
+  console.warn(JSON.stringify({ event: "web_error", status, correlation_id }));
+  return NextResponse.json({ error: { message, correlation_id } }, { status, headers: { "Cache-Control": "no-store" } });
 }
 export async function boundedBody(stream: ReadableStream<Uint8Array> | null, maximum: number): Promise<Uint8Array> {
   if (!stream) return new Uint8Array();

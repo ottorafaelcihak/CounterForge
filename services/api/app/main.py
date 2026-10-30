@@ -9,6 +9,8 @@ from counterforge_contracts.requests import (
     CreateMutation,
     CreateProject,
     CreateTargetConfig,
+    DemoPublicationRequest,
+    DemoSnapshotPrepareRequest,
     MinimizeRequest,
     MutationReviewRequest,
     RetestRequest,
@@ -20,6 +22,7 @@ from counterforge_contracts.requests import (
 from counterforge_contracts.responses import (
     Contract,
     DemoManifest,
+    DemoSnapshot,
     ErrorEnvelope,
     ExperimentRef,
     ExperimentView,
@@ -36,6 +39,7 @@ from counterforge_contracts.responses import (
     MutationValidationRevision,
     Page,
     Project,
+    Readiness,
     Seed,
     SetupCapabilities,
     StoredExperimentEvent,
@@ -52,7 +56,7 @@ from sqlalchemy.engine import Engine
 from .artifacts import MAX_UPLOAD_BYTES, InvalidImage
 from .config import Settings
 from .db.readiness import probe_dependencies
-from .errors import NotImplementedOperation, ServiceError, envelope
+from .errors import NotImplementedOperation, ServiceError
 from .http import (
     Credentials,
     ExperimentControlServices,
@@ -86,17 +90,21 @@ async def live() -> Health:
     return Health()
 
 
-@router.get(PREFIX + "/health/ready", responses=ERRORS)
+@router.get(
+    PREFIX + "/health/ready",
+    responses={**ERRORS, 200: {"model": Readiness}, 503: {"model": Readiness}},
+)
 async def ready(request: Request) -> JSONResponse:
     result = probe_dependencies(settings_for(request), request.app.state.engine)
-    if result.ready:
-        return JSONResponse(status_code=200, content={"status": "ready", "api_version": 1})
-    return JSONResponse(
-        status_code=503,
-        content=envelope(
-            ErrorCode.DEPENDENCY_UNAVAILABLE, "Required services are not ready."
-        ).model_dump(mode="json"),
+    body = Readiness(
+        status="ready" if result.ready else "not_ready",
+        database=result.database,
+        migrations=result.migrations,
+        redis=result.redis,
+        artifacts=result.artifacts,
+        worker_heartbeat=result.worker_heartbeat,
     )
+    return JSONResponse(status_code=200 if result.ready else 503, content=body.model_dump())
 
 
 @router.get(PREFIX + "/setup", response_model=SetupCapabilities, responses=ERRORS)
@@ -160,23 +168,11 @@ async def get_project(project_id: UUID, service: Services) -> Project:
 async def get_asset(
     asset_id: UUID, request: Request, credentials: Credentials, service: Services
 ) -> Response:
-    try:
-        await require_owner(request, credentials)
-        row = service.asset(asset_id)
-    except ServiceError as exc:
-        if exc.status != 401:
-            raise
-        whitelist = service.t.public_asset_whitelist
-        if (
-            service.db.scalar(select(whitelist.c.asset_id).where(whitelist.c.asset_id == asset_id))
-            is None
-        ):
-            raise
-        row = service.row(service.t.artifact_assets, asset_id)
-        if row["media_type"] not in {"image/png", "image/jpeg", "image/webp"}:
-            raise ServiceError(
-                ErrorCode.FORBIDDEN, "This asset cannot be published.", 403
-            ) from None
+    # Private asset bytes are owner-only. Public demo images are served only
+    # through the snapshot-bound public asset route below; no legacy
+    # whitelist row can grant anonymous access here.
+    await require_owner(request, credentials)
+    row = service.asset(asset_id)
     if row["kind"] in {"REGRESSION_ZIP", "MANIFEST"}:
         exports = service.t.regression_exports
         ids = list(
@@ -554,8 +550,79 @@ async def metrics(experiment_id: UUID, service: Services) -> Metrics:
 
 
 @public_router.get(PREFIX + "/public/demo", response_model=DemoManifest, responses=ERRORS)
-async def demo() -> NoReturn:
-    disabled()
+async def demo(service: Services) -> DemoManifest:
+    from .public_demo import public_manifest
+
+    return public_manifest(service)
+
+
+@public_router.get(
+    PREFIX + "/public/demo/assets/{public_asset_id}/content",
+    response_model=None,
+    response_class=Response,
+    responses={
+        **ERRORS,
+        200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}},
+    },
+)
+async def get_public_demo_asset(public_asset_id: UUID, service: Services) -> Response:
+    from .public_demo import public_asset
+
+    data, media_type = public_asset(service, public_asset_id)
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "public, no-store",
+            "Content-Disposition": "inline",
+        },
+    )
+
+
+@router.post(
+    PREFIX + "/experiments/{experiment_id}/demo-snapshot",
+    response_model=DemoSnapshot,
+    status_code=201,
+    responses=ERRORS,
+)
+async def prepare_demo_snapshot(
+    experiment_id: UUID, service: Services, body: DemoSnapshotPrepareRequest | None = None
+) -> DemoSnapshot:
+    from .public_demo import prepare_snapshot
+
+    return prepare_snapshot(service, experiment_id, body)
+
+
+@router.get(PREFIX + "/demo-snapshots/{snapshot_id}", response_model=DemoSnapshot, responses=ERRORS)
+async def get_demo_snapshot(snapshot_id: UUID, service: Services) -> DemoSnapshot:
+    from .public_demo import get_snapshot
+
+    return get_snapshot(service, snapshot_id)
+
+
+@router.post(
+    PREFIX + "/demo-snapshots/{snapshot_id}/publish",
+    response_model=DemoSnapshot,
+    responses=ERRORS,
+)
+async def publish_demo_snapshot(
+    snapshot_id: UUID, body: DemoPublicationRequest, service: Services
+) -> DemoSnapshot:
+    from .public_demo import publish_snapshot
+
+    return publish_snapshot(service, snapshot_id, body)
+
+
+@router.post(
+    PREFIX + "/demo-snapshots/{snapshot_id}/revoke",
+    response_model=DemoSnapshot,
+    responses=ERRORS,
+)
+async def revoke_demo_snapshot(snapshot_id: UUID, service: Services) -> DemoSnapshot:
+    from .public_demo import revoke_snapshot
+
+    return revoke_snapshot(service, snapshot_id)
 
 
 # Stable owner-scoped read APIs.
@@ -826,14 +893,7 @@ async def project_experiments(
     cursor: Annotated[str | None, Query(max_length=512)] = None,
 ) -> Page[ExperimentView]:
     service.project(project_id)
-    return service.page(
-        service.t.experiments,
-        f"experiments:{project_id}",
-        service.experiment_dto,
-        [service.t.experiments.c.project_id == project_id],
-        limit,
-        cursor,
-    )
+    return service.latest_experiments(project_id, limit, cursor)
 
 
 @router.post(

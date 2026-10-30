@@ -1,3 +1,9 @@
+x-logging: &bounded-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 x-runtime: &runtime
   environment: &runtime-environment
     APP_ENV: ${APP_ENV:-development}
@@ -27,6 +33,7 @@ services:
   postgres:
     image: postgres:16
     restart: unless-stopped
+    logging: *bounded-logging
     environment:
       POSTGRES_DB: counterforge
       POSTGRES_USER: counterforge
@@ -43,6 +50,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *bounded-logging
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
@@ -58,6 +66,8 @@ services:
     build:
       context: .
       dockerfile: services/api/Dockerfile
+    restart: "no"
+    logging: *bounded-logging
     command: ["python", "-m", "services.api.app.db.migrations"]
     depends_on:
       postgres: {condition: service_healthy}
@@ -67,26 +77,43 @@ services:
       context: .
       dockerfile: services/api/Dockerfile
     restart: unless-stopped
+    logging: *bounded-logging
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
+    healthcheck:
+      # Liveness only, no credentials and no provider probe.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
   worker:
     <<: *runtime
     build:
       context: .
       dockerfile: services/worker/Dockerfile
     restart: unless-stopped
+    logging: *bounded-logging
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
+    healthcheck:
+      # Fresh only while the worker refreshes its exact queue heartbeat key.
+      test: ["CMD", "python", "-c", "import os,sys; from redis import Redis; c=Redis.from_url(os.environ['REDIS_URL'], socket_connect_timeout=2, socket_timeout=2); sys.exit(0 if c.exists('counterforge:worker-heartbeat:' + os.environ.get('QUEUE_NAME', 'counterforge')) else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
+    logging: *bounded-logging
     ports:
       - "127.0.0.1:${WEB_PORT:-3000}:3000"
     environment:
@@ -94,7 +121,13 @@ services:
       OWNER_AUTH_TOKEN: ${OWNER_AUTH_TOKEN:?Set OWNER_AUTH_TOKEN before starting services}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     depends_on:
-      api: {condition: service_started}
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.status < 500 ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
 
 volumes:
   pgdata: {}

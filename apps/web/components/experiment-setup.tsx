@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { RunSummary } from "./project-runs";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, allPages, jsonPost, type components } from "@/lib/client-api";
@@ -16,6 +16,7 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
   const router = useRouter();
   const [contracts, setContracts] = useState<{ seed: Seed; contract: Contract }[]>([]);
   const [targets, setTargets] = useState<Target[]>([]), [runs, setRuns] = useState<Run[]>([]);
+  const [runsCursor, setRunsCursor] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [contractId, setContractId] = useState(""), [targetId, setTargetId] = useState("");
   const [mode, setMode] = useState<Start["mode"]>("ADAPTIVE");
@@ -35,14 +36,14 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
       const [seeds, available, previous, safe] = await Promise.all([
         allPages<Seed>("projects/" + projectId + "/seeds?limit=100"),
         allPages<Target>("projects/" + projectId + "/targets?limit=100"),
-        allPages<Run>("projects/" + projectId + "/experiments?limit=100"), api<Capabilities>("setup"),
+        api<{ items: Run[]; next_cursor: string | null }>("projects/" + projectId + "/experiments?limit=5"), api<Capabilities>("setup"),
       ]);
       const groups = await Promise.all(seeds.items.map(async seed => ({ seed,
         result: await allPages<Contract>("seeds/" + seed.id + "/contracts?limit=100"),
       })));
       if (!mounted.current || sequence !== requestNo.current) return;
       const choices = groups.flatMap(({ seed, result }) => result.items.map(contract => ({ seed, contract })));
-      setContracts(choices); setTargets(available.items.filter(target => target.enabled)); setRuns(previous.items); setCapabilities(safe);
+      setContracts(choices); setTargets(available.items.filter(target => target.enabled)); setRuns(previous.items); setRunsCursor(previous.next_cursor); setCapabilities(safe);
       const chosen = choices.find(item => item.contract.id === currentContract.current) || choices[0];
       currentContract.current = chosen?.contract.id || "";
       setContractId(currentContract.current);
@@ -123,6 +124,6 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
       {selected && <p className="muted">Fixed human count {selected.contract.contract.expected.value}. Limits can only tighten the reviewed contract. The clock includes paused time.</p>}
       <p className={capabilities?.provider_mode === "LIVE" ? "review-warning" : "muted"}>{capabilities?.provider_mode === "LIVE" ? "Starting dispatches paid Meta requests within these run limits. Unresolved charges remain counted." : capabilities?.provider_mode === "FIXTURE" ? "Synthetic provider fixtures: no real model result or billed usage." : "Provider dispatch is disabled in this workspace."}</p>
       <button className="primary" type="submit" disabled={busy || loading || !valid || !contractId || !targetId || capabilities?.provider_mode === "DISABLED"}>{busy ? "Starting…" : "Start bounded experiment"}</button>
-    </form><section className="form-panel"><h3>Previous runs</h3>{runs.length ? <ul className="run-list">{runs.map(run => <li key={run.id}><Link href={"/experiments/" + run.id}><strong>{run.state.replaceAll("_", " ")}</strong><span>{run.id.slice(0, 8)} · {run.metrics.total_target_calls} target calls</span></Link></li>)}</ul> : <p className="muted">Runs appear here after they are started.</p>}</section></div>
+    </form><section><h3>Previous runs</h3>{runs.length ? runs.map(run => <RunSummary key={run.id} run={run} />) : <p className="muted">Runs appear here after they are started.</p>}{runsCursor && <button type="button" className="secondary" onClick={async () => { const page = await api<{ items: Run[]; next_cursor: string | null }>("projects/" + projectId + "/experiments?limit=5&cursor=" + encodeURIComponent(runsCursor)); setRuns(old => [...old, ...page.items]); setRunsCursor(page.next_cursor); }}>Load more runs</button>}</section></div>
   </section>;
 }

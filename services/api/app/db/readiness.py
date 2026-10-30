@@ -15,30 +15,51 @@ from ..config import Settings
 from .migrations import migration_config
 from .uow import create_database_engine
 
+WORKER_HEARTBEAT_TTL_SECONDS = 15
+
+
+def worker_heartbeat_key(queue_name: str) -> str:
+    """Exact queue-specific heartbeat key; carries no credentials or payload."""
+    return f"counterforge:worker-heartbeat:{queue_name}"
+
 
 @dataclass(frozen=True)
 class Readiness:
     database: bool
+    migrations: bool
     redis: bool
     artifacts: bool
+    worker_heartbeat: bool
 
     @property
     def ready(self) -> bool:
-        return self.database and self.redis and self.artifacts
+        return (
+            self.database
+            and self.migrations
+            and self.redis
+            and self.artifacts
+            and self.worker_heartbeat
+        )
 
 
 def probe_dependencies(settings: Settings, engine: Engine | None = None) -> Readiness:
-    """Return booleans only: never expose exception text, paths or service URLs."""
-    database = redis = artifacts = False
+    """Return booleans only: never expose exception text, paths or service URLs.
+
+    No provider connectivity or inference is probed here. Worker heartbeat is
+    fresh only while its short-lived Redis key exists (see worker main).
+    """
+    database = migrations = redis_ok = artifacts = worker_heartbeat = False
     owned_engine = engine is None
     try:
         engine = engine or create_database_engine(settings)
         with engine.connect() as connection:
-            expected = set(ScriptDirectory.from_config(migration_config()).get_heads())
-            installed = set(MigrationContext.configure(connection).get_current_heads())
-            database = connection.scalar(text("SELECT 1")) == 1 and installed == expected
+            database = connection.scalar(text("SELECT 1")) == 1
+            if database:
+                expected = set(ScriptDirectory.from_config(migration_config()).get_heads())
+                installed = set(MigrationContext.configure(connection).get_current_heads())
+                migrations = installed == expected
     except Exception:
-        pass
+        database = migrations = False
     finally:
         if owned_engine and engine is not None:
             engine.dispose()
@@ -49,9 +70,11 @@ def probe_dependencies(settings: Settings, engine: Engine | None = None) -> Read
             socket_timeout=2,
             retry_on_timeout=False,
         ) as client:
-            redis = bool(client.ping())
+            redis_ok = bool(client.ping())
+            if redis_ok:
+                worker_heartbeat = bool(client.exists(worker_heartbeat_key(settings.queue_name)))
     except Exception:
-        pass
+        redis_ok = worker_heartbeat = False
     temporary_path: Path | None = None
     try:
         # Probe actual write/fsync/read/delete; os.access alone is insufficient.
@@ -73,4 +96,10 @@ def probe_dependencies(settings: Settings, engine: Engine | None = None) -> Read
                 temporary_path.unlink(missing_ok=True)
             except OSError:
                 pass
-    return Readiness(database=database, redis=redis, artifacts=artifacts)
+    return Readiness(
+        database=database,
+        migrations=migrations,
+        redis=redis_ok,
+        artifacts=artifacts,
+        worker_heartbeat=worker_heartbeat,
+    )

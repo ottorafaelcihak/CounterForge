@@ -34,6 +34,8 @@ class Tables:
     audit_events: Table
     background_jobs: Table
     public_asset_whitelist: Table
+    public_demo_snapshots: Table
+    public_demo_assets: Table
     deployment_allowance: Table
     seed_mask_revisions: Table
     seed_mask_acknowledgements: Table

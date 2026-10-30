@@ -455,12 +455,23 @@
       "DemoManifest": {
         "additionalProperties": false,
         "properties": {
-          "experiment": {
-            "$ref": "#/components/schemas/ExperimentView"
+          "architecture": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Architecture",
+            "type": "array"
+          },
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/PublicDemoAsset"
+            },
+            "title": "Assets",
+            "type": "array"
           },
           "findings": {
             "items": {
-              "$ref": "#/components/schemas/Finding"
+              "$ref": "#/components/schemas/PublicDemoFinding"
             },
             "title": "Findings",
             "type": "array"
@@ -472,6 +483,145 @@
             "title": "Limitations",
             "type": "array"
           },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicDemoMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "LOCAL_FIXTURE",
+                  "REAL_PROVIDER"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "recorded": {
+            "const": true,
+            "default": true,
+            "title": "Recorded",
+            "type": "boolean"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "state": {
+            "enum": [
+              "EMPTY",
+              "PUBLISHED",
+              "FIXTURE_PREVIEW"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "DemoManifest",
+        "type": "object"
+      },
+      "DemoPublicationRequest": {
+        "additionalProperties": false,
+        "description": "Explicit operator publication intent; preparation alone never publishes.\n\nRepublication rights are distinct from the private seed-use license\nacknowledgement: the operator must confirm them for the exact prepared\nmanifest hash being published.",
+        "properties": {
+          "confirm_publication": {
+            "const": true,
+            "title": "Confirm Publication",
+            "type": "boolean"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "publication_intent": {
+            "maxLength": 500,
+            "minLength": 10,
+            "title": "Publication Intent",
+            "type": "string"
+          },
+          "redistribution_rights_acknowledged": {
+            "const": true,
+            "title": "Redistribution Rights Acknowledged",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "publication_intent",
+          "confirm_publication",
+          "redistribution_rights_acknowledged",
+          "manifest_sha256"
+        ],
+        "title": "DemoPublicationRequest",
+        "type": "object"
+      },
+      "DemoSnapshot": {
+        "additionalProperties": false,
+        "description": "Private owner view of snapshot preparation/publication state.",
+        "properties": {
+          "asset_count": {
+            "minimum": 0.0,
+            "title": "Asset Count",
+            "type": "integer"
+          },
+          "finding_count": {
+            "minimum": 0.0,
+            "title": "Finding Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "prepared_at": {
+            "format": "date-time",
+            "title": "Prepared At",
+            "type": "string"
+          },
+          "prepared_by": {
+            "title": "Prepared By",
+            "type": "string"
+          },
           "provenance": {
             "enum": [
               "REAL_PROVIDER",
@@ -480,29 +630,94 @@
             "title": "Provenance",
             "type": "string"
           },
-          "public_asset_ids": {
+          "publication_intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Intent"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "source_experiment_id": {
+            "format": "uuid",
+            "title": "Source Experiment Id",
+            "type": "string"
+          },
+          "source_experiment_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Experiment Sha256",
+            "type": "string"
+          },
+          "source_report_sha256": {
             "items": {
-              "format": "uuid",
               "type": "string"
             },
-            "title": "Public Asset Ids",
+            "title": "Source Report Sha256",
             "type": "array"
           },
-          "recorded": {
-            "const": true,
-            "default": true,
-            "title": "Recorded",
-            "type": "boolean"
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "REVOKED",
+              "SUPERSEDED"
+            ],
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
+          "id",
+          "status",
           "provenance",
-          "experiment",
-          "findings",
-          "public_asset_ids",
-          "limitations"
+          "source_experiment_id",
+          "source_experiment_sha256",
+          "manifest_sha256",
+          "finding_count",
+          "asset_count",
+          "prepared_by",
+          "prepared_at"
         ],
-        "title": "DemoManifest",
+        "title": "DemoSnapshot",
+        "type": "object"
+      },
+      "DemoSnapshotPrepareRequest": {
+        "additionalProperties": false,
+        "description": "Optional preparation choices; preparation itself never publishes.",
+        "properties": {
+          "include_seed_image": {
+            "default": false,
+            "title": "Include Seed Image",
+            "type": "boolean"
+          }
+        },
+        "title": "DemoSnapshotPrepareRequest",
         "type": "object"
       },
       "ErrorBody": {
@@ -2359,6 +2574,33 @@
         "title": "MaskRevision",
         "type": "object"
       },
+      "MetricReportReference": {
+        "additionalProperties": false,
+        "properties": {
+          "mutation_id": {
+            "format": "uuid",
+            "title": "Mutation Id",
+            "type": "string"
+          },
+          "report_asset_id": {
+            "format": "uuid",
+            "title": "Report Asset Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mutation_id",
+          "revision",
+          "report_asset_id"
+        ],
+        "title": "MetricReportReference",
+        "type": "object"
+      },
       "Metrics": {
         "additionalProperties": false,
         "properties": {
@@ -2367,10 +2609,30 @@
             "title": "Actual Provider Usage Usd",
             "type": "number"
           },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "conservative_estimate_usd": {
             "minimum": 0.0,
             "title": "Conservative Estimate Usd",
             "type": "number"
+          },
+          "finding_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/FindingStatus"
+            },
+            "title": "Finding Counts",
+            "type": "object"
           },
           "generated_candidates": {
             "minimum": 0.0,
@@ -2382,10 +2644,43 @@
             "title": "Invalid Candidates",
             "type": "integer"
           },
+          "report_references": {
+            "items": {
+              "$ref": "#/components/schemas/MetricReportReference"
+            },
+            "title": "Report References",
+            "type": "array"
+          },
           "review_required_candidates": {
             "minimum": 0.0,
             "title": "Review Required Candidates",
             "type": "integer"
+          },
+          "screening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "spend_by_category": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JobUsage"
+            },
+            "propertyNames": {
+              "enum": [
+                "PLANNER",
+                "IMAGE",
+                "SAM",
+                "TARGET",
+                "OTHER"
+              ]
+            },
+            "title": "Spend By Category",
+            "type": "object"
           },
           "stable_findings": {
             "minimum": 0.0,
@@ -3011,6 +3306,52 @@
           "created_at"
         ],
         "title": "MutationValidationRevision",
+        "type": "object"
+      },
+      "ObservationCounts": {
+        "additionalProperties": false,
+        "description": "Stored observations, with uncertainty retained in the total denominator.",
+        "properties": {
+          "correct": {
+            "minimum": 0.0,
+            "title": "Correct",
+            "type": "integer"
+          },
+          "incorrect": {
+            "minimum": 0.0,
+            "title": "Incorrect",
+            "type": "integer"
+          },
+          "interpretable": {
+            "minimum": 0.0,
+            "title": "Interpretable",
+            "type": "integer"
+          },
+          "provider_errors": {
+            "minimum": 0.0,
+            "title": "Provider Errors",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "unknown": {
+            "minimum": 0.0,
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "interpretable",
+          "correct",
+          "incorrect",
+          "unknown",
+          "provider_errors"
+        ],
+        "title": "ObservationCounts",
         "type": "object"
       },
       "Page_Contract_": {
@@ -3697,6 +4038,242 @@
           "min_visible_fraction"
         ],
         "title": "ProtectedObjects",
+        "type": "object"
+      },
+      "PublicDemoAsset": {
+        "additionalProperties": false,
+        "description": "One image selected for the public snapshot under a fresh opaque ID.\n\nThe ID is minted for the snapshot and maps only to approved snapshot\nbytes; it is never a private artifact, experiment or finding ID.",
+        "properties": {
+          "content_url": {
+            "pattern": "^/api/v1/public/demo/assets/[0-9a-f-]+/content$",
+            "title": "Content Url",
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "media_type": {
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "title": "Media Type",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "ORIGINAL",
+              "MUTATED"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "sha256",
+          "media_type",
+          "width",
+          "height",
+          "content_url"
+        ],
+        "title": "PublicDemoAsset",
+        "type": "object"
+      },
+      "PublicDemoFinding": {
+        "additionalProperties": false,
+        "description": "Sanitized finding summary: counts and verdicts only, no evidence text.",
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "confirmation_attempts": {
+            "minimum": 0.0,
+            "title": "Confirmation Attempts",
+            "type": "integer"
+          },
+          "confirmation_incorrect": {
+            "minimum": 0.0,
+            "title": "Confirmation Incorrect",
+            "type": "integer"
+          },
+          "ground_truth_count": {
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Ground Truth Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "model_adapter": {
+            "enum": [
+              "META_SPARK",
+              "LOCAL_FIXTURE"
+            ],
+            "title": "Model Adapter",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "mutation_family": {
+            "$ref": "#/components/schemas/MutationFamily"
+          },
+          "mutation_strength": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Mutation Strength",
+            "type": "number"
+          },
+          "qualification": {
+            "title": "Qualification",
+            "type": "string"
+          },
+          "status": {
+            "const": "STABLE",
+            "default": "STABLE",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ground_truth_count",
+          "model_adapter",
+          "model_id",
+          "mutation_family",
+          "mutation_strength",
+          "confirmation_incorrect",
+          "confirmation_attempts",
+          "qualification",
+          "asset_ids"
+        ],
+        "title": "PublicDemoFinding",
+        "type": "object"
+      },
+      "PublicDemoMetrics": {
+        "additionalProperties": false,
+        "description": "Whole-run counts except stable_findings: approved findings in this snapshot.",
+        "properties": {
+          "generated_candidates": {
+            "minimum": 0.0,
+            "title": "Generated Candidates",
+            "type": "integer"
+          },
+          "invalid_candidates": {
+            "minimum": 0.0,
+            "title": "Invalid Candidates",
+            "type": "integer"
+          },
+          "review_required_candidates": {
+            "minimum": 0.0,
+            "title": "Review Required Candidates",
+            "type": "integer"
+          },
+          "stable_findings": {
+            "description": "Approved findings in this snapshot, not a whole-run total.",
+            "minimum": 0.0,
+            "title": "Stable Findings",
+            "type": "integer"
+          },
+          "total_target_calls": {
+            "minimum": 0.0,
+            "title": "Total Target Calls",
+            "type": "integer"
+          },
+          "valid_candidates": {
+            "minimum": 0.0,
+            "title": "Valid Candidates",
+            "type": "integer"
+          },
+          "valid_screening_calls": {
+            "minimum": 0.0,
+            "title": "Valid Screening Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generated_candidates",
+          "valid_candidates",
+          "invalid_candidates",
+          "review_required_candidates",
+          "valid_screening_calls",
+          "total_target_calls",
+          "stable_findings"
+        ],
+        "title": "PublicDemoMetrics",
+        "type": "object"
+      },
+      "Readiness": {
+        "additionalProperties": false,
+        "description": "Owner-only structured readiness booleans; no URLs, paths or secrets.",
+        "properties": {
+          "artifacts": {
+            "title": "Artifacts",
+            "type": "boolean"
+          },
+          "database": {
+            "title": "Database",
+            "type": "boolean"
+          },
+          "migrations": {
+            "title": "Migrations",
+            "type": "boolean"
+          },
+          "redis": {
+            "title": "Redis",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "worker_heartbeat": {
+            "title": "Worker Heartbeat",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "migrations",
+          "redis",
+          "artifacts",
+          "worker_heartbeat"
+        ],
+        "title": "Readiness",
         "type": "object"
       },
       "ReproductionPolicy": {
@@ -5159,6 +5736,421 @@
         "summary": "Prepare Background"
       }
     },
+    "/api/v1/demo-snapshots/{snapshot_id}": {
+      "get": {
+        "operationId": "get_demo_snapshot_api_v1_demo_snapshots__snapshot_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Get Demo Snapshot"
+      }
+    },
+    "/api/v1/demo-snapshots/{snapshot_id}/publish": {
+      "post": {
+        "operationId": "publish_demo_snapshot_api_v1_demo_snapshots__snapshot_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoPublicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Publish Demo Snapshot"
+      }
+    },
+    "/api/v1/demo-snapshots/{snapshot_id}/revoke": {
+      "post": {
+        "operationId": "revoke_demo_snapshot_api_v1_demo_snapshots__snapshot_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "snapshot_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Revoke Demo Snapshot"
+      }
+    },
     "/api/v1/experiments": {
       "post": {
         "operationId": "start_experiment_api_v1_experiments_post",
@@ -5573,6 +6565,158 @@
           }
         ],
         "summary": "Cancel"
+      }
+    },
+    "/api/v1/experiments/{experiment_id}/demo-snapshot": {
+      "post": {
+        "operationId": "prepare_demo_snapshot_api_v1_experiments__experiment_id__demo_snapshot_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DemoSnapshotPrepareRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Prepare Demo Snapshot"
       }
     },
     "/api/v1/experiments/{experiment_id}/event-history": {
@@ -8238,7 +9382,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
               }
             },
             "description": "Successful Response"
@@ -8337,7 +9483,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/Readiness"
                 }
               }
             },
@@ -10671,6 +11817,137 @@
           }
         },
         "summary": "Demo"
+      }
+    },
+    "/api/v1/public/demo/assets/{public_asset_id}/content": {
+      "get": {
+        "operationId": "get_public_demo_asset_api_v1_public_demo_assets__public_asset_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "public_asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Public Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Public Demo Asset"
       }
     },
     "/api/v1/regressions": {

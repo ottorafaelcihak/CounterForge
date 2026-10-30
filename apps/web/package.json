@@ -2,14 +2,17 @@
   "name": "counterforge-web",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "next dev --webpack --hostname 127.0.0.1",
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "generate-types": "openapi-typescript ../../packages/contracts/schemas/openapi.json -o lib/types/api.generated.ts"
+    "generate-types": "openapi-typescript ../../packages/contracts/schemas/openapi.json -o lib/types/api.generated.ts",
+    "test": "node --test --test-isolation=none tests/*.test.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

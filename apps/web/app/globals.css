@@ -132,3 +132,35 @@ label { display:flex; flex-direction:column; gap:.4rem; font-size:.94rem; font-w
 .minimization-panel .actions { display: flex; gap: .8rem; flex-wrap: wrap; }
 .minimization-panel .actions p { flex-basis: 100%; }
 @media (max-width: 650px) { .comparison-targets, .retest-form .limit-fields { grid-template-columns: 1fr; } }
+
+/* Owner journey: keyboard controls, retained evidence and narrow viewports. */
+:focus-visible { outline:3px solid #2259ba; outline-offset:3px; }
+.skip-link { position:fixed; z-index:40; top:.5rem; left:1rem; padding:.7rem 1rem; background:white; border:2px solid #2259ba; transform:translateY(-200%); }
+.skip-link:focus { transform:none; }
+dialog.session-overlay { width:100%; max-width:none; height:100%; max-height:none; margin:0; border:0; overflow:auto; }
+dialog.session-overlay::backdrop { background:#18364ca8; }
+.candidate-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+.candidate-thumbnails { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+.candidate-thumbnails figure { min-width:0; margin:0; }
+.candidate-thumbnails img { width:100%; height:160px; object-fit:contain; background:#dbe4ec; }
+.candidate-thumbnails figcaption { text-transform:capitalize; font-size:.85rem; }
+.candidate-run-list article { min-width:0; overflow-wrap:anywhere; }
+.metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+.metrics-grid dt { color:var(--muted); font-size:.85rem; }
+.metrics-grid dd { margin:.3rem 0; font-weight:600; }
+.run-summary { min-width:0; overflow-wrap:anywhere; }
+.setup-single { max-width:850px; }
+.image-controls { display:flex; flex-wrap:wrap; gap:1rem; }
+.finding-image { position:relative; }
+.finding-image img { display:block; }
+.finding-image img.protected-mask-overlay { position:absolute; inset:0; width:100%; height:100%; opacity:.4; mix-blend-mode:screen; pointer-events:none; }
+.session-overlay .login-form { margin:auto; }
+@media (max-width:650px) { .candidate-filters { grid-template-columns:1fr; gap:0; } .metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .page-heading { flex-wrap:wrap; } }
+
+/* Public demo: anonymous recorded replay, no owner controls. */
+.demo-page section { margin-bottom:2.5rem; }
+.demo-page figure { margin:0; min-width:0; }
+.demo-page figure img { display:block; width:100%; height:260px; object-fit:contain; background:#e1eaf2; }
+.demo-page figure figcaption { font-size:.85rem; color:var(--muted); margin-top:.5rem; overflow-wrap:anywhere; }
+.demo-finding { border-top:1px solid var(--line); padding-top:1.5rem; margin-bottom:2rem; }
+@media (max-width:650px) { .demo-page figure img { height:200px; } }

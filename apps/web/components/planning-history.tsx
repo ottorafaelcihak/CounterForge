@@ -6,12 +6,12 @@ const money = (value: number) => "$" + value.toFixed(6);
 export function PlanningHistory({ run }: { run: Run }) {
   const batches = run.planning_batches || [];
   const history = run.planner_history || [];
-  if (run.search_policy !== "FEEDBACK_V1") return null;
-  return <section aria-label="Feedback planning evidence" className="planning-history">
-    <h2>Feedback planning evidence</h2>
-    <p>Policy feedback-v1 uses observed outcomes and reserves every fifth attempt, starting with the first, for seeded random exploration. Candidate attempts include duplicates and rejected selections.</p>
-    <p className="muted">Scores and smoothed estimates are engineering defaults. Evidence of better failure discovery requires the later evaluation.</p>
-    {batches.length ? batches.map(batch => <details className="form-panel" key={batch.slot_index}>
+  const feedback = run.search_policy === "FEEDBACK_V1";
+  return <section aria-label={feedback ? "Feedback planning evidence" : "Hypothesis and outcome history"} className="planning-history">
+    <h2>{feedback ? "Feedback planning evidence" : "Hypothesis and outcome history"}</h2>
+    {feedback && <><p>Policy feedback-v1 uses observed outcomes and reserves every fifth attempt, starting with the first, for seeded random exploration. Candidate attempts include duplicates and rejected selections.</p>
+    <p className="muted">Scores and smoothed estimates are engineering defaults. Evidence of better failure discovery requires the later evaluation.</p></>}
+    {feedback && (batches.length ? batches.map(batch => <details className="form-panel" key={batch.slot_index}>
       <summary>Attempt {batch.slot_index + 1} · {batch.slot_strategy.replaceAll("_", " ").toLowerCase()} · {batch.author.replaceAll("_", " ")}</summary>
       <p>Policy {batch.policy_revision} · template {batch.template_revision} · random seed {batch.random_seed}</p>
       {batch.fallback_reason && <p className="review-warning">Fallback: {batch.fallback_reason.replaceAll("_", " ")}</p>}
@@ -24,7 +24,7 @@ export function PlanningHistory({ run }: { run: Run }) {
           <td>{proposal.score.toFixed(4)}</td><td>{money(proposal.estimated_cost_usd)}</td>
           <td>Validity {proposal.p_valid.toFixed(3)} · failure {proposal.p_failure.toFixed(3)} · exploration {proposal.explore.toFixed(3)} · {proposal.family_trials} family trials</td>
         </tr>)}</tbody></table></div>
-    </details>) : <p>No planning batch has been retained yet.</p>}
+    </details>) : <p>No planning batch has been retained yet.</p>)}
     <details className="form-panel"><summary>Recent retained outcomes ({history.length})</summary>
       <p className="muted">The planner receives a bounded recent window. Unknown replies remain explicit in the retained evidence.</p>
       {history.length ? <ol>{history.map((item, index) => <li key={index}>

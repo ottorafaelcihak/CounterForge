@@ -53,6 +53,14 @@ make services-up      # builds, migrates and starts the local stack
 make services-down    # retains persistent volumes
 ```
 
+For operations (readiness, backup/restore, Redis-loss recovery, retention,
+latency, and the disposable rehearsal) see the
+[operations runbook](docs/operations/runbook.md); all `make ops-*` targets
+make no direct provider calls. Restore requires `CONFIRM_DISPOSABLE=1` and empty
+disposable destinations; retention is dry-run by default. Keep workers stopped
+or providers disabled through restore/recovery reconciliation, since recovered
+authorized work can resume billing under LIVE workers.
+
 All published ports bind to loopback. Override `POSTGRES_PORT`, `REDIS_PORT`,
 `API_PORT` or `WEB_PORT` as needed. Set `WEB_ORIGIN` to the exact browser origin,
 default `http://localhost:3000`. `OWNER_LABEL` scopes projects; changing it changes
@@ -70,8 +78,10 @@ The API docs are at `http://127.0.0.1:8000/docs`. Business routes require
 `Authorization: Bearer <OWNER_AUTH_TOKEN>`. The browser uses an opaque, eight-hour
 HttpOnly/SameSite=Strict session and an allowlisted same-origin proxy. Mutations
 require the configured Origin; upstream owner/model keys never become browser
-DTOs, URLs or local-storage values. Public asset reads require an explicit server
-whitelist; the public demo belongs to a later phase.
+DTOs, URLs or local-storage values. Anonymous image reads require the current
+approved, hash-bound demo snapshot. `/demo` is a read-only recorded gallery;
+preparing a private draft grants no public access. Publication remains a Phase 10
+action with explicit intent and redistribution acknowledgement.
 
 ## Prepare and review a seed
 
@@ -340,6 +350,9 @@ supplied SQL. Downgrades refuse to discard evidence. Asset reads verify paths,
 size and SHA; content-addressed blobs are fsynced and atomically installed before
 transactional registration.
 
+Migration `0006` adds feedback, refinement and retest support; `0007` adds retained
+public demo snapshots and their explicit asset whitelist.
+
 ## Project structure
 
 ```text
@@ -362,6 +375,13 @@ adds the frozen matched-budget evaluation harness and independent audit in
 labels and a separate paid authorization. See the
 [Phase 08 handoff](docs/plans/phase-08-handoff.md),
 [evaluation guide](docs/evaluation.md) and [limitations](docs/limitations.md).
+
+Phase 09 completes owner project/run views, candidate filters, authenticated stream
+reconnection, session renewal, evidence controls and the isolated recorded gallery.
+It adds readiness, bounded logs, backup/restore and a disposable restart/recovery
+rehearsal. The retained real-provider demo draft has zero confirmed findings and
+remains unpublished. See the [Phase 09 handoff](docs/plans/phase-09-handoff.md)
+for verification, observed latency and operational limits.
 
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
 and [phase 06 handoff](docs/plans/phase-06-handoff.md). The PRD, technical

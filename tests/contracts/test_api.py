@@ -25,7 +25,24 @@ async def client():
 @pytest.mark.allow_hosts(["127.0.0.1"])
 async def test_health_does_not_claim_unimplemented_dependencies_ready(client):
     assert (await client.get("/api/v1/health/live")).status_code == 200
-    assert (await client.get("/api/v1/health/ready")).status_code == 503
+    ready = await client.get("/api/v1/health/ready")
+    assert ready.status_code == 503
+    body = ready.json()
+    assert set(body) == {
+        "status",
+        "database",
+        "migrations",
+        "redis",
+        "artifacts",
+        "worker_heartbeat",
+    }
+    assert body["status"] == "not_ready"
+    assert body["database"] is False and body["migrations"] is False
+    assert body["redis"] is False and body["worker_heartbeat"] is False
+    assert isinstance(body["artifacts"], bool)
+    assert (
+        await client.get("/api/v1/health/ready", headers={"Authorization": ""})
+    ).status_code == 401
 
 
 async def test_project_creation_requires_owner_before_persistence(client):
@@ -58,6 +75,45 @@ async def test_bad_uuid_and_unknown_route_use_envelope(client):
         "code"
     ] == "INVALID_INPUT"
     assert (await client.get("/missing")).json()["error"]["code"] == "NOT_FOUND"
+
+
+async def test_public_demo_schema_excludes_private_fields(client):
+    schema = (await client.get("/openapi.json")).json()
+    schemas = schema["components"]["schemas"]
+    manifest = schemas["DemoManifest"]
+    assert set(manifest["properties"]) == {
+        "recorded",
+        "state",
+        "provenance",
+        "snapshot_id",
+        "published_at",
+        "findings",
+        "assets",
+        "metrics",
+        "architecture",
+        "limitations",
+    }
+    finding = schemas["PublicDemoFinding"]
+    forbidden = {
+        "experiment_id",
+        "project_id",
+        "contract_id",
+        "target_config_id",
+        "mutation_id",
+        "prompt",
+        "notes",
+        "reviewer",
+        "raw_text",
+        "usage",
+        "evidence",
+    }
+    assert forbidden.isdisjoint(finding["properties"])
+    assert forbidden.isdisjoint(schemas["PublicDemoAsset"]["properties"])
+    assert forbidden.isdisjoint(schemas["PublicDemoMetrics"]["properties"])
+    paths = schema["paths"]
+    assert "/api/v1/public/demo/assets/{public_asset_id}/content" in paths
+    assert "/api/v1/experiments/{experiment_id}/demo-snapshot" in paths
+    assert "/api/v1/demo-snapshots/{snapshot_id}/publish" in paths
 
 
 async def test_openapi_registers_real_typed_contracts(client):

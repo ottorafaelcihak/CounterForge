@@ -1,0 +1,19 @@
+# Task-owned Phase 09 operational rehearsal override.
+# Use only with an explicit project and .env.example, never the default stack:
+#   docker compose --env-file .env.example -p counterforge-phase09-ops \
+#     -f compose.yaml -f compose.rehearsal.yaml config --quiet
+# Distinct loopback ports and the project-scoped volumes/network keep this
+# rehearsal from touching the default containers or unrelated services.
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:${OPS_POSTGRES_PORT:-55433}:5432"
+  redis:
+    ports: !override
+      - "127.0.0.1:${OPS_REDIS_PORT:-56380}:6379"
+  api:
+    ports: !override
+      - "127.0.0.1:${OPS_API_PORT:-58001}:8000"
+  web:
+    ports: !override
+      - "127.0.0.1:${OPS_WEB_PORT:-53001}:3000"

@@ -46,6 +46,17 @@ class Health(ContractModel):
     schema_version: Literal["1.0.0"] = "1.0.0"
 
 
+class Readiness(ContractModel):
+    """Owner-only structured readiness booleans; no URLs, paths or secrets."""
+
+    status: Literal["ready", "not_ready"]
+    database: bool
+    migrations: bool
+    redis: bool
+    artifacts: bool
+    worker_heartbeat: bool
+
+
 class Page[T](ContractModel):
     items: list[T]
     next_cursor: str | None = None
@@ -188,6 +199,23 @@ class ValidationReport(ContractModel):
     review_audit: ReviewAudit | None = None
 
 
+class ObservationCounts(ContractModel):
+    """Stored observations, with uncertainty retained in the total denominator."""
+
+    total: int = Field(ge=0)
+    interpretable: int = Field(ge=0)
+    correct: int = Field(ge=0)
+    incorrect: int = Field(ge=0)
+    unknown: int = Field(ge=0)
+    provider_errors: int = Field(ge=0)
+
+
+class MetricReportReference(ContractModel):
+    mutation_id: UUID
+    revision: int = Field(ge=1)
+    report_asset_id: UUID
+
+
 class Metrics(ContractModel):
     generated_candidates: int = Field(ge=0)
     valid_candidates: int = Field(ge=0)
@@ -199,6 +227,13 @@ class Metrics(ContractModel):
     actual_provider_usage_usd: FiniteNumber = Field(ge=0)
     conservative_estimate_usd: FiniteNumber = Field(ge=0)
     unresolved_charges_usd: FiniteNumber = Field(ge=0)
+    screening: ObservationCounts | None = None
+    confirmation: ObservationCounts | None = None
+    finding_counts: dict[FindingStatus, int] = Field(default_factory=dict)
+    spend_by_category: dict[Literal["PLANNER", "IMAGE", "SAM", "TARGET", "OTHER"], "JobUsage"] = (
+        Field(default_factory=dict)
+    )
+    report_references: list[MetricReportReference] = Field(default_factory=list)
 
 
 class ExperimentView(ContractModel):
@@ -376,13 +411,82 @@ class ExportRef(ContractModel):
     error_code: str | None = None
 
 
+class PublicDemoAsset(ContractModel):
+    """One image selected for the public snapshot under a fresh opaque ID.
+
+    The ID is minted for the snapshot and maps only to approved snapshot
+    bytes; it is never a private artifact, experiment or finding ID.
+    """
+
+    id: UUID
+    role: Literal["ORIGINAL", "MUTATED"]
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    media_type: Literal["image/png", "image/jpeg", "image/webp"]
+    width: int = Field(ge=1)
+    height: int = Field(ge=1)
+    content_url: LocalLink = Field(pattern=r"^/api/v1/public/demo/assets/[0-9a-f-]+/content$")
+
+
+class PublicDemoFinding(ContractModel):
+    """Sanitized finding summary: counts and verdicts only, no evidence text."""
+
+    id: UUID
+    status: Literal["STABLE"] = "STABLE"
+    ground_truth_count: int = Field(ge=0, le=1000)
+    model_adapter: Literal["META_SPARK", "LOCAL_FIXTURE"]
+    model_id: str
+    mutation_family: MutationFamily
+    mutation_strength: FiniteNumber = Field(ge=0, le=1)
+    confirmation_incorrect: int = Field(ge=0)
+    confirmation_attempts: int = Field(ge=0)
+    qualification: str
+    asset_ids: list[UUID]
+
+
+class PublicDemoMetrics(ContractModel):
+    """Whole-run counts except stable_findings: approved findings in this snapshot."""
+
+    generated_candidates: int = Field(ge=0)
+    valid_candidates: int = Field(ge=0)
+    invalid_candidates: int = Field(ge=0)
+    review_required_candidates: int = Field(ge=0)
+    valid_screening_calls: int = Field(ge=0)
+    total_target_calls: int = Field(ge=0)
+    stable_findings: int = Field(
+        ge=0, description="Approved findings in this snapshot, not a whole-run total."
+    )
+
+
 class DemoManifest(ContractModel):
     recorded: Literal[True] = True
+    state: Literal["EMPTY", "PUBLISHED", "FIXTURE_PREVIEW"]
+    provenance: Literal["REAL_PROVIDER", "LOCAL_FIXTURE"] | None = None
+    snapshot_id: UUID | None = None
+    published_at: datetime | None = None
+    findings: list[PublicDemoFinding] = Field(default_factory=list)
+    assets: list[PublicDemoAsset] = Field(default_factory=list)
+    metrics: PublicDemoMetrics | None = None
+    architecture: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class DemoSnapshot(ContractModel):
+    """Private owner view of snapshot preparation/publication state."""
+
+    id: UUID
+    status: Literal["DRAFT", "PUBLISHED", "REVOKED", "SUPERSEDED"]
     provenance: Literal["REAL_PROVIDER", "LOCAL_FIXTURE"]
-    experiment: ExperimentView
-    findings: list[Finding]
-    public_asset_ids: list[UUID]
-    limitations: list[str]
+    source_experiment_id: UUID
+    source_experiment_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_report_sha256: list[str] = Field(default_factory=list)
+    finding_count: int = Field(ge=0)
+    asset_count: int = Field(ge=0)
+    prepared_by: str
+    prepared_at: datetime
+    published_by: str | None = None
+    published_at: datetime | None = None
+    publication_intent: str | None = None
 
 
 class MaskRevision(Mask):

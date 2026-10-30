@@ -14,6 +14,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   const [finding, setFinding] = useState<Finding | null>(null), [exports, setExports] = useState<ExportRecord[]>([]);
   const [loadError, setLoadError] = useState(""), [actionError, setActionError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showMask, setShowMask] = useState(false), [showDiff, setShowDiff] = useState(false);
   const exportKey = useRef<string | null>(null), reload = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     let active = true, fetching = false;
@@ -64,10 +65,17 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         {finding.mutation_id && <Link href={"/mutations/" + finding.mutation_id}>Open candidate review and audit history</Link>}
       </section>
       {!evidence && <p className="review-warning">Retained detailed evidence requires review or repair. Open the candidate audit history; export remains unavailable.</p>}
-      <MinimizationPanel findingId={findingId} eligible={!!evidence?.export_eligible} />
+      <MinimizationPanel findingId={findingId} eligible={!loadError && !!evidence?.export_eligible} />
       {evidence && <>
-        <section className="form-panel"><h2>Retained images</h2><div className="evidence-image-grid">{["original", "candidate", "diff", "protected_mask"].map(role => { const asset = evidence.assets[role]; return asset ? <figure key={role}><figcaption>{role.replaceAll("_", " ")}</figcaption>{/* Authenticated immutable evidence; native images preserve exact bytes. */}
-          <img src={assetURL(asset.asset_id)} alt={role.replaceAll("_", " ") + " evidence"} /><details><summary>SHA-256</summary><code>{asset.sha256}</code></details></figure> : null; })}</div></section>
+        <section className="form-panel"><h2>Retained images</h2>
+          <div className="image-controls"><label className="checkbox"><input type="checkbox" checked={showMask} onChange={event => setShowMask(event.target.checked)} disabled={!evidence.assets.protected_mask} />Show protected mask overlay</label><label className="checkbox"><input type="checkbox" checked={showDiff} onChange={event => setShowDiff(event.target.checked)} disabled={!evidence.assets.diff} />Show pixel difference</label></div>
+          {!evidence.assets.protected_mask && <p>Protected mask unavailable. Inspect candidate review before relying on these images.</p>}
+          {!evidence.assets.diff && <p>Pixel difference unavailable for this retained evidence, so the difference toggle is disabled.</p>}
+          <div className="evidence-image-grid">{["original", "candidate", ...(showDiff ? ["diff"] : []), ...(showMask ? ["protected_mask"] : [])].map(role => { const asset = evidence.assets[role]; return asset ? <figure key={role}><figcaption>{role.replaceAll("_", " ")}</figcaption>
+            <div className="finding-image"><img src={assetURL(asset.asset_id)} alt={role.replaceAll("_", " ") + " evidence for the human count of " + finding.ground_truth.value} />
+              {showMask && role === "candidate" && evidence.assets.protected_mask && <img className="protected-mask-overlay" src={assetURL(evidence.assets.protected_mask.asset_id)} alt="Protected object region overlay; separate mask image below" />}</div>
+            <p><a href={assetURL(asset.asset_id)} download={role + ".png"}>Download {role.replaceAll("_", " ")} evidence</a></p><details><summary>SHA-256</summary><code>{asset.sha256}</code></details></figure> : null; })}</div>
+        </section>
         <section className="form-panel"><h2>Validity and independent review</h2><p>{evidence.validation.confidence_note}</p><p>Verifier <code>{evidence.validation.verifier_version}</code> · policy <code>{evidence.validation.policy_version}</code></p>
           <ul className="evidence-checks">{evidence.validation.checks.map((check, index) => <li key={index}><strong>{check.code.replaceAll("_", " ")}: {check.status}</strong><div><p>{check.detail || (check.mandatory ? "Required invariant check" : "Supporting measurement")}</p><details><summary>Check measurements</summary><pre>{JSON.stringify(check, null, 2)}</pre></details></div></li>)}</ul>
           {evidence.validation.review_audit ? <><h3>Human review</h3><p>Reviewer: {evidence.validation.review_audit.actor}</p><p>{evidence.validation.review_audit.note}</p><p>Semantics: {evidence.validation.review_audit.semantic} · visibility: {evidence.validation.review_audit.visibility}</p></> : <p>No human override is recorded in the current report.</p>}
@@ -81,12 +89,12 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         <section className="form-panel"><h2>Export and showcase</h2><p>{evidence.qualification}</p>
           {!evidence.export_eligible && <p className="review-warning">Export unavailable: {evidence.export_blocked_reasons.join(", ") || "Current evidence does not meet the stable export requirements."}</p>}
           {actionError && <p className="error" role="alert">{actionError} Retrying the same request preserves its idempotency key.</p>}
-          <div className="actions"><button className="primary" data-testid="request-export" disabled={busy || pending || ready || failed || !evidence.export_eligible} onClick={() => requestExport(false)}>{busy ? "Requesting…" : pending ? "Export in progress" : ready ? "Verified export available" : failed ? "Export failed; start a new attempt" : "Request regression export"}</button>
-          {failed && !pending && !ready && <button disabled={busy || !evidence.export_eligible} onClick={() => requestExport(true)}>Retry failed export as a new attempt</button>}
-          <button disabled={busy || finding.demo_approved || !evidence.export_eligible} onClick={approveDemo}>{finding.demo_approved ? "Approved for showcase" : "Approve finding for showcase"}</button></div><p className="muted">Showcase approval is a separate human decision. Exporting does not grant it.</p>
+          <div className="actions"><button className="primary" data-testid="request-export" disabled={!!loadError || busy || pending || ready || failed || !evidence.export_eligible} onClick={() => requestExport(false)}>{busy ? "Requesting…" : pending ? "Export in progress" : ready ? "Verified export available" : failed ? "Export failed; start a new attempt" : "Request regression export"}</button>
+          {failed && !pending && !ready && <button disabled={!!loadError || busy || !evidence.export_eligible} onClick={() => requestExport(true)}>Retry failed export as a new attempt</button>}
+          <button disabled={!!loadError || busy || finding.demo_approved || !evidence.export_eligible} onClick={approveDemo}>{finding.demo_approved ? "Approved for showcase" : "Approve finding for showcase"}</button></div><p className="muted">Showcase approval is a separate human decision. Exporting does not grant it.</p>
         </section>
       </>}
-      <section className="export-list" aria-label="Finding exports">{exports.map(record => <ExportCard key={record.export_id} record={record} verificationAllowed={!!evidence?.export_eligible} />)}</section>
+      <section className="export-list" aria-label="Finding exports">{exports.map(record => <ExportCard key={record.export_id} record={record} verificationAllowed={!loadError && !!evidence?.export_eligible} />)}</section>
       <RunnerInstructions />
     </>}
   </main>;

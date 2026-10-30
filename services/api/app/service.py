@@ -44,7 +44,7 @@ from counterforge_contracts.responses import (
 )
 from counterforge_contracts.versions import ErrorCode
 from counterforge_contracts.vtc import ExpectedCount, Limits, VisualTestContract
-from sqlalchemy import Table, case, func, literal, select, union_all
+from sqlalchemy import Table, and_, case, func, literal, or_, select, union_all
 from sqlalchemy.engine import RowMapping
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -317,6 +317,41 @@ class Service:
         )
         return Page(
             items=[render(row) for row in rows[:limit]],
+            next_cursor=(
+                self._cursor(scope, cast(UUID, rows[limit - 1]["id"]))
+                if len(rows) > limit
+                else None
+            ),
+        )
+
+    def latest_experiments(
+        self, project_id: UUID, limit: int, cursor: str | None
+    ) -> Page[ExperimentView]:
+        """Newest-first bounded page; clients never scan every retained run."""
+        table = self.t.experiments
+        scope = f"experiments-latest:{project_id}"
+        conditions: list[ColumnElement[bool]] = [table.c.project_id == project_id]
+        if cursor:
+            cursor_id = self._cursor_id(scope, cursor)
+            anchor = self.row(table, cursor_id)
+            conditions.append(
+                or_(
+                    table.c.created_at < anchor["created_at"],
+                    and_(table.c.created_at == anchor["created_at"], table.c.id < cursor_id),
+                )
+            )
+        rows = (
+            self.db.execute(
+                select(table)
+                .where(*conditions)
+                .order_by(table.c.created_at.desc(), table.c.id.desc())
+                .limit(limit + 1)
+            )
+            .mappings()
+            .all()
+        )
+        return Page(
+            items=[self.experiment_dto(row) for row in rows[:limit]],
             next_cursor=(
                 self._cursor(scope, cast(UUID, rows[limit - 1]["id"]))
                 if len(rows) > limit
@@ -894,6 +929,7 @@ class Service:
         )
         from .accounting import Budget
         from .planner_history import planner_history, planning_batches
+        from .product_metrics import stored_metric_details
 
         return ExperimentView(
             search_policy=row["config_snapshot"].get("search_policy", "ONE_SHOT"),
@@ -911,6 +947,7 @@ class Service:
                 max_runtime_seconds=row["max_runtime_seconds"],
             ),
             metrics=Metrics(
+                **stored_metric_details(self, row["id"]),
                 generated_candidates=generated or 0,
                 valid_candidates=counts.get("VALID", 0),
                 invalid_candidates=counts.get("INVALID", 0),

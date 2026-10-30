@@ -122,3 +122,23 @@ class BackgroundRequest(ContractModel):
 
 class CandidateSegmentationRequest(ContractModel):
     limits: JobLimits
+
+
+class DemoSnapshotPrepareRequest(ContractModel):
+    """Optional preparation choices; preparation itself never publishes."""
+
+    include_seed_image: bool = False
+
+
+class DemoPublicationRequest(ContractModel):
+    """Explicit operator publication intent; preparation alone never publishes.
+
+    Republication rights are distinct from the private seed-use license
+    acknowledgement: the operator must confirm them for the exact prepared
+    manifest hash being published.
+    """
+
+    publication_intent: str = Field(min_length=10, max_length=500)
+    confirm_publication: Literal[True]
+    redistribution_rights_acknowledged: Literal[True]
+    manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")

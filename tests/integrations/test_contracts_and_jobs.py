@@ -267,7 +267,11 @@ async def test_job_creation_is_durable_and_idempotency_conflicts_are_explicit(ap
         assert uow.connection.execute(select(uow.tables.usage_events)).all() == []
 
 
-async def test_public_asset_access_requires_explicit_whitelist(api, vtc_payload):
+async def test_public_asset_legacy_whitelist_grants_nothing(api, vtc_payload):
+    # Superseded by the Phase 09 snapshot whitelist: a legacy whitelist row
+    # alone must not grant anonymous access to private asset bytes. Public
+    # images are served only through snapshot-bound public asset IDs (see
+    # tests/integrations/test_public_demo.py).
     seed, _, _ = await setup_case(api, vtc_payload)
     asset_id = UUID(seed["image_asset_id"])
     path = f"/api/v1/assets/{asset_id}/content"
@@ -278,7 +282,8 @@ async def test_public_asset_access_requires_explicit_whitelist(api, vtc_payload)
             {"id": asset_id},
         )
         uow.commit()
-    response = await api.client.get(path, headers={"Authorization": ""})
+    assert (await api.client.get(path, headers={"Authorization": ""})).status_code == 401
+    response = await api.client.get(path)
     assert response.status_code == 200 and response.content == png()
     assert (
         await api.client.get(f"/api/v1/assets/{uuid4()}/content", headers={"Authorization": ""})

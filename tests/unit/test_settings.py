@@ -96,7 +96,8 @@ def test_readiness_performs_real_artifact_probe_and_reports_unavailable_services
     )
     result = probe_dependencies(settings)
     assert result.artifacts is True
-    assert result.database is False and result.redis is False and result.ready is False
+    assert result.database is False and result.migrations is False
+    assert result.redis is False and result.worker_heartbeat is False and result.ready is False
     assert list(tmp_path.iterdir()) == []
     blocked = tmp_path / "file"
     blocked.write_text("not a directory")

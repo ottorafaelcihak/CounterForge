@@ -72,6 +72,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/demo-snapshots/{snapshot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Demo Snapshot */
+        get: operations["get_demo_snapshot_api_v1_demo_snapshots__snapshot_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demo-snapshots/{snapshot_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Demo Snapshot */
+        post: operations["publish_demo_snapshot_api_v1_demo_snapshots__snapshot_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demo-snapshots/{snapshot_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Demo Snapshot */
+        post: operations["revoke_demo_snapshot_api_v1_demo_snapshots__snapshot_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/experiments": {
         parameters: {
             query?: never;
@@ -117,6 +168,23 @@ export interface paths {
         put?: never;
         /** Cancel */
         post: operations["cancel_api_v1_experiments__experiment_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/experiments/{experiment_id}/demo-snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare Demo Snapshot */
+        post: operations["prepare_demo_snapshot_api_v1_experiments__experiment_id__demo_snapshot_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -671,6 +739,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/demo/assets/{public_asset_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Demo Asset */
+        get: operations["get_public_demo_asset_api_v1_public_demo_assets__public_asset_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/regressions": {
         parameters: {
             query?: never;
@@ -1085,24 +1170,116 @@ export interface components {
         };
         /** DemoManifest */
         DemoManifest: {
-            experiment: components["schemas"]["ExperimentView"];
+            /** Architecture */
+            architecture?: string[];
+            /** Assets */
+            assets?: components["schemas"]["PublicDemoAsset"][];
             /** Findings */
-            findings: components["schemas"]["Finding"][];
+            findings?: components["schemas"]["PublicDemoFinding"][];
             /** Limitations */
-            limitations: string[];
-            /**
-             * Provenance
-             * @enum {string}
-             */
-            provenance: "REAL_PROVIDER" | "LOCAL_FIXTURE";
-            /** Public Asset Ids */
-            public_asset_ids: string[];
+            limitations?: string[];
+            metrics?: components["schemas"]["PublicDemoMetrics"] | null;
+            /** Provenance */
+            provenance?: ("LOCAL_FIXTURE" | "REAL_PROVIDER") | null;
+            /** Published At */
+            published_at?: string | null;
             /**
              * Recorded
              * @default true
              * @constant
              */
             recorded: true;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "EMPTY" | "PUBLISHED" | "FIXTURE_PREVIEW";
+        };
+        /**
+         * DemoPublicationRequest
+         * @description Explicit operator publication intent; preparation alone never publishes.
+         *
+         *     Republication rights are distinct from the private seed-use license
+         *     acknowledgement: the operator must confirm them for the exact prepared
+         *     manifest hash being published.
+         */
+        DemoPublicationRequest: {
+            /**
+             * Confirm Publication
+             * @constant
+             */
+            confirm_publication: true;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Publication Intent */
+            publication_intent: string;
+            /**
+             * Redistribution Rights Acknowledged
+             * @constant
+             */
+            redistribution_rights_acknowledged: true;
+        };
+        /**
+         * DemoSnapshot
+         * @description Private owner view of snapshot preparation/publication state.
+         */
+        DemoSnapshot: {
+            /** Asset Count */
+            asset_count: number;
+            /** Finding Count */
+            finding_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /**
+             * Prepared At
+             * Format: date-time
+             */
+            prepared_at: string;
+            /** Prepared By */
+            prepared_by: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "REAL_PROVIDER" | "LOCAL_FIXTURE";
+            /** Publication Intent */
+            publication_intent?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Published By */
+            published_by?: string | null;
+            /**
+             * Source Experiment Id
+             * Format: uuid
+             */
+            source_experiment_id: string;
+            /** Source Experiment Sha256 */
+            source_experiment_sha256: string;
+            /** Source Report Sha256 */
+            source_report_sha256?: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "DRAFT" | "PUBLISHED" | "REVOKED" | "SUPERSEDED";
+        };
+        /**
+         * DemoSnapshotPrepareRequest
+         * @description Optional preparation choices; preparation itself never publishes.
+         */
+        DemoSnapshotPrepareRequest: {
+            /**
+             * Include Seed Image
+             * @default false
+             */
+            include_seed_image: boolean;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -1843,18 +2020,45 @@ export interface components {
              */
             seed_id: string;
         };
+        /** MetricReportReference */
+        MetricReportReference: {
+            /**
+             * Mutation Id
+             * Format: uuid
+             */
+            mutation_id: string;
+            /**
+             * Report Asset Id
+             * Format: uuid
+             */
+            report_asset_id: string;
+            /** Revision */
+            revision: number;
+        };
         /** Metrics */
         Metrics: {
             /** Actual Provider Usage Usd */
             actual_provider_usage_usd: number;
+            confirmation?: components["schemas"]["ObservationCounts"] | null;
             /** Conservative Estimate Usd */
             conservative_estimate_usd: number;
+            /** Finding Counts */
+            finding_counts?: {
+                [key: string]: number;
+            };
             /** Generated Candidates */
             generated_candidates: number;
             /** Invalid Candidates */
             invalid_candidates: number;
+            /** Report References */
+            report_references?: components["schemas"]["MetricReportReference"][];
             /** Review Required Candidates */
             review_required_candidates: number;
+            screening?: components["schemas"]["ObservationCounts"] | null;
+            /** Spend By Category */
+            spend_by_category?: {
+                [key: string]: components["schemas"]["JobUsage"];
+            };
             /** Stable Findings */
             stable_findings: number;
             /** Total Target Calls */
@@ -2082,6 +2286,24 @@ export interface components {
             /** Revision */
             revision: number;
         };
+        /**
+         * ObservationCounts
+         * @description Stored observations, with uncertainty retained in the total denominator.
+         */
+        ObservationCounts: {
+            /** Correct */
+            correct: number;
+            /** Incorrect */
+            incorrect: number;
+            /** Interpretable */
+            interpretable: number;
+            /** Provider Errors */
+            provider_errors: number;
+            /** Total */
+            total: number;
+            /** Unknown */
+            unknown: number;
+        };
         /** Page[Contract] */
         Page_Contract_: {
             /** Items */
@@ -2288,6 +2510,119 @@ export interface components {
             mask_asset_ids: string[];
             /** Min Visible Fraction */
             min_visible_fraction: number;
+        };
+        /**
+         * PublicDemoAsset
+         * @description One image selected for the public snapshot under a fresh opaque ID.
+         *
+         *     The ID is minted for the snapshot and maps only to approved snapshot
+         *     bytes; it is never a private artifact, experiment or finding ID.
+         */
+        PublicDemoAsset: {
+            /** Content Url */
+            content_url: string;
+            /** Height */
+            height: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Media Type
+             * @enum {string}
+             */
+            media_type: "image/png" | "image/jpeg" | "image/webp";
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "ORIGINAL" | "MUTATED";
+            /** Sha256 */
+            sha256: string;
+            /** Width */
+            width: number;
+        };
+        /**
+         * PublicDemoFinding
+         * @description Sanitized finding summary: counts and verdicts only, no evidence text.
+         */
+        PublicDemoFinding: {
+            /** Asset Ids */
+            asset_ids: string[];
+            /** Confirmation Attempts */
+            confirmation_attempts: number;
+            /** Confirmation Incorrect */
+            confirmation_incorrect: number;
+            /** Ground Truth Count */
+            ground_truth_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Model Adapter
+             * @enum {string}
+             */
+            model_adapter: "META_SPARK" | "LOCAL_FIXTURE";
+            /** Model Id */
+            model_id: string;
+            mutation_family: components["schemas"]["MutationFamily"];
+            /** Mutation Strength */
+            mutation_strength: number;
+            /** Qualification */
+            qualification: string;
+            /**
+             * Status
+             * @default STABLE
+             * @constant
+             */
+            status: "STABLE";
+        };
+        /**
+         * PublicDemoMetrics
+         * @description Whole-run counts except stable_findings: approved findings in this snapshot.
+         */
+        PublicDemoMetrics: {
+            /** Generated Candidates */
+            generated_candidates: number;
+            /** Invalid Candidates */
+            invalid_candidates: number;
+            /** Review Required Candidates */
+            review_required_candidates: number;
+            /**
+             * Stable Findings
+             * @description Approved findings in this snapshot, not a whole-run total.
+             */
+            stable_findings: number;
+            /** Total Target Calls */
+            total_target_calls: number;
+            /** Valid Candidates */
+            valid_candidates: number;
+            /** Valid Screening Calls */
+            valid_screening_calls: number;
+        };
+        /**
+         * Readiness
+         * @description Owner-only structured readiness booleans; no URLs, paths or secrets.
+         */
+        Readiness: {
+            /** Artifacts */
+            artifacts: boolean;
+            /** Database */
+            database: boolean;
+            /** Migrations */
+            migrations: boolean;
+            /** Redis */
+            redis: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "not_ready";
+            /** Worker Heartbeat */
+            worker_heartbeat: boolean;
         };
         /** ReproductionPolicy */
         ReproductionPolicy: {
@@ -3144,6 +3479,346 @@ export interface operations {
             };
         };
     };
+    get_demo_snapshot_api_v1_demo_snapshots__snapshot_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSnapshot"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    publish_demo_snapshot_api_v1_demo_snapshots__snapshot_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoPublicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSnapshot"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    revoke_demo_snapshot_api_v1_demo_snapshots__snapshot_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSnapshot"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     start_experiment_api_v1_experiments_post: {
         parameters: {
             query?: never;
@@ -3390,6 +4065,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExperimentRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    prepare_demo_snapshot_api_v1_experiments__experiment_id__demo_snapshot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DemoSnapshotPrepareRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoSnapshot"];
                 };
             };
             /** @description Unauthorized */
@@ -5565,7 +6356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Readiness"];
                 };
             };
             /** @description Unauthorized */
@@ -5655,7 +6446,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["Readiness"];
                 };
             };
         };
@@ -7389,6 +8180,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemoManifest"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_public_demo_asset_api_v1_public_demo_assets__public_asset_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                public_asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             /** @description Unauthorized */

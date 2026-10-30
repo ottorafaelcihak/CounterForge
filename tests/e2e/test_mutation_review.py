@@ -204,7 +204,13 @@ def test_candidate_evidence_review_and_explicit_audit(setup_stack, vtc_payload):
             stale_note = "Automated fixture: simulate a stale semantic rejection."
             decide("additional_object", "clear", stale_note)
             record.click()
-            expect(page.get_by_text("Review evidence is stale.", exact=True)).to_be_visible()
+            expect(
+                page.get_by_text(
+                    __import__("re").compile(
+                        r"^Review evidence is stale\.(?: Reference: [a-f0-9-]+)?$"
+                    )
+                )
+            ).to_be_visible()
             expect(record).to_be_disabled()
             reload = page.get_by_role("button", name="Reload evidence", exact=True)
             page.once("dialog", lambda dialog: dialog.dismiss())

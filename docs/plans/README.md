@@ -19,7 +19,12 @@ plus up to USD 0.012 unresolved; its Spark image timed out and random screening 
 correct. Phase 05 separately used 13 calls / USD 0.041512. No genuine stable failure
 or live regression export was demonstrated. Usable SAM masks on the illustration,
 automatic threshold calibration and held-out strategy evaluation remain unmet.
-Phases 08–11 remain planned.
+Phase 09 implements the completed owner journey, isolated recorded gallery and
+local operational hardening. Its [handoff](phase-09-handoff.md) records browser,
+restart/recovery, backup/restore and latency evidence. The real-provider snapshot
+is a private zero-finding draft; publication and redistribution approval remain
+Phase 10 actions. Phase 08's measured campaign remains gated as described above.
+Phases 10–11 remain planned.
 
 Read plans in order. Checked implementation gates refer to their verification
 handoffs; fixture success never substitutes for the outstanding live/human gates

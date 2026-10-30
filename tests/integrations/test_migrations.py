@@ -79,7 +79,7 @@ def test_fresh_migrations_preserve_baseline_and_map_original_names(migrated_engi
     with migrated_engine.connect() as connection:
         assert (
             connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0006_phase07_support"
+            == "0007_public_demo_snapshot"
         )
         tables = load_tables(connection)
         names = set(inspect(connection).get_table_names()) - {"alembic_version"}
@@ -250,8 +250,8 @@ def test_readiness_probes_postgres_without_changing_the_schema(migrated_engine, 
         {"ARTIFACT_ROOT": str(tmp_path), "REDIS_URL": "redis://127.0.0.1:1/0"}
     )
     result = probe_dependencies(settings, migrated_engine)
-    assert result.database is True and result.artifacts is True
-    assert result.redis is False and result.ready is False
+    assert result.database is True and result.migrations is True and result.artifacts is True
+    assert result.redis is False and result.worker_heartbeat is False and result.ready is False
     assert list(tmp_path.iterdir()) == []
 
 
@@ -270,7 +270,7 @@ def test_readiness_rejects_missing_or_behind_migrations(database_engine, tmp_pat
         }
     )
     result = probe_dependencies(settings, database_engine)
-    assert result.database is False and result.ready is False
+    assert result.database is True and result.migrations is False and result.ready is False
 
 
 def test_phase04_backfills_ordered_legacy_reports_and_appends_next(database_engine):
