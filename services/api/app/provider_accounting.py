@@ -472,3 +472,71 @@ class ExperimentAccounting(Accounting):
                 )
             uow.commit()
         return Ticket(self, key, intent)
+
+
+class FollowupAccounting(Accounting):
+    """Fenced MINIMIZE calls retain original experiment limits and proof bindings."""
+
+    def __init__(
+        self, *args: Any, mutation_id: UUID, invocation_sha256: str, **kwargs: Any
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutation_id, self.invocation_sha256 = mutation_id, invocation_sha256
+
+    def owned_job(self, uow: UnitOfWork, *, fence: bool = True) -> Any:
+        job = super().owned_job(uow, fence=fence)
+        if fence:
+            from .experiments import require_provider_mode
+            from .service import Service
+
+            s = Service(uow, self.settings)
+            e = s.row(s.t.experiments, job["experiment_id"], lock=True)
+            Budget(uow).require_followup(e, job["id"])
+            require_provider_mode(s, e)
+            candidate = s.candidates.row(self.mutation_id)
+            if (
+                candidate["minimization_job_id"] != job["id"]
+                or candidate["experiment_id"] != e["id"]
+            ):
+                raise ServiceError(ErrorCode.FORBIDDEN, "Probe lineage differs.", 403)
+            s.require_valid_candidate(self.mutation_id)
+        return job
+
+    async def reserve(self, intent: CallIntent) -> Ticket:
+        key = f"{self.job_id}:{self.purpose}:{self.mutation_id}:{intent.attempt}"
+        with self.factory() as uow:
+            job = self.owned_job(uow)
+            if self.settings.provider_mode == "DISABLED":
+                raise ServiceError(ErrorCode.INVALID_STATE, "Providers are disabled.")
+            Budget(uow).reserve_followup_operation(
+                job["experiment_id"],
+                self.job_id,
+                key,
+                intent.category,
+                Decimal(0) if self.synthetic else intent.upper_bound_usd,
+                target_calls=1,
+                provider="FIXTURE" if self.synthetic else "META",
+                model_id=intent.model,
+                semantic_sha256=intent.semantic_sha256,
+            )
+            u = uow.tables.usage_events
+            prior = (
+                uow.connection.execute(select(u).where(u.c.operation_key == key)).mappings().one()
+            )
+            digest = prior["metadata_json"].get("invocation_sha256")
+            if digest is not None and digest != self.invocation_sha256:
+                raise ServiceError(ErrorCode.REVIEW_REQUIRED, "Retained invocation differs.")
+            uow.connection.execute(
+                u.update()
+                .where(u.c.operation_key == key)
+                .values(
+                    pricing_revision=intent.pricing_revision,
+                    attempt_no=intent.attempt,
+                    metadata_json={
+                        **prior["metadata_json"],
+                        "invocation_sha256": self.invocation_sha256,
+                    },
+                )
+            )
+            uow.commit()
+        return Ticket(self, key, intent)

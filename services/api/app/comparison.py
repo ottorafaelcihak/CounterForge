@@ -172,6 +172,44 @@ def report(s: Service, manifest: dict[str, Any]) -> dict[str, Any]:
             rows(table)
             for table in (s.t.model_observations, s.t.mutations, s.t.findings, s.t.mutation_plans)
         )
+        # Followups share source evidence/caps, not discovery denominators.
+        refinement_jobs = set(
+            s.db.scalars(
+                select(s.t.background_jobs.c.id).where(
+                    s.t.background_jobs.c.experiment_id == eid,
+                    s.t.background_jobs.c.kind == "MINIMIZE",
+                )
+            )
+        )
+        refinement_usage = [r for r in usage if r["background_job_id"] in refinement_jobs]
+        source_usage = usage
+        usage = [r for r in usage if r["background_job_id"] not in refinement_jobs]
+        refined_ids = {m["id"] for m in mutations if m["minimization_job_id"] is not None}
+        refined_plans = {m["plan_id"] for m in mutations if m["id"] in refined_ids}
+        mutations = [m for m in mutations if m["id"] not in refined_ids]
+        findings = [f for f in findings if f["mutation_id"] not in refined_ids]
+        observations = [
+            o
+            for o in observations
+            if o["retest_job_id"] is None and o["mutation_id"] not in refined_ids
+        ]
+        plans = [p for p in plans if p["id"] not in refined_plans]
+        retest_jobs = s.db.scalars(
+            select(s.t.background_jobs.c.id).where(
+                s.t.background_jobs.c.kind == "RETEST",
+                s.t.background_jobs.c.finding_id.in_(
+                    select(s.t.findings.c.id).where(s.t.findings.c.experiment_id == eid)
+                ),
+            )
+        ).all()
+        retest_usage = [
+            dict(r)
+            for r in s.db.execute(
+                select(s.t.usage_events).where(
+                    s.t.usage_events.c.background_job_id.in_(retest_jobs)
+                )
+            ).mappings()
+        ]
         if any(p["created_at"] < declared for p in plans):
             raise ValueError("Mutation planning predates comparison declaration")
         verdicts: Counter[str] = Counter()
@@ -189,7 +227,7 @@ def report(s: Service, manifest: dict[str, Any]) -> dict[str, Any]:
             for phase in ("SEED_BASELINE", "SCREENING", "CONFIRMATION")
         }
         total_usage = summarize_usage(usage)
-        unsettled = any(r["status"] in {"RESERVED", "UNKNOWN_CHARGE"} for r in usage)
+        unsettled = any(r["status"] in {"RESERVED", "UNKNOWN_CHARGE"} for r in source_usage)
         arms.append(
             {
                 **arm,
@@ -202,7 +240,16 @@ def report(s: Service, manifest: dict[str, Any]) -> dict[str, Any]:
                 "candidate_validity": {
                     v: verdicts[v] for v in ("VALID", "INVALID", "REVIEW_REQUIRED")
                 },
-                "target_calls_consumed": e["calls_consumed"],
+                "target_calls_consumed": e["calls_consumed"]
+                - sum(
+                    r["request_count"]
+                    for r in refinement_usage
+                    if r["category"] == "TARGET" and r["dispatched_at"] is not None
+                ),
+                "source_target_calls_consumed": e["calls_consumed"],
+                "source_usage": summarize_usage(source_usage),
+                "refinement_usage": summarize_usage(refinement_usage),
+                "retest_usage": summarize_usage(retest_usage),
                 "target_cap": e["max_target_calls"],
                 "observations_by_phase": phases,
                 "valid_screening_observations": sum(
@@ -257,6 +304,17 @@ def markdown(result: dict[str, Any]) -> str:
         lines.append(
             f"| {a['mode']} | {a['state']} | {a['generated_candidates']} | {v['VALID']} / {v['INVALID']} / {v['REVIEW_REQUIRED']} | {a['target_calls_consumed']} / {a['target_cap']} | {p['SEED_BASELINE']['observations']} / {p['SCREENING']['observations']} / {p['CONFIRMATION']['observations']} | {a['suspected_findings_total']} / {a['stable_findings']} | {u['dispatched_requests']} | {u['actual_usd']} |"
         )
+    for arm in result["arms"]:
+        refinement = arm.get("refinement_usage", {})
+        retest = arm.get("retest_usage", {})
+        if refinement.get("request_slots_total", 0) or retest.get("request_slots_total", 0):
+            lines.append(
+                f"\n{arm['mode']} followups excluded from search discoveries/costs: "
+                f"refinement {refinement['dispatched_requests']} requests, actual USD {refinement['actual_usd']}; "
+                f"retest {retest['dispatched_requests']} requests, actual USD {retest['actual_usd']}. "
+                "Estimated, reserved and unknown followup costs remain in the JSON report; "
+                "source_usage and source_target_calls_consumed retain original cap exposure."
+            )
     return "\n".join(
         [
             *lines,

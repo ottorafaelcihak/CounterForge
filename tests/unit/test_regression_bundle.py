@@ -99,6 +99,35 @@ def test_bundle_has_all_members_hashes_and_deterministic_metadata():
         assert all(info.date_time == (1980, 1, 1, 0, 0, 0) for info in archive.infolist())
 
 
+def test_original_format_bundle_without_refinement_metadata_remains_readable_unchanged():
+    from counterforge_regression.bundle import build_bundle, canonical, verify_bundle
+    from counterforge_regression.manifest import RegressionManifest
+
+    bundle = build_bundle(example_manifest(), evidence())
+    with ZipFile(io.BytesIO(bundle.zip_bytes)) as archive:
+        members = {name: archive.read(name) for name in archive.namelist()}
+    original = json.loads(members["manifest.json"])
+    for field in ("parent_mutation_id", "parent_finding_id", "minimization_job_id"):
+        original.pop(field)
+    members["manifest.json"] = canonical(original)
+    members["sha256sums.txt"] = "".join(
+        f"{sha256(data).hexdigest()}  {name}\n"
+        for name, data in sorted(members.items())
+        if name != "sha256sums.txt"
+    ).encode()
+    output = io.BytesIO()
+    with ZipFile(output, "w") as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+    retained = output.getvalue()
+    verify_bundle(retained)
+    parsed = RegressionManifest.model_validate_json(members["manifest.json"])
+    assert (
+        parsed.parent_mutation_id is parsed.parent_finding_id is parsed.minimization_job_id is None
+    )
+    assert output.getvalue() == retained
+
+
 @pytest.mark.parametrize("damage", ["missing", "path", "secret", "binary-secret"])
 def test_bundle_rejects_missing_unsafe_or_secret_content(damage):
     from counterforge_regression.bundle import build_bundle

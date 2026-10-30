@@ -629,7 +629,11 @@ class Service:
 
     def start_experiment(self, body: StartExperiment, idempotency_key: str) -> ExperimentRef:
         self.project(body.project_id, lock=True)
-        digest = fingerprint(body.model_dump(mode="json"))
+        request = body.model_dump(mode="json")
+        if body.search_policy == "ONE_SHOT":
+            # Match pre-feedback fingerprints for safe retries across deployment.
+            request.pop("search_policy")
+        digest = fingerprint(request)
         previous = (
             self.db.execute(
                 select(self.t.experiments).where(
@@ -680,8 +684,11 @@ class Service:
         from counterforge_meta.usage import PriceBook
 
         prices = PriceBook.load(self.settings.pricing_path)
+        from counterforge_meta.spark import PLANNER_TEMPLATE
+
         snapshot = {
             **evidence,
+            "search_policy": body.search_policy,
             "contract": vtc.model_dump(mode="json"),
             "contract_sha256": contract["contract_sha256"],
             "limits": request_limits,
@@ -710,7 +717,11 @@ class Service:
                 "random_seed": body.random_seed
                 if body.random_seed is not None
                 else uuid4().int & (2**63 - 1),
-                "revision": "random-initial-v2"
+                "planner_template_revision": PLANNER_TEMPLATE,
+                "slot_strategy": "ordinal-mod5-zero-random-v1",
+                "revision": "feedback-v1"
+                if body.search_policy == "FEEDBACK_V1"
+                else "random-initial-v2"
                 if body.mode == "RANDOM_BASELINE"
                 else "spark-initial-v1",
                 "strength_range": [0, 1],
@@ -816,14 +827,21 @@ class Service:
             for verdict, count in self.db.execute(
                 select(latest.c.verdict, func.count())
                 .select_from(mutations.join(latest, mutations.c.id == latest.c.mutation_id))
-                .where(mutations.c.experiment_id == row["id"])
+                .where(
+                    mutations.c.experiment_id == row["id"],
+                    mutations.c.minimization_job_id.is_(None),
+                )
                 .group_by(latest.c.verdict)
             ).all()
         }
         generated = self.db.scalar(
             select(func.count())
             .select_from(mutations)
-            .where(mutations.c.experiment_id == row["id"], mutations.c.image_asset_id.is_not(None))
+            .where(
+                mutations.c.experiment_id == row["id"],
+                mutations.c.image_asset_id.is_not(None),
+                mutations.c.minimization_job_id.is_(None),
+            )
         )
         observations = self.t.model_observations
         screened = self.db.scalar(
@@ -835,18 +853,29 @@ class Service:
                 observations.c.experiment_id == row["id"],
                 observations.c.phase == "SCREENING",
                 latest.c.verdict == "VALID",
+                observations.c.mutation_id.in_(
+                    select(mutations.c.id).where(mutations.c.minimization_job_id.is_(None))
+                ),
             )
         )
         stable = self.db.scalar(
             select(func.count())
             .select_from(self.t.findings)
             .where(
-                self.t.findings.c.experiment_id == row["id"], self.t.findings.c.status == "STABLE"
+                self.t.findings.c.experiment_id == row["id"],
+                self.t.findings.c.status == "STABLE",
+                self.t.findings.c.mutation_id.in_(
+                    select(mutations.c.id).where(mutations.c.minimization_job_id.is_(None))
+                ),
             )
         )
         from .accounting import Budget
+        from .planner_history import planner_history, planning_batches
 
         return ExperimentView(
+            search_policy=row["config_snapshot"].get("search_policy", "ONE_SHOT"),
+            planner_history=planner_history(self, row["id"]),
+            planning_batches=planning_batches(self, row["id"]),
             id=row["id"],
             project_id=row["project_id"],
             contract_id=row["contract_id"],
@@ -964,6 +993,9 @@ class Service:
             )
         return JobRef(
             job_id=row["id"],
+            created_at=row["created_at"],
+            started_at=row["started_at"],
+            finished_at=row["finished_at"],
             state=row["state"],
             links=JobLinks(self=f"/api/v1/jobs/{row['id']}"),
             error_code=row["error_code"],
@@ -1176,6 +1208,7 @@ class Service:
             )
         details = dict(
             finding_id=f["id"],
+            project_id=e["project_id"],
             job_id=job["id"],
             provenance="LOCAL_FIXTURE"
             if e["config_snapshot"].get("provider_mode") == "FIXTURE"

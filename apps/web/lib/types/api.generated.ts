@@ -362,6 +362,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/findings/{finding_id}/minimizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Minimizations */
+        get: operations["minimizations_api_v1_findings__finding_id__minimizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/findings/{finding_id}/minimize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Minimize */
+        post: operations["minimize_api_v1_findings__finding_id__minimize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fixtures/development-seed": {
         parameters: {
             query?: never;
@@ -424,6 +458,40 @@ export interface paths {
         get: operations["get_job_api_v1_jobs__job_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Minimization */
+        post: operations["cancel_minimization_api_v1_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Minimization */
+        post: operations["resume_minimization_api_v1_jobs__job_id__resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -631,6 +699,23 @@ export interface paths {
         put?: never;
         /** Retest */
         post: operations["retest_api_v1_regressions__export_id__retest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regressions/{export_id}/retests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retests */
+        get: operations["retests_api_v1_regressions__export_id__retests_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1120,6 +1205,10 @@ export interface components {
              * @enum {string}
              */
             mode: "ADAPTIVE" | "RANDOM_BASELINE";
+            /** Planner History */
+            planner_history?: components["schemas"]["PlannerHistory"][];
+            /** Planning Batches */
+            planning_batches?: components["schemas"]["PlanningBatch"][];
             /**
              * Project Id
              * Format: uuid
@@ -1137,6 +1226,12 @@ export interface components {
             reserved_usd: number;
             /** Resume Blocked Reason */
             resume_blocked_reason?: string | null;
+            /**
+             * Search Policy
+             * @default ONE_SHOT
+             * @enum {string}
+             */
+            search_policy: "ONE_SHOT" | "FEEDBACK_V1";
             /**
              * Spent Usd
              * @default 0
@@ -1183,6 +1278,8 @@ export interface components {
             links: components["schemas"]["ExportLinks"];
             /** Manifest Sha256 */
             manifest_sha256?: string | null;
+            /** Project Id */
+            project_id?: string | null;
             /** Provenance */
             provenance?: ("LOCAL_FIXTURE" | "REAL_PROVIDER") | null;
             /** Runner Version */
@@ -1437,6 +1534,15 @@ export interface components {
              */
             status: "alive";
         };
+        /** HistoryOutcome */
+        HistoryOutcome: {
+            outcome: components["schemas"]["TargetOutcome"];
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "SCREENING" | "CONFIRMATION" | "RETEST";
+        };
         /** InferenceOptions */
         InferenceOptions: {
             /**
@@ -1474,8 +1580,12 @@ export interface components {
         };
         /** JobRef */
         JobRef: {
+            /** Created At */
+            created_at?: string | null;
             /** Error Code */
             error_code?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
             /**
              * Job Id
              * Format: uuid
@@ -1483,6 +1593,8 @@ export interface components {
             job_id: string;
             links: components["schemas"]["JobLinks"];
             result?: components["schemas"]["JobResult"] | null;
+            /** Started At */
+            started_at?: string | null;
             state: components["schemas"]["JobState"];
             usage?: components["schemas"]["JobUsage"];
         };
@@ -1506,6 +1618,7 @@ export interface components {
             expected_count?: number | null;
             /** Mask Asset Ids */
             mask_asset_ids?: string[];
+            minimization?: components["schemas"]["MinimizationResult"] | null;
             /** Original Background Asset Id */
             original_background_asset_id?: string | null;
             /** Original Background Sha256 */
@@ -1514,6 +1627,7 @@ export interface components {
             outcome: string;
             /** Parsed Count */
             parsed_count?: number | null;
+            retest?: components["schemas"]["RetestComparison"] | null;
             /**
              * Synthetic
              * @default false
@@ -1752,6 +1866,68 @@ export interface components {
             /** Valid Screening Calls */
             valid_screening_calls: number;
         };
+        /** MinimizationProbe */
+        MinimizationProbe: {
+            /** Confirmation Outcomes */
+            confirmation_outcomes?: components["schemas"]["TargetOutcome"][];
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Mutation Id */
+            mutation_id?: string | null;
+            /** Outcome */
+            outcome: string;
+            screening_outcome?: components["schemas"]["TargetOutcome"] | null;
+            /** Strength */
+            strength: number;
+        };
+        /** MinimizationResult */
+        MinimizationResult: {
+            /**
+             * Best Finding Id
+             * Format: uuid
+             */
+            best_finding_id: string;
+            /**
+             * Best Mutation Id
+             * Format: uuid
+             */
+            best_mutation_id: string;
+            /** Probe Limit */
+            probe_limit: number;
+            /** Probes */
+            probes?: components["schemas"]["MinimizationProbe"][];
+            /** Probes Used */
+            probes_used: number;
+            /**
+             * Qualification
+             * @default Simplest tested stable variant; no claim of a global minimum. Each child requires independent human review and three fresh incorrect confirmations.
+             */
+            qualification: string;
+            /**
+             * Source Finding Id
+             * Format: uuid
+             */
+            source_finding_id: string;
+            /**
+             * Source Mutation Id
+             * Format: uuid
+             */
+            source_mutation_id: string;
+            /** Stop Reason */
+            stop_reason: string;
+            /** Usage */
+            usage?: {
+                [key: string]: number;
+            };
+        };
+        /** MinimizeRequest */
+        MinimizeRequest: {
+            /**
+             * Probe Limit
+             * @default 8
+             */
+            probe_limit: number;
+        };
         /** ModelIdentity */
         ModelIdentity: {
             /**
@@ -1793,6 +1969,8 @@ export interface components {
             mask_snapshot?: {
                 [key: string]: unknown;
             }[];
+            /** Minimization Job Id */
+            minimization_job_id?: string | null;
             /** Parent Mutation Id */
             parent_mutation_id?: string | null;
             /** Protected Label */
@@ -1932,6 +2110,13 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** Page[JobRef] */
+        Page_JobRef_: {
+            /** Items */
+            items: components["schemas"]["JobRef"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /** Page[MaskRevision] */
         Page_MaskRevision_: {
             /** Items */
@@ -1981,6 +2166,64 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** PlannerHistory */
+        PlannerHistory: {
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd: number;
+            family: components["schemas"]["MutationFamily"];
+            /**
+             * Hypothesis
+             * @default
+             */
+            hypothesis: string;
+            /** Reason Codes */
+            reason_codes?: string[];
+            /** Recipe Parameters */
+            recipe_parameters?: {
+                [key: string]: number | string | boolean;
+            };
+            /** Strength */
+            strength: number;
+            /** Target Outcomes */
+            target_outcomes?: components["schemas"]["HistoryOutcome"][];
+            validity?: components["schemas"]["ValidityVerdict"] | null;
+        };
+        /** PlanningBatch */
+        PlanningBatch: {
+            /** Author */
+            author: string;
+            /** Cost Components */
+            cost_components: {
+                [key: string]: number;
+            };
+            /** Exploration Reserved */
+            exploration_reserved: number;
+            /** Exploration Used */
+            exploration_used: number;
+            /** Fallback Reason */
+            fallback_reason?: string | null;
+            /** History Snapshot */
+            history_snapshot: components["schemas"]["PlannerHistory"][];
+            /** Policy Revision */
+            policy_revision: string;
+            /** Random Seed */
+            random_seed: number;
+            /** Rankings */
+            rankings: components["schemas"]["ProposalRanking"][];
+            /** Remaining Budget */
+            remaining_budget: {
+                [key: string]: number;
+            };
+            /** Slot Index */
+            slot_index: number;
+            /** Slot Strategy */
+            slot_strategy: string;
+            /** Template Revision */
+            template_revision: string;
+        };
         /** Project */
         Project: {
             /**
@@ -2003,6 +2246,37 @@ export interface components {
              * @constant
              */
             task_type: "object_counting";
+        };
+        /** ProposalRanking */
+        ProposalRanking: {
+            /** Estimated Cost Usd */
+            estimated_cost_usd: number;
+            /** Explore */
+            explore: number;
+            family: components["schemas"]["MutationFamily"];
+            /** Family Trials */
+            family_trials: number;
+            /** Hypothesis */
+            hypothesis: string;
+            /** P Failure */
+            p_failure: number;
+            /** P Valid */
+            p_valid: number;
+            /** Proposal Order */
+            proposal_order: number;
+            /** Rank */
+            rank?: number | null;
+            /** Rejection Reason */
+            rejection_reason?: string | null;
+            /** Score */
+            score: number;
+            /**
+             * Selected
+             * @default false
+             */
+            selected: boolean;
+            /** Strength */
+            strength: number;
         };
         /** ProtectedObjects */
         ProtectedObjects: {
@@ -2028,14 +2302,108 @@ export interface components {
              */
             required_failures: number;
         };
-        /** RetestRequest */
-        RetestRequest: {
-            limits?: components["schemas"]["Limits"];
+        /** RetestComparison */
+        RetestComparison: {
+            /** Bundle Sha256 */
+            bundle_sha256: string;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "FIXED" | "PERSISTENT" | "INTERMITTENT" | "INCONCLUSIVE";
+            /** Completed Attempts */
+            completed_attempts: number;
+            /** Correct */
+            correct: number;
+            /** Errors */
+            errors: number;
+            /** Expected Count */
+            expected_count: number;
+            /**
+             * Export Id
+             * Format: uuid
+             */
+            export_id: string;
+            /**
+             * Historical Fresh Attempts
+             * @default 3
+             */
+            historical_fresh_attempts: number;
+            /**
+             * Historical Fresh Incorrect
+             * @default 3
+             */
+            historical_fresh_incorrect: number;
+            /**
+             * Historical Screening Incorrect
+             * @default 1
+             */
+            historical_screening_incorrect: number;
+            /** Incorrect */
+            incorrect: number;
+            /** Input Sha256 */
+            input_sha256: string;
+            /** Interpretable Attempts */
+            interpretable_attempts: number;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Observation Ids */
+            observation_ids?: string[];
+            /**
+             * Planned Attempts
+             * @default 3
+             * @constant
+             */
+            planned_attempts: 3;
+            /** Prompt Sha256 */
+            prompt_sha256: string;
+            /**
+             * Qualification
+             * @default Coverage is completed/3; correctness uses interpretable attempts only. Configured revisions are owner labels, not proof of the actual served model version. Provider-managed behavior may change; LOCAL_FIXTURE is simulated.
+             */
+            qualification: string;
+            /**
+             * Source Finding Id
+             * Format: uuid
+             */
+            source_finding_id: string;
+            /** Stop Reason */
+            stop_reason?: string | null;
+            target_a: components["schemas"]["RetestTarget"];
+            target_b: components["schemas"]["RetestTarget"];
             /**
              * Target Config Id
              * Format: uuid
              */
             target_config_id: string;
+            /** Unknown */
+            unknown: number;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** RetestRequest */
+        RetestRequest: {
+            limits: components["schemas"]["JobLimits"];
+            /**
+             * Target Config Id
+             * Format: uuid
+             */
+            target_config_id: string;
+        };
+        /** RetestTarget */
+        RetestTarget: {
+            /**
+             * Adapter Key
+             * @enum {string}
+             */
+            adapter_key: "META_SPARK" | "LOCAL_FIXTURE";
+            /** Configured Revision */
+            configured_revision: string;
+            inference_options: components["schemas"]["InferenceOptions"];
+            /** Model Id */
+            model_id: string;
+            /** Observed Revisions */
+            observed_revisions?: string[];
         };
         /** ReviewAudit */
         ReviewAudit: {
@@ -2170,6 +2538,12 @@ export interface components {
             project_id: string;
             /** Random Seed */
             random_seed?: number | null;
+            /**
+             * Search Policy
+             * @default ONE_SHOT
+             * @enum {string}
+             */
+            search_policy: "ONE_SHOT" | "FEEDBACK_V1";
             /**
              * Target Config Id
              * Format: uuid
@@ -4815,6 +5189,239 @@ export interface operations {
             };
         };
     };
+    minimizations_api_v1_findings__finding_id__minimizations_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_JobRef_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    minimize_api_v1_findings__finding_id__minimize_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MinimizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     development_seed_api_v1_fixtures_development_seed_get: {
         parameters: {
             query?: never;
@@ -5066,6 +5673,230 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    cancel_minimization_api_v1_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    resume_minimization_api_v1_jobs__job_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6768,7 +7599,9 @@ export interface operations {
     retest_api_v1_regressions__export_id__retest_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
             path: {
                 export_id: string;
             };
@@ -6787,6 +7620,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobRef"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    retests_api_v1_regressions__export_id__retests_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_JobRef_"];
                 };
             };
             /** @description Unauthorized */

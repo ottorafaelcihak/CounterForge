@@ -18,7 +18,9 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
   const [targets, setTargets] = useState<Target[]>([]), [runs, setRuns] = useState<Run[]>([]);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [contractId, setContractId] = useState(""), [targetId, setTargetId] = useState("");
-  const [mode, setMode] = useState<"ADAPTIVE" | "RANDOM_BASELINE">("ADAPTIVE");
+  const [mode, setMode] = useState<Start["mode"]>("ADAPTIVE");
+  const [policy, setPolicy] = useState<Start["search_policy"]>("ONE_SHOT");
+  const [randomSeed, setRandomSeed] = useState("20261029");
   const [limits, setLimits] = useState({ max_candidates: 3, max_target_calls: 8, max_estimated_usd: 10, max_runtime_seconds: 1200 });
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [loading, setLoading] = useState(true);
   const pending = useRef<{ body: string; key: string } | null>(null);
@@ -71,7 +73,10 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
       max_estimated_usd: Math.min(old.max_estimated_usd, cap.max_estimated_usd), max_runtime_seconds: Math.min(old.max_runtime_seconds, cap.max_runtime_seconds) }));
   }
   const ceiling = selected?.contract.contract.limits;
-  const valid = ceiling && Object.entries(limits).every(([key, value]) => Number.isFinite(value) && value > 0 && value <= ceiling[key as keyof typeof ceiling]) &&
+  const usesSeed = mode === "RANDOM_BASELINE" || policy === "FEEDBACK_V1";
+  const seedValue = Number(randomSeed);
+  const seedValid = !usesSeed || randomSeed.trim() !== "" && Number.isSafeInteger(seedValue) && seedValue >= 0;
+  const valid = seedValid && ceiling && Object.entries(limits).every(([key, value]) => Number.isFinite(value) && value > 0 && value <= ceiling[key as keyof typeof ceiling]) &&
     Number.isInteger(limits.max_candidates) && Number.isInteger(limits.max_target_calls) && limits.max_target_calls >= 3 &&
     Number.isInteger(limits.max_runtime_seconds) && limits.max_runtime_seconds >= 60;
 
@@ -79,7 +84,7 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
     event.preventDefault();
     if (busy || !valid || !contractId || !targetId) return;
     setBusy(true); setError("");
-    const body: Start = { project_id: projectId, contract_id: contractId, target_config_id: targetId, mode, limits };
+    const body: Start = { project_id: projectId, contract_id: contractId, target_config_id: targetId, mode, search_policy: mode === "ADAPTIVE" ? policy : "ONE_SHOT", limits, ...(usesSeed ? { random_seed: seedValue } : {}) };
     const canonical = JSON.stringify(body);
     if (!pending.current || pending.current.body !== canonical) pending.current = { body: canonical, key: crypto.randomUUID() };
     try {
@@ -101,9 +106,14 @@ export function ExperimentSetup({ projectId, setupRevision }: { projectId: strin
       <label><span id="run-target-label">Experiment target</span><select aria-labelledby="run-target-label" value={targetId} onChange={e => setTargetId(e.target.value)} disabled={busy || loading} required>
         <option value="">Choose a target</option>{targets.map(target => <option key={target.id} value={target.id}>{target.model_id} · {target.model_revision}</option>)}
       </select></label>
-      <label><span id="run-mode-label">Planning mode</span><select aria-labelledby="run-mode-label" value={mode} onChange={e => setMode(e.target.value as typeof mode)} disabled={busy}>
+      <label><span id="run-mode-label">Planning mode</span><select aria-labelledby="run-mode-label" value={mode} onChange={e => { setMode(e.target.value as typeof mode); setPolicy("ONE_SHOT"); }} disabled={busy}>
         <option value="ADAPTIVE">Initial Spark plan</option><option value="RANDOM_BASELINE">Seeded random baseline</option>
       </select></label>
+      {mode === "ADAPTIVE" && <label><span id="search-policy-label">Search policy</span><select aria-labelledby="search-policy-label" value={policy} onChange={e => setPolicy(e.target.value as typeof policy)} disabled={busy}>
+        <option value="ONE_SHOT">One-shot plan</option><option value="FEEDBACK_V1">Feedback search · policy feedback-v1</option>
+      </select></label>}
+      {usesSeed && <label>Recorded random seed<input aria-label="Recorded random seed" type="number" min={0} max={Number.MAX_SAFE_INTEGER} step={1} value={randomSeed} onChange={e => setRandomSeed(e.target.value)} disabled={busy} required /></label>}
+      {policy === "FEEDBACK_V1" && <p className="muted">Later Spark proposals use retained outcomes. {Math.ceil(limits.max_candidates / 5)} candidate attempts are reserved for seeded random exploration. Duplicates and rejected selections consume attempts; scores are engineering estimates.</p>}
       <fieldset className="limit-fields"><legend>Maximum run limits</legend>
         <label>Candidates<input aria-label="Maximum candidates" type="number" min={1} max={ceiling?.max_candidates || 100} required value={limits.max_candidates} onChange={e => setLimits(old => ({ ...old, max_candidates: Number(e.target.value) }))} disabled={busy} /></label>
         <label>Target calls<input aria-label="Maximum target calls" type="number" min={3} max={ceiling?.max_target_calls || 500} required value={limits.max_target_calls} onChange={e => setLimits(old => ({ ...old, max_target_calls: Number(e.target.value) }))} disabled={busy} /></label>

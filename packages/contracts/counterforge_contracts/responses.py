@@ -5,6 +5,8 @@ from uuid import UUID
 from pydantic import Field, JsonValue
 
 from .base import ContractModel, FiniteNumber
+from .history import PlannerHistory, PlanningBatch
+from .refinement import MinimizationResult, RetestComparison
 from .requests import InferenceOptions
 from .versions import (
     ErrorCode,
@@ -59,6 +61,9 @@ class ExperimentLinks(ContractModel):
 
 
 class JobRef(ContractModel):
+    created_at: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
     job_id: UUID
     state: JobState
     links: JobLinks
@@ -206,6 +211,9 @@ class ExperimentView(ContractModel):
     metrics: Metrics
     stop_reason: str | None = None
     mode: Literal["ADAPTIVE", "RANDOM_BASELINE"] = "ADAPTIVE"
+    search_policy: Literal["ONE_SHOT", "FEEDBACK_V1"] = "ONE_SHOT"
+    planner_history: list[PlannerHistory] = Field(default_factory=list)
+    planning_batches: list[PlanningBatch] = Field(default_factory=list)
     synthetic: bool = False
     started_at: datetime | None = None
     elapsed_seconds: float = Field(default=0, ge=0)
@@ -220,6 +228,7 @@ class Mutation(ContractModel):
     id: UUID
     experiment_id: UUID
     parent_mutation_id: UUID | None = None
+    minimization_job_id: UUID | None = None
     image_asset_id: UUID | None = None
     family: MutationFamily
     strength: FiniteNumber = Field(ge=0, le=1)
@@ -354,6 +363,7 @@ class ExportLinks(ContractModel):
 
 
 class ExportRef(ContractModel):
+    project_id: UUID | None = None
     export_id: UUID
     state: Literal["QUEUED", "RUNNING", "READY", "FAILED", "REVOKED"]
     links: ExportLinks
@@ -413,6 +423,8 @@ class FindingUsage(JobUsage):
 
 
 class JobResult(ContractModel):
+    minimization: MinimizationResult | None = None
+    retest: RetestComparison | None = None
     outcome: str
     background_asset_id: UUID | None = None
     background_sha256: str | None = None

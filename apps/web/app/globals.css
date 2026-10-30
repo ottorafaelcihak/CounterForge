@@ -108,3 +108,27 @@ label { display:flex; flex-direction:column; gap:.4rem; font-size:.94rem; font-w
 .observation-card { border-top: 1px solid var(--line, #d7ddd3); padding-top: .7rem; margin-top: 1rem; }
 .evidence-prompt { white-space: pre-wrap; }
 @media (max-width: 650px) { .evidence-image-grid { grid-template-columns: 1fr; } .finding-workspace .actions { flex-wrap: wrap; } }
+
+.planning-history .form-panel { min-width: 0; margin-top: 1rem; overflow-wrap: anywhere; }
+.planning-history summary { cursor: pointer; font-weight: 600; }
+.planning-history details > details { margin: 1rem 0; }
+.table-scroll { max-width: 100%; overflow-x: auto; margin-top: 1rem; }
+.planning-history table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .85rem; }
+.planning-history th, .planning-history td { text-align: left; vertical-align: top; padding: .8rem; border-bottom: 1px solid var(--line); }
+.planning-history caption { text-align: left; font-weight: 600; margin-bottom: .5rem; }
+
+
+.retest-panel, .minimization-panel details { margin-top: 1.3rem; }
+.retest-panel summary, .minimization-panel summary { cursor: pointer; font-weight: 600; }
+.retest-panel code, .minimization-panel code { overflow-wrap: anywhere; }
+.retest-form { margin: 1.2rem 0; }
+.retest-form .limit-fields { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.retest-job, .minimization-job { border-top: 1px solid var(--line); margin-top: 1.5rem; padding-top: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.comparison-targets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.comparison-targets pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+.retest-hashes dd { margin: .3rem 0 1rem; }
+.minimization-probes { padding-left: 1.2rem; }
+.minimization-probes li { padding: .7rem 0; border-top: 1px solid var(--line); }
+.minimization-panel .actions { display: flex; gap: .8rem; flex-wrap: wrap; }
+.minimization-panel .actions p { flex-basis: 100%; }
+@media (max-width: 650px) { .comparison-targets, .retest-form .limit-fields { grid-template-columns: 1fr; } }

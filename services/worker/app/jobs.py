@@ -41,6 +41,8 @@ def claim_job(factory: Any, settings: Settings, job_id: UUID) -> dict[str, Any] 
             "SCENE",
             "MUTATION_SAM",
             "EXPORT",
+            "MINIMIZE",
+            "RETEST",
         }:
             return None
         token = uuid4()
@@ -116,7 +118,15 @@ def recover_jobs(factory: Any, settings: Settings) -> list[UUID]:
                         )
                     ),
                     table.c.kind.in_(
-                        ["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM", "EXPORT"]
+                        [
+                            "SEGMENT",
+                            "TARGET_CHECK",
+                            "SCENE",
+                            "MUTATION_SAM",
+                            "EXPORT",
+                            "MINIMIZE",
+                            "RETEST",
+                        ]
                     ),
                     table.c.lease_expires_at <= func.now(),
                 )
@@ -141,6 +151,11 @@ def recover_jobs(factory: Any, settings: Settings) -> list[UUID]:
                         budget.void_operation(event["operation_key"])
                     else:
                         budget.mark_unknown_charge(event["operation_key"], "WORKER_LEASE_EXPIRED")
+            if job["kind"] in {"MINIMIZE", "RETEST"}:
+                from .refinement_jobs import recover_refinement
+
+                if recover_refinement(service, job, dispatched):
+                    continue
             uow.connection.execute(
                 table.update()
                 .where(table.c.id == job["id"])
@@ -160,7 +175,15 @@ def recover_jobs(factory: Any, settings: Settings) -> list[UUID]:
                 .where(
                     table.c.state == "QUEUED",
                     table.c.kind.in_(
-                        ["SEGMENT", "TARGET_CHECK", "SCENE", "MUTATION_SAM", "EXPORT"]
+                        [
+                            "SEGMENT",
+                            "TARGET_CHECK",
+                            "SCENE",
+                            "MUTATION_SAM",
+                            "EXPORT",
+                            "MINIMIZE",
+                            "RETEST",
+                        ]
                     ),
                     uow.tables.projects.c.owner_label == settings.owner_label,
                 )
@@ -227,6 +250,13 @@ async def execute_job(factory: Any, settings: Settings, job_id: UUID) -> None:
     pulse = asyncio.create_task(heartbeat(factory, job))
     synthetic = settings.provider_mode == "FIXTURE"
     try:
+        if job["kind"] in {"MINIMIZE", "RETEST"}:
+            from .refinement_jobs import execute_minimize, execute_retest
+
+            await (execute_minimize if job["kind"] == "MINIMIZE" else execute_retest)(
+                factory, settings, job
+            )
+            return
         if job["kind"] == "EXPORT":
             from .export_jobs import execute_export
 

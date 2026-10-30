@@ -10,7 +10,9 @@ from sqlalchemy.engine import Connection, RowMapping
 
 from ..errors import ServiceError
 
-JobKind = Literal["SEGMENT", "TARGET_CHECK", "EXPORT", "RETEST", "CONFIRM", "SCENE", "MUTATION_SAM"]
+JobKind = Literal[
+    "SEGMENT", "TARGET_CHECK", "EXPORT", "RETEST", "CONFIRM", "SCENE", "MUTATION_SAM", "MINIMIZE"
+]
 
 
 class IdempotencyConflict(ValueError):
@@ -85,7 +87,8 @@ class BackgroundJobs:
             select(func.count())
             .select_from(self.table)
             .where(
-                self.table.c.state.in_(["QUEUED", "RUNNING"]), self.table.c.experiment_id.is_(None)
+                self.table.c.state.in_(["QUEUED", "RUNNING"]),
+                (self.table.c.experiment_id.is_(None) | (self.table.c.kind == "MINIMIZE")),
             )
         )
         if self.experiments is not None:
@@ -101,7 +104,11 @@ class BackgroundJobs:
                 or 0
             )
         # Experiment-owned child stages share their admitted parent's slot.
-        if experiment_id is None and pending is not None and pending >= self.max_pending_jobs:
+        if (
+            (experiment_id is None or kind == "MINIMIZE")
+            and pending is not None
+            and pending >= self.max_pending_jobs
+        ):
             raise ServiceError(ErrorCode.QUEUE_FULL, "Setup queue is at capacity.", 429)
         statement = insert(self.table).values(
             project_id=project_id,

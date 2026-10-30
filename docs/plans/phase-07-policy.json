@@ -1,0 +1,36 @@
+{
+  "revision": "feedback-v1",
+  "planner_template_revision": "planner-v2-low-4096",
+  "enabled_by": "StartExperiment.search_policy=FEEDBACK_V1, mode=ADAPTIVE",
+  "default_search_policy": "ONE_SHOT",
+  "families": ["background_replacement", "background_clutter", "brightness_shift"],
+  "strength_range": [0, 1],
+  "contract_rule": "Each run can further restrict these families and ceilings; strength is a family parameter, not a universal severity measure.",
+  "selection": {
+    "validity_prior": [1, 1],
+    "failure_prior": [1, 1],
+    "failure_samples": "Interpretable SCREENING outcomes of currently VALID original search candidates",
+    "unknown_rule": "Retained explicitly; excluded from binary failure denominators",
+    "lambda": 0.1,
+    "epsilon": 0.000001,
+    "exploration": "1/sqrt(1+family_trials)",
+    "objective": "(p_valid*p_failure+lambda*exploration)/max(epsilon,estimated_cost_usd)",
+    "filter": "Contract-invalid, disallowed and unaffordable proposals before ranking",
+    "ties": ["family", "proposal_order"]
+  },
+  "random_exploration": {
+    "revision": "random-initial-v2",
+    "slot_strategy": "ordinal-mod5-zero-random-v1",
+    "reserved_slots": "0,5,10,... below max_candidates; ceil(0.20*max_candidates)",
+    "seed": "Recorded run seed + attempt slot ordinal",
+    "reallocation": "Never reassigned to exploitation",
+    "attempt_rule": "Duplicate images and rejected selections consume bounded attempts; they do not invent unique images."
+  },
+  "evidence": {
+    "history_window_rows": 10,
+    "history_max_bytes": 16384,
+    "planner_payload_max_bytes": 32768,
+    "retention": "Immutable per-batch input context, proposed/selected rankings, costs, quotas and revisions; retained response is decoded after recovery without another send."
+  },
+  "evaluation_status": "Frozen engineering defaults for Phase08 evaluation; no measured probability, optimality or lift claim."
+}

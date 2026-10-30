@@ -288,6 +288,98 @@ class Budget:
                 ErrorCode.BUDGET_EXCEEDED, "Experiment exceeded its maximum runtime."
             )
 
+    def require_refinement_source(self, experiment: Any) -> None:
+        """Completed source only; original wall clock and every ceiling still bind."""
+        if (
+            experiment["state"] != "COMPLETED"
+            or experiment["runner_token"] is not None
+            or experiment["dispatch_pending"]
+        ):
+            raise ServiceError(
+                ErrorCode.INVALID_STATE,
+                "Refinement requires a completed source with no active runner.",
+            )
+        if (
+            experiment["started_at"] is None
+            or (self._now() - experiment["started_at"]).total_seconds()
+            >= experiment["max_runtime_seconds"]
+        ):
+            raise ServiceError(ErrorCode.BUDGET_EXCEEDED, "Source experiment runtime has expired.")
+        if self.db.scalar(
+            select(self.t.usage_events.c.id)
+            .where(
+                self.t.usage_events.c.experiment_id == experiment["id"],
+                self.t.usage_events.c.status.in_(["RESERVED", "UNKNOWN_CHARGE"]),
+            )
+            .limit(1)
+        ):
+            raise ServiceError(ErrorCode.REVIEW_REQUIRED, "Source has unresolved provider work.")
+
+    def require_followup(self, experiment: Any, job_id: UUID) -> Any:
+        """Server-owned MINIMIZE intent and current claim authorize the narrow exception."""
+        j = self.t.background_jobs
+        job = self.db.execute(select(j).where(j.c.id == job_id).with_for_update()).mappings().one()
+        f = (
+            self.db.execute(
+                select(self.t.findings).where(self.t.findings.c.id == job["finding_id"])
+            )
+            .mappings()
+            .one()
+        )
+        if (
+            job["kind"] != "MINIMIZE"
+            or job["experiment_id"] != experiment["id"]
+            or job["project_id"] != experiment["project_id"]
+            or f["experiment_id"] != experiment["id"]
+            or job["request_json"].get("source_mutation_id") != str(f["mutation_id"])
+            or job["state"] != "RUNNING"
+            or job["claim_token"] is None
+            or job["lease_expires_at"] is None
+            or job["lease_expires_at"] <= self._now()
+        ):
+            raise ServiceError(ErrorCode.INVALID_STATE, "Refinement context is no longer owned.")
+        # Reserved operations belonging to this exact job are permitted while its
+        # fenced runner is active. All other pending/unknown work stops dispatch.
+        if (
+            experiment["state"] != "COMPLETED"
+            or experiment["runner_token"] is not None
+            or experiment["dispatch_pending"]
+        ):
+            raise ServiceError(
+                ErrorCode.INVALID_STATE, "Source is no longer available for refinement."
+            )
+        if (
+            experiment["started_at"] is None
+            or (self._now() - experiment["started_at"]).total_seconds()
+            >= experiment["max_runtime_seconds"]
+        ):
+            raise ServiceError(ErrorCode.BUDGET_EXCEEDED, "Source experiment runtime has expired.")
+        u = self.t.usage_events
+        if self.db.scalar(
+            select(u.c.id)
+            .where(
+                u.c.experiment_id == experiment["id"],
+                (u.c.status == "UNKNOWN_CHARGE")
+                | ((u.c.status == "RESERVED") & u.c.background_job_id.is_distinct_from(job_id)),
+            )
+            .limit(1)
+        ):
+            raise ServiceError(ErrorCode.REVIEW_REQUIRED, "Source has unresolved provider work.")
+        return job
+
+    def reserve_followup_operation(
+        self,
+        experiment_id: UUID,
+        job_id: UUID,
+        operation_key: str,
+        stage: str,
+        upper_bound_usd: Decimal,
+        **kwargs: Any,
+    ) -> OperationReservation:
+        return self.reserve_operation(
+            experiment_id, operation_key, stage, upper_bound_usd, _followup_job_id=job_id, **kwargs
+        )
+
     def _pending(self, experiment_id: UUID) -> tuple[int, int]:
         """Reserved calls and candidate slots derived from unfinished operations."""
 
@@ -347,6 +439,7 @@ class Budget:
         provider: str | None = None,
         model_id: str | None = None,
         semantic_sha256: str | None = None,
+        _followup_job_id: UUID | None = None,
     ) -> OperationReservation:
         """Record durable intent for one experiment stage before any dispatch.
 
@@ -372,6 +465,7 @@ class Budget:
                 "provider": provider,
                 "model_id": model_id,
                 "semantic_sha256": semantic_sha256,
+                **({"followup_job_id": str(_followup_job_id)} if _followup_job_id else {}),
             }
         )
         self._lock_key(key)
@@ -403,7 +497,10 @@ class Budget:
                 ErrorCode.IDEMPOTENCY_CONFLICT,
                 "Operation key already identifies other recorded usage.",
             )
-        self._require_runnable(experiment)
+        if _followup_job_id is None:
+            self._require_runnable(experiment)
+        else:
+            self.require_followup(experiment, _followup_job_id)
         pending_calls, pending_slots = self._pending(experiment_id)
         if experiment["calls_consumed"] + pending_calls + calls > experiment["max_target_calls"]:
             raise ServiceError(
@@ -437,6 +534,7 @@ class Budget:
             self.t.usage_events.insert()
             .values(
                 experiment_id=experiment_id,
+                background_job_id=_followup_job_id,
                 operation_key=key,
                 provider=provider or self._pinned(pinned, "provider", category),
                 model_id=model_id or self._pinned(pinned, "model_id", category),
@@ -491,7 +589,15 @@ class Budget:
         operation = self._operation(key, lock=True)
         if operation is None or operation["status"] != "RESERVED":
             return False
-        self._require_runnable(experiment)
+        usage = self._usage(key, lock=True)
+        if usage is not None and usage["background_job_id"] is not None:
+            job = self._job_for_usage(usage)
+            if job["kind"] == "MINIMIZE":
+                self.require_followup(experiment, job["id"])
+            else:
+                self._require_runnable(experiment)
+        else:
+            self._require_runnable(experiment)
         claimed = self.db.execute(
             self.t.run_operations.update()
             .where(

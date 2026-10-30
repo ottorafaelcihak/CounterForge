@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api, allPages, jsonPost, ApiError, type components } from "@/lib/client-api";
 
+import { PlanningHistory } from "./planning-history";
+
 type Run = components["schemas"]["ExperimentView"];
 type Candidate = components["schemas"]["Mutation"];
 type Finding = components["schemas"]["Finding"];
@@ -18,6 +20,8 @@ const reasons: Record<string, string> = {
   CONFIRMATION_REVIEW_REQUIRED: "Confirmation is incomplete or unresolved. It cannot establish a stable failure.",
   OWNER_REQUEST: "Stopped at the owner's request.", RUNTIME_EXPIRED: "The run's wall-clock limit has expired.",
   BOUNDED_PLAN_COMPLETE: "The bounded plan is complete.",
+  BOUNDED_FEEDBACK_COMPLETE: "All bounded feedback attempts are complete.",
+  SEARCH_CAP_REACHED: "A search limit has been reached.",
   CONFIRMATION_TARGET_CALL_CAP: "The remaining call allowance cannot cover all fresh confirmations.",
   CONFIRMATION_DOLLAR_CAP: "The remaining dollar allowance cannot cover all fresh confirmations.",
   CONFIRMATION_RUNTIME_CAP: "The remaining runtime cannot cover all fresh confirmations.",
@@ -114,7 +118,7 @@ export function ExperimentCockpit({ experimentId }: { experimentId: string }) {
   const metrics = run.metrics;
   const reviewCount = candidates.filter(c => !c.validation || c.validation.verdict === "REVIEW_REQUIRED").length;
   return <main className="workspace cockpit"><nav className="evidence-navigation"><Link href={"/projects/" + run.project_id}>Project setup</Link><button className="quiet" onClick={() => reload.current()}>Reload experiment</button></nav>
-    <div className="page-heading"><div><h1>Experiment cockpit</h1><p>Requested strategy: {run.mode === "RANDOM_BASELINE" ? "seeded random baseline" : "initial Spark plan"} · {run.id.slice(0, 8)}</p></div><span className="badge verdict" data-testid="experiment-state">{run.state}</span></div>
+    <div className="page-heading"><div><h1>Experiment cockpit</h1><p>Requested strategy: {run.mode === "RANDOM_BASELINE" ? "seeded random baseline" : run.search_policy === "FEEDBACK_V1" ? "feedback search" : "initial Spark plan"} · {run.id.slice(0, 8)}</p></div><span className="badge verdict" data-testid="experiment-state">{run.state}</span></div>
     {run.synthetic && <p className="review-warning">Synthetic provider fixture run. These results do not establish a real model weakness or billed API usage.</p>}
     {error && <p className="error" role="alert">{error}</p>}
     {loadError && <p className="error" role="alert">{loadError}</p>}
@@ -131,6 +135,7 @@ export function ExperimentCockpit({ experimentId }: { experimentId: string }) {
       <article><span>Unresolved charges (included)</span><strong>{dollars(metrics.unresolved_charges_usd)}</strong><small>Remain counted until operator reconciliation</small></article>
       <article><span>Maximum dollars / wall clock</span><strong>{dollars(run.limits.max_estimated_usd)}</strong><small>{Math.floor(run.elapsed_seconds)} / {run.limits.max_runtime_seconds} seconds; paused time counts</small></article>
     </section>
+    <PlanningHistory run={run} />
     <section><div className="section-toolbar"><h2>Candidates</h2><span>{reviewCount} awaiting review</span></div>{candidates.length ? <div className="candidate-run-list">{candidates.map(candidate => <article className="form-panel" key={candidate.id}><div className="history-heading"><h3>{candidate.family.replaceAll("_", " ")}</h3><span className={"badge " + (candidate.validation?.verdict === "VALID" ? "verdict-valid" : candidate.validation?.verdict === "INVALID" ? "verdict-invalid" : "verdict-review")}>{candidate.validation?.verdict || "REVIEW_REQUIRED"}</span></div><p>Strength {candidate.strength} · {candidate.state.replaceAll("_", " ")}</p><p className="muted">{candidate.validation?.confidence_note || "A sealed validation report is required."}</p>{!!candidate.validation?.reason_codes?.length && <p>Reasons: {candidate.validation.reason_codes.join(", ")}</p>}{candidate.synthetic && <p className="badge">Synthetic provider fixture</p>}<p><Link href={"/mutations/" + candidate.id}>Review candidate</Link></p></article>)}</div> : <p className="empty-state">No candidate has been generated. Baseline and planning outcomes remain in the saved timeline.</p>}</section>
     <section><h2>Findings and fresh confirmations</h2><p className="muted">Screening is separate. A final stable classification requires three fresh incorrect confirmations and current VALID evidence.</p>{findings.length ? findings.map(finding => <article className="form-panel" key={finding.id}><div className="history-heading"><h3>{finding.status.replaceAll("_", " ")}</h3><span className="badge">{finding.confirmation.incorrect} / {finding.confirmation.attempts} confirmations incorrect</span></div><p>{finding.qualification}</p>{finding.mutation_id && <p><Link href={"/findings/" + finding.id}>Review finding evidence</Link></p>}<p>Human count {finding.ground_truth.value} · Current validity {finding.validation.verdict}</p>{finding.demo_approved ? <p className="success">Demo approved by {finding.demo_approved_by} at {finding.demo_approved_at && new Date(finding.demo_approved_at).toLocaleString()}.</p> : <button className="secondary" disabled={!!busy || finding.status !== "STABLE" || finding.validation.verdict !== "VALID"} onClick={() => approveDemo(finding.id)}>Record human demo approval</button>}</article>) : <p>No finding has been established.</p>}</section>
     <section><h2>Saved event timeline</h2><p className="muted">Most recent 200 events. Reconnects refresh the authoritative snapshot.</p><ol className="run-timeline">{[...events].reverse().map(event => <li key={event.id} data-testid="experiment-event" data-event-id={event.id}><strong>{event.event.replaceAll("_", " ")}</strong><span>Event {event.id}</span><pre>{JSON.stringify(event.payload, null, 2)}</pre></li>)}</ol></section>

@@ -64,6 +64,7 @@ def observations(s: Service, finding: Any) -> list[FindingObservation]:
             select(s.t.model_observations)
             .where(
                 s.t.model_observations.c.experiment_id == e["id"],
+                s.t.model_observations.c.retest_job_id.is_(None),
                 (s.t.model_observations.c.mutation_id == finding["mutation_id"])
                 | (
                     (s.t.model_observations.c.phase == "SEED_BASELINE")
@@ -347,6 +348,13 @@ def collect_export(s: Service, finding_id: UUID, export_job_id: UUID) -> ExportI
     manifest = RegressionManifest(
         finding_id=finding_id,
         export_job_id=export_job_id,
+        parent_mutation_id=m["parent_mutation_id"],
+        parent_finding_id=s.db.scalar(
+            select(s.t.findings.c.id).where(s.t.findings.c.mutation_id == m["parent_mutation_id"])
+        )
+        if m["parent_mutation_id"]
+        else None,
+        minimization_job_id=m["minimization_job_id"],
         test_id=f"finding-{finding_id}",
         question=ev.question,
         expected={

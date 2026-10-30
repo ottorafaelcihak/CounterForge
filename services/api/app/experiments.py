@@ -70,7 +70,10 @@ def queue(s: Any, eid: UUID) -> None:
         s.db.scalar(
             select(func.count())
             .select_from(jobs)
-            .where(jobs.c.state.in_(["QUEUED", "RUNNING"]), jobs.c.experiment_id.is_(None))
+            .where(
+                jobs.c.state.in_(["QUEUED", "RUNNING"]),
+                (jobs.c.experiment_id.is_(None) | (jobs.c.kind == "MINIMIZE")),
+            )
         )
         or 0
     )

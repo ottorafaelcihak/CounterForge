@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api, allPages, type components } from "@/lib/client-api";
 
+import { RetestPanel } from "./retest-panel";
+
 type ExportRecord = components["schemas"]["ExportRef"];
 export const usd = (value: number) => "$" + value.toFixed(6);
 export const fixtureLabel = "LOCAL_FIXTURE · simulated evidence";
@@ -31,6 +33,7 @@ export function ExportCard({ record: listed, verificationAllowed = true }: { rec
     {record.bundle_sha256 && <p className="export-checksum">ZIP SHA-256 <code data-testid="bundle-sha256">{record.bundle_sha256}</code></p>}
     {record.manifest_sha256 && <details><summary>Manifest SHA-256</summary><code className="export-checksum">{record.manifest_sha256}</code></details>}
     {ready && <p><a className="button primary button-link" data-testid="download-export" href={"/api/backend/exports/" + record.export_id + "/download"}>Download verified ZIP</a></p>}
+    {record.project_id && <RetestPanel exportId={record.export_id} projectId={record.project_id} verified={ready} />}
   </article>;
 }
 

@@ -44,6 +44,9 @@ class RegressionManifest(ContractModel):
     format_version: Literal["1.0.0"] = "1.0.0"
     finding_id: UUID
     export_job_id: UUID
+    parent_mutation_id: UUID | None = None
+    parent_finding_id: UUID | None = None
+    minimization_job_id: UUID | None = None
     test_id: str
     task: Literal["object_counting"] = "object_counting"
     question: str = Field(min_length=1, max_length=2000)

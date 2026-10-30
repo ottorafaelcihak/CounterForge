@@ -79,7 +79,7 @@ def test_fresh_migrations_preserve_baseline_and_map_original_names(migrated_engi
     with migrated_engine.connect() as connection:
         assert (
             connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0005_experiment_pipeline"
+            == "0006_phase07_support"
         )
         tables = load_tables(connection)
         names = set(inspect(connection).get_table_names()) - {"alembic_version"}
@@ -120,7 +120,7 @@ def test_observation_attempts_are_unique_per_subject(migrated_engine, subject):
         graph = evidence(connection)
         sql = text(
             f"INSERT INTO model_observations (experiment_id,target_config_id,{subject}_id,phase,"
-            "attempt_no,request_fingerprint,outcome) VALUES (:e,:t,:s,'RETEST',:n,:f,'CORRECT')"
+            "attempt_no,request_fingerprint,outcome) VALUES (:e,:t,:s,'SCREENING',:n,:f,'CORRECT')"
         )
         values = dict(e=graph["experiment"], t=graph["target"], s=graph[subject], n=1, f="c" * 64)
         connection.execute(sql, values)
@@ -313,3 +313,39 @@ def test_phase04_backfills_ordered_legacy_reports_and_appends_next(database_engi
             .one()
         )
         assert r["revision"] == 3 and r["previous_validation_id"] == rows[1]["id"]
+
+
+def test_phase07_retest_identity_and_lineage_constraints(migrated_engine):
+    with migrated_engine.begin() as connection:
+        g = evidence(connection)
+
+        def job(kind, key):
+            return connection.execute(
+                text(
+                    "INSERT INTO background_jobs(project_id,kind,request_json,request_fingerprint,idempotency_key) VALUES(:p,:k,'{}',:f,:key) RETURNING id"
+                ),
+                {"p": g["project"], "k": kind, "f": "a" * 64, "key": key},
+            ).scalar_one()
+
+        a, b = job("RETEST", "a"), job("RETEST", "b")
+        sql = text(
+            "INSERT INTO model_observations(experiment_id,target_config_id,mutation_id,phase,attempt_no,request_fingerprint,outcome,retest_job_id) VALUES(:e,:t,:m,'RETEST',1,:f,'CORRECT',:j)"
+        )
+        params = {"e": g["experiment"], "t": g["target"], "m": g["mutation"], "f": "c" * 64, "j": a}
+        connection.execute(sql, params)
+        connection.execute(sql, {**params, "j": b})
+        for invalid in ({**params, "j": None}, params):
+            with pytest.raises(IntegrityError), connection.begin_nested():
+                connection.execute(sql, invalid)
+        with pytest.raises(IntegrityError), connection.begin_nested():
+            connection.execute(
+                text(
+                    "INSERT INTO model_observations(experiment_id,target_config_id,seed_id,phase,attempt_no,request_fingerprint,outcome,retest_job_id) VALUES(:e,:t,:s,'RETEST',1,:f,'CORRECT',:j)"
+                ),
+                {**params, "s": g["seed"]},
+            )
+        with pytest.raises(IntegrityError), connection.begin_nested():
+            connection.execute(
+                text("UPDATE model_observations SET phase='SCREENING' WHERE retest_job_id=:j"),
+                {"j": a},
+            )

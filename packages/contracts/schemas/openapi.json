@@ -744,6 +744,20 @@
             "title": "Mode",
             "type": "string"
           },
+          "planner_history": {
+            "items": {
+              "$ref": "#/components/schemas/PlannerHistory"
+            },
+            "title": "Planner History",
+            "type": "array"
+          },
+          "planning_batches": {
+            "items": {
+              "$ref": "#/components/schemas/PlanningBatch"
+            },
+            "title": "Planning Batches",
+            "type": "array"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -771,6 +785,15 @@
               }
             ],
             "title": "Resume Blocked Reason"
+          },
+          "search_policy": {
+            "default": "ONE_SHOT",
+            "enum": [
+              "ONE_SHOT",
+              "FEEDBACK_V1"
+            ],
+            "title": "Search Policy",
+            "type": "string"
           },
           "spent_usd": {
             "default": 0,
@@ -921,6 +944,18 @@
               }
             ],
             "title": "Manifest Sha256"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
           },
           "provenance": {
             "anyOf": [
@@ -1529,6 +1564,29 @@
         "title": "Health",
         "type": "object"
       },
+      "HistoryOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/TargetOutcome"
+          },
+          "phase": {
+            "enum": [
+              "SCREENING",
+              "CONFIRMATION",
+              "RETEST"
+            ],
+            "title": "Phase",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phase",
+          "outcome"
+        ],
+        "title": "HistoryOutcome",
+        "type": "object"
+      },
       "InferenceOptions": {
         "additionalProperties": false,
         "properties": {
@@ -1612,6 +1670,18 @@
       "JobRef": {
         "additionalProperties": false,
         "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
           "error_code": {
             "anyOf": [
               {
@@ -1622,6 +1692,18 @@
               }
             ],
             "title": "Error Code"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
           },
           "job_id": {
             "format": "uuid",
@@ -1640,6 +1722,18 @@
                 "type": "null"
               }
             ]
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
           },
           "state": {
             "$ref": "#/components/schemas/JobState"
@@ -1743,6 +1837,16 @@
             "title": "Mask Asset Ids",
             "type": "array"
           },
+          "minimization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MinimizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "original_background_asset_id": {
             "anyOf": [
               {
@@ -1780,6 +1884,16 @@
               }
             ],
             "title": "Parsed Count"
+          },
+          "retest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetestComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "synthetic": {
             "default": false,
@@ -2313,6 +2427,153 @@
         "title": "Metrics",
         "type": "object"
       },
+      "MinimizationProbe": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmation_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/TargetOutcome"
+            },
+            "title": "Confirmation Outcomes",
+            "type": "array"
+          },
+          "finding_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "mutation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mutation Id"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "screening_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "strength": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "type": "number"
+          }
+        },
+        "required": [
+          "strength",
+          "outcome"
+        ],
+        "title": "MinimizationProbe",
+        "type": "object"
+      },
+      "MinimizationResult": {
+        "additionalProperties": false,
+        "properties": {
+          "best_finding_id": {
+            "format": "uuid",
+            "title": "Best Finding Id",
+            "type": "string"
+          },
+          "best_mutation_id": {
+            "format": "uuid",
+            "title": "Best Mutation Id",
+            "type": "string"
+          },
+          "probe_limit": {
+            "maximum": 8.0,
+            "minimum": 1.0,
+            "title": "Probe Limit",
+            "type": "integer"
+          },
+          "probes": {
+            "items": {
+              "$ref": "#/components/schemas/MinimizationProbe"
+            },
+            "title": "Probes",
+            "type": "array"
+          },
+          "probes_used": {
+            "maximum": 8.0,
+            "minimum": 0.0,
+            "title": "Probes Used",
+            "type": "integer"
+          },
+          "qualification": {
+            "default": "Simplest tested stable variant; no claim of a global minimum. Each child requires independent human review and three fresh incorrect confirmations.",
+            "title": "Qualification",
+            "type": "string"
+          },
+          "source_finding_id": {
+            "format": "uuid",
+            "title": "Source Finding Id",
+            "type": "string"
+          },
+          "source_mutation_id": {
+            "format": "uuid",
+            "title": "Source Mutation Id",
+            "type": "string"
+          },
+          "stop_reason": {
+            "title": "Stop Reason",
+            "type": "string"
+          },
+          "usage": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Usage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "source_finding_id",
+          "source_mutation_id",
+          "best_finding_id",
+          "best_mutation_id",
+          "probe_limit",
+          "probes_used",
+          "stop_reason"
+        ],
+        "title": "MinimizationResult",
+        "type": "object"
+      },
+      "MinimizeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "probe_limit": {
+            "default": 8,
+            "maximum": 8.0,
+            "minimum": 1.0,
+            "title": "Probe Limit",
+            "type": "integer"
+          }
+        },
+        "title": "MinimizeRequest",
+        "type": "object"
+      },
       "ModelIdentity": {
         "additionalProperties": false,
         "properties": {
@@ -2402,6 +2663,18 @@
             },
             "title": "Mask Snapshot",
             "type": "array"
+          },
+          "minimization_job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimization Job Id"
           },
           "parent_mutation_id": {
             "anyOf": [
@@ -2851,6 +3124,34 @@
         "title": "Page[Finding]",
         "type": "object"
       },
+      "Page_JobRef_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobRef"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[JobRef]",
+        "type": "object"
+      },
       "Page_MaskRevision_": {
         "additionalProperties": false,
         "properties": {
@@ -3047,6 +3348,180 @@
         "title": "Page[Target]",
         "type": "object"
       },
+      "PlannerHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "family": {
+            "$ref": "#/components/schemas/MutationFamily"
+          },
+          "hypothesis": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Hypothesis",
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "recipe_parameters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "title": "Recipe Parameters",
+            "type": "object"
+          },
+          "strength": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "type": "number"
+          },
+          "target_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryOutcome"
+            },
+            "maxItems": 20,
+            "title": "Target Outcomes",
+            "type": "array"
+          },
+          "validity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ValidityVerdict"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "family",
+          "strength"
+        ],
+        "title": "PlannerHistory",
+        "type": "object"
+      },
+      "PlanningBatch": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "cost_components": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Cost Components",
+            "type": "object"
+          },
+          "exploration_reserved": {
+            "minimum": 0.0,
+            "title": "Exploration Reserved",
+            "type": "integer"
+          },
+          "exploration_used": {
+            "minimum": 0.0,
+            "title": "Exploration Used",
+            "type": "integer"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
+          "history_snapshot": {
+            "items": {
+              "$ref": "#/components/schemas/PlannerHistory"
+            },
+            "maxItems": 10,
+            "title": "History Snapshot",
+            "type": "array"
+          },
+          "policy_revision": {
+            "title": "Policy Revision",
+            "type": "string"
+          },
+          "random_seed": {
+            "title": "Random Seed",
+            "type": "integer"
+          },
+          "rankings": {
+            "items": {
+              "$ref": "#/components/schemas/ProposalRanking"
+            },
+            "title": "Rankings",
+            "type": "array"
+          },
+          "remaining_budget": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Remaining Budget",
+            "type": "object"
+          },
+          "slot_index": {
+            "minimum": 0.0,
+            "title": "Slot Index",
+            "type": "integer"
+          },
+          "slot_strategy": {
+            "title": "Slot Strategy",
+            "type": "string"
+          },
+          "template_revision": {
+            "title": "Template Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slot_index",
+          "policy_revision",
+          "template_revision",
+          "random_seed",
+          "slot_strategy",
+          "author",
+          "exploration_reserved",
+          "exploration_used",
+          "remaining_budget",
+          "cost_components",
+          "history_snapshot",
+          "rankings"
+        ],
+        "title": "PlanningBatch",
+        "type": "object"
+      },
       "Project": {
         "additionalProperties": false,
         "properties": {
@@ -3082,6 +3557,104 @@
           "created_at"
         ],
         "title": "Project",
+        "type": "object"
+      },
+      "ProposalRanking": {
+        "additionalProperties": false,
+        "properties": {
+          "estimated_cost_usd": {
+            "minimum": 0.0,
+            "title": "Estimated Cost Usd",
+            "type": "number"
+          },
+          "explore": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Explore",
+            "type": "number"
+          },
+          "family": {
+            "$ref": "#/components/schemas/MutationFamily"
+          },
+          "family_trials": {
+            "minimum": 0.0,
+            "title": "Family Trials",
+            "type": "integer"
+          },
+          "hypothesis": {
+            "maxLength": 500,
+            "title": "Hypothesis",
+            "type": "string"
+          },
+          "p_failure": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "P Failure",
+            "type": "number"
+          },
+          "p_valid": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "P Valid",
+            "type": "number"
+          },
+          "proposal_order": {
+            "minimum": 0.0,
+            "title": "Proposal Order",
+            "type": "integer"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          },
+          "score": {
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "selected": {
+            "default": false,
+            "title": "Selected",
+            "type": "boolean"
+          },
+          "strength": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Strength",
+            "type": "number"
+          }
+        },
+        "required": [
+          "proposal_order",
+          "family",
+          "strength",
+          "hypothesis",
+          "estimated_cost_usd",
+          "p_valid",
+          "p_failure",
+          "family_trials",
+          "explore",
+          "score"
+        ],
+        "title": "ProposalRanking",
         "type": "object"
       },
       "ProtectedObjects": {
@@ -3146,11 +3719,177 @@
         "title": "ReproductionPolicy",
         "type": "object"
       },
+      "RetestComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "bundle_sha256": {
+            "title": "Bundle Sha256",
+            "type": "string"
+          },
+          "classification": {
+            "enum": [
+              "FIXED",
+              "PERSISTENT",
+              "INTERMITTENT",
+              "INCONCLUSIVE"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "completed_attempts": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Completed Attempts",
+            "type": "integer"
+          },
+          "correct": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Correct",
+            "type": "integer"
+          },
+          "errors": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Errors",
+            "type": "integer"
+          },
+          "expected_count": {
+            "minimum": 0.0,
+            "title": "Expected Count",
+            "type": "integer"
+          },
+          "export_id": {
+            "format": "uuid",
+            "title": "Export Id",
+            "type": "string"
+          },
+          "historical_fresh_attempts": {
+            "default": 3,
+            "title": "Historical Fresh Attempts",
+            "type": "integer"
+          },
+          "historical_fresh_incorrect": {
+            "default": 3,
+            "title": "Historical Fresh Incorrect",
+            "type": "integer"
+          },
+          "historical_screening_incorrect": {
+            "default": 1,
+            "title": "Historical Screening Incorrect",
+            "type": "integer"
+          },
+          "incorrect": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Incorrect",
+            "type": "integer"
+          },
+          "input_sha256": {
+            "title": "Input Sha256",
+            "type": "string"
+          },
+          "interpretable_attempts": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Interpretable Attempts",
+            "type": "integer"
+          },
+          "manifest_sha256": {
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "observation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Observation Ids",
+            "type": "array"
+          },
+          "planned_attempts": {
+            "const": 3,
+            "default": 3,
+            "title": "Planned Attempts",
+            "type": "integer"
+          },
+          "prompt_sha256": {
+            "title": "Prompt Sha256",
+            "type": "string"
+          },
+          "qualification": {
+            "default": "Coverage is completed/3; correctness uses interpretable attempts only. Configured revisions are owner labels, not proof of the actual served model version. Provider-managed behavior may change; LOCAL_FIXTURE is simulated.",
+            "title": "Qualification",
+            "type": "string"
+          },
+          "source_finding_id": {
+            "format": "uuid",
+            "title": "Source Finding Id",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Reason"
+          },
+          "target_a": {
+            "$ref": "#/components/schemas/RetestTarget"
+          },
+          "target_b": {
+            "$ref": "#/components/schemas/RetestTarget"
+          },
+          "target_config_id": {
+            "format": "uuid",
+            "title": "Target Config Id",
+            "type": "string"
+          },
+          "unknown": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Unknown",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "export_id",
+          "source_finding_id",
+          "target_config_id",
+          "target_a",
+          "target_b",
+          "bundle_sha256",
+          "manifest_sha256",
+          "input_sha256",
+          "prompt_sha256",
+          "expected_count",
+          "completed_attempts",
+          "correct",
+          "incorrect",
+          "unknown",
+          "errors",
+          "interpretable_attempts",
+          "classification"
+        ],
+        "title": "RetestComparison",
+        "type": "object"
+      },
       "RetestRequest": {
         "additionalProperties": false,
         "properties": {
           "limits": {
-            "$ref": "#/components/schemas/Limits"
+            "$ref": "#/components/schemas/JobLimits"
           },
           "target_config_id": {
             "format": "uuid",
@@ -3159,9 +3898,49 @@
           }
         },
         "required": [
-          "target_config_id"
+          "target_config_id",
+          "limits"
         ],
         "title": "RetestRequest",
+        "type": "object"
+      },
+      "RetestTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter_key": {
+            "enum": [
+              "META_SPARK",
+              "LOCAL_FIXTURE"
+            ],
+            "title": "Adapter Key",
+            "type": "string"
+          },
+          "configured_revision": {
+            "title": "Configured Revision",
+            "type": "string"
+          },
+          "inference_options": {
+            "$ref": "#/components/schemas/InferenceOptions"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "observed_revisions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Observed Revisions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "adapter_key",
+          "model_id",
+          "configured_revision",
+          "inference_options"
+        ],
+        "title": "RetestTarget",
         "type": "object"
       },
       "ReviewAudit": {
@@ -3468,6 +4247,15 @@
               }
             ],
             "title": "Random Seed"
+          },
+          "search_policy": {
+            "default": "ONE_SHOT",
+            "enum": [
+              "ONE_SHOT",
+              "FEEDBACK_V1"
+            ],
+            "title": "Search Policy",
+            "type": "string"
           },
           "target_config_id": {
             "format": "uuid",
@@ -6987,6 +7775,326 @@
         "summary": "Export"
       }
     },
+    "/api/v1/findings/{finding_id}/minimizations": {
+      "get": {
+        "operationId": "minimizations_api_v1_findings__finding_id__minimizations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_JobRef_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Minimizations"
+      }
+    },
+    "/api/v1/findings/{finding_id}/minimize": {
+      "post": {
+        "operationId": "minimize_api_v1_findings__finding_id__minimize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MinimizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Minimize"
+      }
+    },
     "/api/v1/fixtures/development-seed": {
       "get": {
         "operationId": "development_seed_api_v1_fixtures_development_seed_get",
@@ -7375,6 +8483,276 @@
           }
         ],
         "summary": "Get Job"
+      }
+    },
+    "/api/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_minimization_api_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Cancel Minimization"
+      }
+    },
+    "/api/v1/jobs/{job_id}/resume": {
+      "post": {
+        "operationId": "resume_minimization_api_v1_jobs__job_id__resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Resume Minimization"
       }
     },
     "/api/v1/mutations/{mutation_id}": {
@@ -9460,6 +10838,17 @@
               "title": "Export Id",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -9590,6 +10979,170 @@
           }
         ],
         "summary": "Retest"
+      }
+    },
+    "/api/v1/regressions/{export_id}/retests": {
+      "get": {
+        "operationId": "retests_api_v1_regressions__export_id__retests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Export Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_JobRef_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "501": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Implemented"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "OwnerToken": []
+          }
+        ],
+        "summary": "Retests"
       }
     },
     "/api/v1/seeds/{seed_id}": {

@@ -9,6 +9,7 @@ from counterforge_contracts.requests import (
     CreateMutation,
     CreateProject,
     CreateTargetConfig,
+    MinimizeRequest,
     MutationReviewRequest,
     RetestRequest,
     ReviewDecision,
@@ -461,8 +462,88 @@ async def download_export(export_id: UUID, service: Services) -> Response:
     status_code=202,
     responses=ERRORS,
 )
-async def retest(export_id: UUID, body: RetestRequest) -> NoReturn:
-    disabled()
+async def retest(
+    export_id: UUID, body: RetestRequest, idempotency_key: Key, service: Services
+) -> JobRef:
+    from .refinements import request_retest
+
+    return request_retest(service, export_id, body, idempotency_key)
+
+
+@router.get(
+    PREFIX + "/regressions/{export_id}/retests", response_model=Page[JobRef], responses=ERRORS
+)
+async def retests(
+    export_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[JobRef]:
+    service.get_export(export_id)
+    return service.page(
+        service.t.background_jobs,
+        f"retests:{export_id}",
+        service.job_dto,
+        [
+            service.t.background_jobs.c.kind == "RETEST",
+            service.t.background_jobs.c.request_json["export_id"].astext == str(export_id),
+        ],
+        limit,
+        cursor,
+    )
+
+
+@router.post(
+    PREFIX + "/findings/{finding_id}/minimize",
+    response_model=JobRef,
+    status_code=202,
+    responses=ERRORS,
+)
+async def minimize(
+    finding_id: UUID, body: MinimizeRequest, idempotency_key: Key, service: Services
+) -> JobRef:
+    from .refinements import request_minimize
+
+    return request_minimize(service, finding_id, body, idempotency_key)
+
+
+@router.get(
+    PREFIX + "/findings/{finding_id}/minimizations", response_model=Page[JobRef], responses=ERRORS
+)
+async def minimizations(
+    finding_id: UUID,
+    service: Services,
+    limit: Limit = 20,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> Page[JobRef]:
+    service.finding(finding_id)
+    return service.page(
+        service.t.background_jobs,
+        f"minimizations:{finding_id}",
+        service.job_dto,
+        [
+            service.t.background_jobs.c.kind == "MINIMIZE",
+            service.t.background_jobs.c.finding_id == finding_id,
+        ],
+        limit,
+        cursor,
+    )
+
+
+@router.post(
+    PREFIX + "/jobs/{job_id}/resume", response_model=JobRef, status_code=202, responses=ERRORS
+)
+async def resume_minimization(job_id: UUID, service: Services) -> JobRef:
+    from .refinements import resume_minimize
+
+    return resume_minimize(service, job_id)
+
+
+@router.post(PREFIX + "/jobs/{job_id}/cancel", response_model=JobRef, responses=ERRORS)
+async def cancel_minimization(job_id: UUID, service: Services) -> JobRef:
+    from .refinements import cancel_minimize
+
+    return cancel_minimize(service, job_id)
 
 
 @router.get(

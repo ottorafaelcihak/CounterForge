@@ -1,7 +1,7 @@
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import Field, StrictInt
+from pydantic import Field, StrictInt, model_validator
 
 from .base import ContractModel, FiniteNumber
 from .plans import MutationPlan
@@ -61,8 +61,15 @@ class StartExperiment(ContractModel):
     contract_id: UUID
     target_config_id: UUID
     mode: Literal["ADAPTIVE", "RANDOM_BASELINE"] = "ADAPTIVE"
+    search_policy: Literal["ONE_SHOT", "FEEDBACK_V1"] = "ONE_SHOT"
     random_seed: StrictInt | None = Field(default=None, ge=0, le=2**63 - 1)
     limits: Limits = Field(default_factory=Limits)
+
+    @model_validator(mode="after")
+    def feedback_requires_adaptive(self) -> Self:
+        if self.search_policy == "FEEDBACK_V1" and self.mode != "ADAPTIVE":
+            raise ValueError("FEEDBACK_V1 requires ADAPTIVE mode")
+        return self
 
 
 class ConfirmRequest(ContractModel):
@@ -71,7 +78,11 @@ class ConfirmRequest(ContractModel):
 
 class RetestRequest(ContractModel):
     target_config_id: UUID
-    limits: Limits = Field(default_factory=Limits)
+    limits: JobLimits
+
+
+class MinimizeRequest(ContractModel):
+    probe_limit: StrictInt = Field(default=8, ge=1, le=8)
 
 
 class AcknowledgeMaskMismatch(ContractModel):

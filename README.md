@@ -8,14 +8,15 @@ human-verified ground truth and repeated evaluation. Its goal is to turn
 reproducible visual-model failures into portable regression tests, starting with
 single-image object counting.
 
-Phases 01–06 implement typed contracts, PostgreSQL evidence storage, atomic spend
+Phases 01–07 implement typed contracts, PostgreSQL evidence storage, atomic spend
 accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
-independent verification, durable experiments and portable regression ZIPs. Three
+independent verification, durable experiments and portable regression ZIPs. Optional feedback search, reviewed reduction probes
+and independent target-version retests extend that pipeline. Three
 correct seed checks precede search; only VALID candidates reach screening, and a
 stable finding requires three fresh incorrect confirmations. Owner evidence pages
 and a regression library show provenance, reproduction, costs and verified
-downloads. See the [Phase 06 handoff](docs/plans/phase-06-handoff.md) for checks,
-live comparison usage and remaining gates. Fixture success does not establish a
+downloads. See the [Phase 07 handoff](docs/plans/phase-07-handoff.md) for the frozen policy,
+verification, live feedback usage and remaining gates. Fixture success does not establish a
 real model weakness; automatic threshold calibration remains outstanding.
 
 ## Development setup
@@ -138,13 +139,19 @@ state, baseline progress, review reasons, cap exposure and findings. A same-page
 retry of an unchanged start request reuses its idempotency key. After navigation
 following an uncertain reply, inspect Previous runs before creating another run.
 
-ADAPTIVE records a one-shot Spark plan (`spark-initial-v1`); invalid proposals
-use an explicitly labeled deterministic fallback. RANDOM_BASELINE uses a seeded
-proposal without a planner call. New runs retain the actual PRNG seed and
-`random-initial-v2` revision in their immutable snapshot; an optional
-`random_seed` on the start request makes the proposal reproducible. Both
-strategies have the same permitted families and full `[0,1]` strength range. The initial scheduler processes one bounded
-proposal; later phases add feedback exploration. Generated candidates pause for
+ADAPTIVE defaults to `ONE_SHOT`, retaining the original Spark plan
+(`spark-initial-v1`) and labeled fallback. Opt into `FEEDBACK_V1` to supply actual
+sanitized outcomes and remaining limits to subsequent Spark batches. The cockpit
+retains each batch's input history, proposed/selected/rejected rankings, costs and
+policy revisions. At least 20% of bounded attempt slots belong to seeded random
+exploration; unused exploration slots are never reassigned to exploitation.
+
+RANDOM_BASELINE uses recorded seeded proposals without planner calls. An optional
+`random_seed` makes proposals reproducible; new runs retain its actual value and
+`random-initial-v2` revision. Strategies share permitted families and the full
+`[0,1]` strength range, subject to each contract. See the
+[frozen feedback policy](docs/plans/phase-07-policy.json) for engineering defaults;
+no improvement over random is claimed. Generated candidates pause for
 human semantics/visibility review. Review the retained comparison evidence, record
 a decision, return to the experiment and resume. Paused time counts toward runtime.
 
@@ -191,6 +198,26 @@ A real-provider bundle supports explicit `--live` execution with `MODEL_API_KEY`
 in the environment: one bounded provider call, no automatic retries. Provider
 behavior may change. `make verify-export` checks the healthy/broken/replay/tamper
 pair offline and succeeds only when each fails or passes for the intended reason.
+
+## Refine and retest retained findings
+
+Open a stable finding's refinement panel to test up to eight simpler variants.
+All original experiment caps, including elapsed wall-clock time, still apply.
+Brightness moves toward identity 0.5; deterministic clutter removes recorded
+layers. Unsupported backgrounds and unsuccessful probes retain the original
+finding. Each new child pauses for independent review; explicitly resume after
+review. A reduced stable failure needs its own screen and three fresh incorrect
+confirmations. Passing neighbors remain boundary evidence. Results describe the
+simplest tested stable variant, not a global minimum.
+
+After verifying an export, its retest panel can start a new bounded job against an
+enabled curated target configuration. The exact bundle image, prompt and human
+answer stay fixed; target-B settings and observations are retained separately.
+Each new job has explicit call, dollar and runtime limits under the deployment
+allowance. Three correct replies mean fixed, three wrong persistent, and three
+interpretable mixed replies intermittent. Any unknown, error, partial result or
+budget stop is inconclusive. Historical target-A evidence and ZIP bytes remain
+intact. Revision labels do not guarantee a separately pinned provider model.
 
 ## Declare a small strategy comparison
 

@@ -10,6 +10,9 @@ This folder holds CounterForge's project documentation.
 - [Phase 04 implementation handoff](plans/phase-04-handoff.md)
 - [Phase 05 implementation handoff](plans/phase-05-handoff.md)
 - [Phase 06 implementation handoff](plans/phase-06-handoff.md)
+- [Phase 07 implementation handoff](plans/phase-07-handoff.md)
+- [Frozen feedback policy](plans/phase-07-policy.json)
+- [Live feedback demonstration](plans/phase-07-live-results.json)
 - [Initial Spark versus random comparison](plans/phase-06-comparison-results.md)
 - [Provider interfaces, pricing and live gates](plans/phase-03-provider-record.md)
 

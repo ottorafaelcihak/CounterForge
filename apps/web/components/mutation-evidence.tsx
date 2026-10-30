@@ -30,6 +30,7 @@ function verdictClass(verdict: string) {
 
 export function MutationEvidence({ mutationId }: { mutationId: string }) {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [refinementSource, setRefinementSource] = useState<{ jobId: string; findingId: string } | null>(null);
   const [history, setHistory] = useState<Revision[]>([]);
   const [error, setError] = useState(""), [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false), [stale, setStale] = useState(false);
@@ -50,6 +51,16 @@ export function MutationEvidence({ mutationId }: { mutationId: string }) {
     }).catch(e => { if (active) setError(e instanceof Error ? e.message : "Evidence could not be loaded."); });
     return () => { active = false; };
   }, [mutationId]);
+
+  useEffect(() => {
+    const jobId = candidate?.minimization_job_id;
+    if (!jobId) return;
+    let active = true;
+    void api<components["schemas"]["JobRef"]>("jobs/" + jobId).then(job => {
+      if (active) { const findingId = job.result?.minimization?.source_finding_id; setRefinementSource(findingId ? { jobId, findingId } : null); }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [candidate?.minimization_job_id]);
 
   function resetDraft() {
     setSemantic(""); setVisibility(""); setNotes(""); setAuditNote(""); setAuditing(false); setResolved([]);
@@ -109,6 +120,8 @@ export function MutationEvidence({ mutationId }: { mutationId: string }) {
   return <main className="workspace mutation-workspace">
     <nav className="evidence-navigation"><Link href="/">Projects</Link>
       <Link href={"/experiments/" + candidate.experiment_id}>Experiment</Link>
+      {candidate.parent_mutation_id && <Link href={"/mutations/" + candidate.parent_mutation_id}>Parent candidate</Link>}
+      {candidate.minimization_job_id && refinementSource?.jobId === candidate.minimization_job_id && <Link href={"/findings/" + refinementSource.findingId}>Return to finding refinement</Link>}
       {candidate.source_seed_id && <Link href={"/seeds/" + candidate.source_seed_id + "/masks"}>Source mask review</Link>}
       <button className="quiet" onClick={reload} disabled={busy}>Reload evidence</button></nav>
     <div className="page-heading"><div><h1>Candidate evidence</h1><p>{candidate.family.replaceAll("_", " ")} · Strength {candidate.strength} · Revision {candidate.validation_revision ?? "unavailable"}</p></div>

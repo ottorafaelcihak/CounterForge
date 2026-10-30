@@ -11,7 +11,8 @@ from counterforge_contracts.versions import MutationFamily
 from counterforge_contracts.vtc import Limits, VisualTestContract
 from pydantic import JsonValue, ValidationError
 
-from .transport import MetaTransport
+from .history import sanitized_history
+from .transport import CallResponse, MetaTransport
 from .usage import sanitize_raw
 
 PLANNER_TEMPLATE = "planner-v2-low-4096"
@@ -41,7 +42,7 @@ class SparkPlanner:
             "allowed_mutations": [family.value for family in contract.allowed_mutations],
             "forbidden_mutations": contract.forbidden_mutations,
             "min_visible_fraction": contract.protected.min_visible_fraction,
-            "recent_outcomes": history[-10:],
+            "recent_outcomes": sanitized_history(history),
             "remaining_budget": remaining_budget.model_dump(mode="json"),
         }
         text = json.dumps(payload, separators=(",", ":"), allow_nan=False)
@@ -61,6 +62,12 @@ class SparkPlanner:
             max_completion_tokens=4096,
             reasoning_effort="low",
         )
+        return self.decode_response(response, contract)
+
+    def decode_response(
+        self, response: CallResponse, contract: VisualTestContract
+    ) -> list[MutationPlan]:
+        """Apply the identical validation/fallback to a verified retained receipt."""
         raw = ""
         proposal = None
         reason = response.outcome

@@ -345,6 +345,7 @@ class Candidates:
         *,
         source_plan_id: UUID | None = None,
         automated: bool = False,
+        refinement_job_id: UUID | None = None,
     ) -> Mutation:
         from .service import canonical_json, fingerprint
 
@@ -382,6 +383,15 @@ class Candidates:
         }
         if source_plan_id is not None:
             request["source_plan_id"] = str(source_plan_id)
+        parent_id = None
+        if refinement_job_id is not None:
+            context = Budget(s.uow).require_followup(experiment, refinement_job_id)
+            parent_id = UUID(context["request_json"]["source_mutation_id"])
+            parent = self.row(parent_id)
+            if parent["experiment_id"] != experiment_id:
+                raise ServiceError(ErrorCode.FORBIDDEN, "Source lineage differs.", 403)
+            request["refinement_job_id"] = str(refinement_job_id)
+            request["parent_mutation_id"] = str(parent_id)
         identity = fingerprint(request)
         aliased = self.aliased(experiment_id, key, identity)
         if aliased is not None:
@@ -401,7 +411,10 @@ class Candidates:
                 raise IdempotencyConflict("Candidate request differs")
             return self.dto(previous)
         budget = Budget(s.uow)
-        budget._require_runnable(experiment)
+        if refinement_job_id is None:
+            budget._require_runnable(experiment)
+        else:
+            budget.require_followup(experiment, refinement_job_id)
         background = None
         background_snapshot = None
         synthetic = False
@@ -460,7 +473,10 @@ class Candidates:
                 ErrorCode.INVALID_INPUT, "Mutation inputs could not be accepted.", 422
             ) from None
         # Bound CPU work by the same experiment runtime, including generation.
-        budget._require_runnable(experiment)
+        if refinement_job_id is None:
+            budget._require_runnable(experiment)
+        else:
+            budget.require_followup(experiment, refinement_job_id)
         project = experiment["project_id"]
         # Content addressed storage makes this asset the normalized candidate SHA.
         candidate = s.artifacts.put(
@@ -562,6 +578,8 @@ class Candidates:
                 .values(
                     experiment_id=experiment_id,
                     plan_id=plan_id,
+                    parent_mutation_id=parent_id,
+                    minimization_job_id=refinement_job_id,
                     image_asset_id=UUID(assets["candidate"]),
                     family=generated.recipe.family,
                     strength=Decimal(str(generated.recipe.strength)),
@@ -807,6 +825,7 @@ class Candidates:
             id=row["id"],
             experiment_id=row["experiment_id"],
             parent_mutation_id=row["parent_mutation_id"],
+            minimization_job_id=row["minimization_job_id"],
             image_asset_id=row["image_asset_id"],
             family=row["family"],
             strength=float(row["strength"]),

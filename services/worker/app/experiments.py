@@ -35,10 +35,11 @@ from services.api.app.experiments import (
     reserve_confirmation_batch,
     transition,
 )
-from services.api.app.provider_accounting import ExperimentAccounting
+from services.api.app.provider_accounting import ExperimentAccounting, FollowupAccounting
 from services.api.app.service import Service, fingerprint
 
-from .fixtures import mock_transport, require_seed
+from .fixtures import mock_transport
+from .fixtures import require_seed as require_seed
 
 LEASE = timedelta(seconds=30)
 
@@ -56,6 +57,14 @@ def experiment_prices(snapshot: dict[str, Any]) -> PriceBook:
 
 
 def owned(s: Service, job: dict[str, Any]) -> Any:
+    if job.get("kind") == "MINIMIZE":
+        from .jobs import fenced
+
+        if fenced(s.uow, job) is None:
+            raise ServiceError(ErrorCode.INVALID_STATE, "Refinement fence expired.")
+        row = s.row(s.t.experiments, job["experiment_id"], lock=True)
+        Budget(s.uow).require_followup(row, job["id"])
+        return row
     row = s.row(s.t.experiments, job["id"], lock=True)
     s.project(row["project_id"])
     if (
@@ -194,7 +203,20 @@ def accounting(
     purpose: str,
     mid: UUID | None = None,
     invocation_sha256: str | None = None,
-) -> ExperimentAccounting:
+) -> ExperimentAccounting | FollowupAccounting:
+    if job.get("kind") == "MINIMIZE":
+        assert mid is not None and invocation_sha256 is not None
+        return FollowupAccounting(
+            factory,
+            settings,
+            job_id=job["id"],
+            claim_token=job["claim_token"],
+            delivery=job["delivery_no"],
+            purpose=purpose,
+            synthetic=settings.provider_mode == "FIXTURE",
+            mutation_id=mid,
+            invocation_sha256=invocation_sha256,
+        )
     return ExperimentAccounting(
         factory,
         settings,
@@ -244,7 +266,10 @@ async def target_stage(
     with factory() as uow:
         s = Service(uow, settings)
         e = owned(s, job)
-        Budget(uow)._require_runnable(e)
+        if job.get("kind") == "MINIMIZE":
+            Budget(uow).require_followup(e, job["id"])
+        else:
+            Budget(uow)._require_runnable(e)
         snap = e["config_snapshot"]
         target, expected = snap["target"], snap["contract"]["expected"]["value"]
         image_id = UUID(snap["seed"]["image_asset_id"])
@@ -351,7 +376,7 @@ async def target_stage(
             s.db.execute(
                 select(s.t.usage_events)
                 .where(
-                    s.t.usage_events.c.experiment_id == job["id"],
+                    s.t.usage_events.c.experiment_id == e["id"],
                     s.t.usage_events.c.operation_key.startswith(prefix, autoescape=True),
                     s.t.usage_events.c.dispatched_at.is_not(None),
                 )
@@ -512,28 +537,66 @@ async def target_stage(
         uow.commit()
 
 
+def feedback_enabled(snapshot: dict[str, Any]) -> bool:
+    return bool(snapshot.get("search_policy", "ONE_SHOT") == "FEEDBACK_V1")
+
+
+def finish_slot(s: Service, e: Any) -> None:
+    """Advance an attempt even when no new unique image was produced."""
+    slot = e["checkpoint_json"].get("slot_index", 0) + 1
+    s.db.execute(
+        s.t.experiments.update()
+        .where(s.t.experiments.c.id == e["id"])
+        .values(checkpoint_json={"slot_index": slot, "resume_state": "PLANNING"})
+    )
+    if slot >= e["max_candidates"]:
+        transition(s, e["id"], "COMPLETED", "BOUNDED_FEEDBACK_COMPLETE")
+    else:
+        transition(s, e["id"], "PLANNING")
+
+
 async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
+    from counterforge_contracts.history import PlanningBatch
+    from counterforge_meta.history import sanitized_history
+    from counterforge_meta.spark import PLANNER_TEMPLATE
+
+    from services.api.app.planner_history import planner_history
+
+    from .adaptive_policy import POLICY_REVISION, SLOT_STRATEGY, exploration_slot, rank_proposals
+    from .random_strategy import RANDOM_REVISION, random_plan
+
     snap = job["config_snapshot"]
+    feedback = feedback_enabled(snap)
     contract = VisualTestContract.model_validate(snap["contract"])
     prices = experiment_prices(snap)
     with factory() as uow:
         s = Service(uow, settings)
         e = owned(s, job)
+        slot = e["checkpoint_json"].get("slot_index", 0)
         if settings.provider_mode == "FIXTURE":
             require_seed(s.artifacts.read_verified(UUID(snap["seed"]["image_asset_id"])))
         calls, slots = Budget(uow)._pending(e["id"])
         if (
             e["candidates_created"] + slots >= e["max_candidates"]
+            or feedback
+            and slot >= e["max_candidates"]
             or e["calls_consumed"] + calls >= e["max_target_calls"]
         ):
             transition(s, e["id"], "BUDGET_EXHAUSTED", "SEARCH_CAP_REACHED")
             uow.commit()
             return
-        # Remaining quantities may fall below start-request minima; these are
-        # planner context only. Original DB ceilings remain dispatch authority.
+        if feedback and (
+            snap["strategy"].get("revision") != POLICY_REVISION
+            or snap["strategy"].get("planner_template_revision") != PLANNER_TEMPLATE
+            or snap["strategy"].get("slot_strategy") != SLOT_STRATEGY
+        ):
+            pause_review(s, e["id"], "SEARCH_POLICY_REVISION_UNAVAILABLE")
+            uow.commit()
+            return
         remaining = Limits.model_validate(snap["limits"]).model_copy(
             update={
-                "max_candidates": e["max_candidates"] - e["candidates_created"] - slots,
+                "max_candidates": e["max_candidates"]
+                - (slot if feedback else e["candidates_created"] + slots),
                 "max_target_calls": e["max_target_calls"] - e["calls_consumed"] - calls,
                 "max_estimated_usd": max(
                     0, float(e["max_estimated_usd"] - e["spent_usd"] - e["reserved_usd"])
@@ -547,30 +610,47 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 ),
             }
         )
-    if job["mode"] == "RANDOM_BASELINE":
-        from .random_strategy import RANDOM_REVISION, random_plan
-
+        # Rank using every retained outcome; send only the bounded recent window.
+        history = planner_history(s, e["id"], limit=e["max_candidates"])
+        if feedback:
+            context = e["checkpoint_json"].get("planning_context")
+            if context is None:
+                # Freeze actual input before provider I/O, including crash recovery.
+                save_checkpoint(
+                    s,
+                    e["id"],
+                    planning_context={
+                        "history": history,
+                        "remaining": remaining.model_dump(mode="json"),
+                    },
+                )
+                uow.commit()
+            else:
+                history = context["history"]
+                remaining = remaining.model_copy(update=context["remaining"])
+    random = job["mode"] == "RANDOM_BASELINE" or feedback and exploration_slot(slot)
+    purpose = f"PLANNER_{slot}" if feedback else "PLANNER"
+    if random:
         strategy = snap.get("strategy")
-        if not strategy or strategy.get("revision") != RANDOM_REVISION:
+        if not strategy or (not feedback and strategy.get("revision") != RANDOM_REVISION):
             raise ServiceError(
-                ErrorCode.REVIEW_REQUIRED,
-                "Random search requires a recorded strategy seed and revision.",
+                ErrorCode.REVIEW_REQUIRED, "Random search requires a recorded seed and revision."
             )
         plans = [
             random_plan(
-                strategy["random_seed"],
+                strategy["random_seed"] + (slot if feedback else 0),
                 contract.allowed_mutations,
                 float(prices.upper("muse-image-1.0")),
             )
         ]
         evidence = {
-            "author": "RANDOM_BASELINE",
+            "author": "RANDOM_EXPLORATION" if feedback else "RANDOM_BASELINE",
             "synthetic": settings.provider_mode == "FIXTURE",
             "random_seed": strategy["random_seed"],
             "strength_range": strategy["strength_range"],
         }
     else:
-        port = accounting(factory, settings, job, "PLANNER")
+        port = accounting(factory, settings, job, purpose)
         async with MetaTransport(
             api_key="synthetic-fixture-key"
             if port.synthetic
@@ -581,41 +661,122 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             deadline_seconds=45,
         ) as transport:
             planner = SparkPlanner(transport=transport)
-            plans = await planner.plan(contract, [], remaining)
+            with factory() as uow:
+                s = Service(uow, settings)
+                owned(s, job)
+                prior = (
+                    s.db.execute(
+                        select(s.t.usage_events)
+                        .where(
+                            s.t.usage_events.c.experiment_id == job["id"],
+                            s.t.usage_events.c.operation_key.startswith(
+                                f"{job['id']}:{purpose}:", autoescape=True
+                            ),
+                            s.t.usage_events.c.dispatched_at.is_not(None),
+                        )
+                        .order_by(s.t.usage_events.c.created_at.desc())
+                    )
+                    .mappings()
+                    .first()
+                )
+                raw = None
+                if prior is not None:
+                    if prior["status"] != "SETTLED" or not prior["raw_response_asset_id"]:
+                        raise ServiceError(
+                            ErrorCode.REVIEW_REQUIRED, "Prior planner attempt needs resolution."
+                        )
+                    import json
+
+                    raw = json.loads(s.artifacts.read_verified(prior["raw_response_asset_id"]))
+            if prior is not None:
+                from counterforge_contracts.providers import ProviderResult
+                from counterforge_meta.transport import CallResponse
+
+                if not isinstance(raw, dict):
+                    raise ServiceError(
+                        ErrorCode.REVIEW_REQUIRED, "Retained planner receipt is invalid."
+                    )
+                plans = planner.decode_response(
+                    CallResponse(
+                        prior["outcome"],
+                        ProviderResult(provider="META", model="muse-spark-1.3", latency_ms=0),
+                        raw.get("response", raw),
+                    ),
+                    contract,
+                )
+            else:
+                plans = await planner.plan(contract, history, remaining)
             evidence = dict(planner.last_evidence)
     with factory() as uow:
         s = Service(uow, settings)
         e = owned(s, job)
-        if e["state"] not in ACTIVE_STATES:
-            save_checkpoint(
-                s, e["id"], plans=[p.model_dump(mode="json") for p in plans], plan_done=True
+        selected = plans
+        if feedback:
+            target = snap["target"]
+            tokens = target["inference_options"].get(
+                "max_output_tokens", target["inference_options"].get("max_completion_tokens", 128)
             )
-        else:
-            save_checkpoint(
-                s, e["id"], plans=[p.model_dump(mode="json") for p in plans], plan_done=True
+            unit = (
+                float(prices.upper("muse-spark-1.3", tokens))
+                if settings.provider_mode != "FIXTURE"
+                else 0.0
             )
-            transition(s, e["id"], "MUTATING")
+            costs = {
+                "generation": 3 * float(prices.upper("muse-image-1.0")),
+                "sam": 3 * float(prices.upper("sam-3.1")),
+                "screen": 3 * unit,
+                "confirmation": 3 * unit,
+            }
+            if settings.provider_mode == "FIXTURE":
+                costs = {k: 0.0 for k in costs}
+            available = max(0.0, float(e["max_estimated_usd"] - e["spent_usd"] - e["reserved_usd"]))
+            rankings = rank_proposals(
+                plans, contract, history, available_usd=available, cost_components=costs
+            )
+            selected = [plans[r.proposal_order] for r in rankings if r.selected]
+            evidence["batch"] = PlanningBatch(
+                slot_index=slot,
+                policy_revision=POLICY_REVISION,
+                template_revision=snap["strategy"]["planner_template_revision"],
+                random_seed=snap["strategy"]["random_seed"],
+                slot_strategy="RANDOM_EXPLORATION" if random else "ADAPTIVE_RANKING",
+                author=evidence["author"],
+                fallback_reason=evidence.get("fallback_reason"),
+                exploration_reserved=(e["max_candidates"] + 4) // 5,
+                exploration_used=slot // 5 + 1,
+                remaining_budget={k: float(v) for k, v in remaining.model_dump().items()},
+                cost_components=costs,
+                history_snapshot=[] if random else sanitized_history(history),
+                rankings=rankings,
+            ).model_dump(mode="json")
         usage = (
             s.db.execute(
                 select(s.t.usage_events)
                 .where(
                     s.t.usage_events.c.experiment_id == e["id"],
-                    s.t.usage_events.c.category == "PLANNER",
+                    s.t.usage_events.c.operation_key.startswith(
+                        f"{e['id']}:{purpose}:", autoescape=True
+                    ),
                 )
                 .order_by(s.t.usage_events.c.created_at.desc())
             )
             .mappings()
             .first()
+            if not random
+            else None
         )
+        selected_id = None
         for index, plan in enumerate(plans):
-            retained_plan_id = s.db.scalar(
+            retained_id = s.db.scalar(
                 s.t.mutation_plans.insert()
                 .values(
                     experiment_id=e["id"],
                     planner_model=evidence["author"],
-                    strategy="RANDOM" if e["mode"] == "RANDOM_BASELINE" else "META_ADAPTIVE",
-                    strategy_revision="random-initial-v2"
-                    if e["mode"] == "RANDOM_BASELINE"
+                    strategy="RANDOM" if random else "META_ADAPTIVE",
+                    strategy_revision=POLICY_REVISION
+                    if feedback
+                    else RANDOM_REVISION
+                    if random
                     else "spark-initial-v1",
                     hypothesis=s.candidates.clean(plan.hypothesis),
                     plan_json=plan.model_dump(mode="json"),
@@ -624,19 +785,34 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 )
                 .returning(s.t.mutation_plans.c.id)
             )
-            if index == 0:
-                save_checkpoint(s, e["id"], source_plan_id=str(retained_plan_id))
+            if (feedback and rankings[index].selected) or (not feedback and index == 0):
+                selected_id = retained_id
+        save_checkpoint(
+            s,
+            e["id"],
+            plans=[p.model_dump(mode="json") for p in selected],
+            plan_done=True,
+            source_plan_id=str(selected_id) if selected_id else None,
+        )
         event(
             s,
             e["id"],
             "PLAN_RECORDED",
             {
-                "strategy_revision": "spark-initial-v1"
+                "strategy_revision": POLICY_REVISION
+                if feedback
+                else "spark-initial-v1"
                 if e["mode"] == "ADAPTIVE"
-                else "random-initial-v2",
+                else RANDOM_REVISION,
                 "author": evidence["author"],
+                "slot_index": slot,
             },
         )
+        if e["state"] in ACTIVE_STATES:
+            if selected:
+                transition(s, e["id"], "MUTATING")
+            elif feedback:
+                finish_slot(s, s.experiment(e["id"]))
         uow.commit()
 
 
@@ -718,7 +894,10 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             with factory() as uow:
                 s = Service(uow, settings)
                 owned(s, job)
-                transition(s, eid, "MUTATING")
+                if feedback_enabled(job["config_snapshot"]) and not cp.get("plans"):
+                    finish_slot(s, s.experiment(eid))
+                else:
+                    transition(s, eid, "MUTATING")
                 uow.commit()
         else:
             with factory() as uow:
@@ -763,7 +942,7 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                     "plan_json": approved.plan_json,
                     "limits": limits,
                 },
-                f"{eid}:scene:0",
+                f"{eid}:scene:{cp.get('slot_index', 0)}",
             )
         with factory() as uow:
             s = Service(uow, settings)
@@ -772,13 +951,27 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             candidate = s.candidates.create(
                 eid,
                 CreateMutation(
-                    plan=plan, rng_seed=int(eid.int % (2**31)), background_job_id=background
+                    plan=plan,
+                    rng_seed=(snap["strategy"]["random_seed"] + cp.get("slot_index", 0))
+                    if feedback_enabled(snap)
+                    else int(eid.int % (2**31)),
+                    background_job_id=background,
                 ),
-                "pipeline:0",
+                f"pipeline:{cp.get('slot_index', 0)}",
                 source_plan_id=UUID(cp["source_plan_id"]) if cp.get("source_plan_id") else None,
                 automated=True,
             )
-            save_checkpoint(s, eid, generated=True, mutation_id=str(candidate.id))
+            duplicate = bool(
+                cp.get("source_plan_id")
+                and s.candidates.row(candidate.id)["plan_id"] != UUID(cp["source_plan_id"])
+            )
+            save_checkpoint(
+                s,
+                eid,
+                generated=True,
+                mutation_id=str(candidate.id),
+                **({"sam_done": True, "duplicate_image": True} if duplicate else {}),
+            )
             event(s, eid, "CANDIDATE_GENERATED", {"mutation_id": str(candidate.id)})
             transition(s, eid, "VALIDATING")
             uow.commit()
@@ -804,7 +997,7 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                         "max_runtime_seconds": job["max_runtime_seconds"],
                     },
                 },
-                f"{eid}:sam:0",
+                f"{eid}:sam:{cp.get('slot_index', 0)}",
             )
         with factory() as uow:
             s = Service(uow, settings)
@@ -901,6 +1094,8 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 if selected is None:
                     if review:
                         pause_review(s, eid, "CANDIDATE_HUMAN_REVIEW_REQUIRED")
+                    elif feedback_enabled(e["config_snapshot"]):
+                        finish_slot(s, e)
                     else:
                         transition(s, eid, "COMPLETED", "BOUNDED_PLAN_COMPLETE")
                     uow.commit()
@@ -985,6 +1180,31 @@ async def execute_experiment(factory: Any, settings: Any, eid: UUID) -> None:
             enqueue_experiments(settings, [eid])
 
 
+def planner_recovery_requires_review(experiment: Any, event: Any) -> bool:
+    checkpoint = experiment["checkpoint_json"]
+    if event["status"] == "UNKNOWN_CHARGE":
+        return True
+    if not feedback_enabled(experiment["config_snapshot"]):
+        return not checkpoint.get("plan_done")
+    prefix = f"{experiment['id']}:PLANNER_"
+    key = event["operation_key"]
+    ordinal = key[len(prefix) :].split(":", 1)[0] if key.startswith(prefix) else ""
+    if not ordinal.isdigit():
+        return True
+    slot = checkpoint.get("slot_index", 0)
+    if int(ordinal) < slot:
+        return bool(event["status"] != "SETTLED")
+    if int(ordinal) > slot:
+        return True
+    retained_receipt = (
+        event["status"] == "SETTLED"
+        and event["raw_response_asset_id"]
+        and event["metadata_json"].get("finish_sha256")
+        and checkpoint.get("planning_context") is not None
+    )
+    return not (checkpoint.get("plan_done") or retained_receipt)
+
+
 def recover_experiments(factory: Any, settings: Any) -> list[UUID]:
     """Recover PostgreSQL intent after lost Redis; never replay ambiguous paid sends."""
     with factory() as uow:
@@ -1032,7 +1252,7 @@ def recover_experiments(factory: Any, settings: Any) -> list[UUID]:
                         ):
                             ambiguous = True
                     elif v["category"] == "PLANNER":
-                        if not e["checkpoint_json"].get("plan_done"):
+                        if planner_recovery_requires_review(e, v):
                             ambiguous = True
                     elif v["background_job_id"]:
                         prep = s.job(v["background_job_id"])

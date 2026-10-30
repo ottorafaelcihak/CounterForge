@@ -17,13 +17,13 @@ from tests.integrations.test_experiment_pipeline import fixture_settings, replie
 pytestmark = pytest.mark.allow_hosts(["127.0.0.1"])
 
 
-async def pair(api, payload):
+async def pair(api, payload, limits=None):
     api.settings.provider_mode = "FIXTURE"
     api.settings.allow_synthetic_fixtures = True
     _, _, vtc = await contract(api, payload)
     config = await target(api)
     ids = []
-    limits = Limits(max_candidates=1, max_target_calls=7, max_estimated_usd=7.5)
+    limits = limits or Limits(max_candidates=1, max_target_calls=7, max_estimated_usd=7.5)
     for mode in ("ADAPTIVE", "RANDOM_BASELINE"):
         response = await api.client.post(
             "/api/v1/experiments",
@@ -186,3 +186,93 @@ async def test_predeclare_blocks_a_preexisting_unbilled_random_plan(api, vtc_pay
         )
         with pytest.raises(ValueError, match="planning"):
             predeclare(s, *ids, "too-late-for-plan")
+
+
+async def test_refinement_and_retest_do_not_inflate_search_comparison(
+    api, vtc_payload, monkeypatch
+):
+    from decimal import Decimal
+
+    from sqlalchemy import func
+
+    from services.api.app.accounting import Budget
+    from services.worker.app.jobs import execute_job
+    from tests.integrations import test_experiment_pipeline as pipeline
+    from tests.integrations.test_exports import request
+    from tests.integrations.test_minimization import reviewed_probe, source
+
+    ids = await pair(
+        api, vtc_payload, Limits(max_candidates=4, max_target_calls=20, max_estimated_usd=7.5)
+    )
+    with api.factory() as uow:
+        manifest = predeclare(Service(uow, api.settings), *ids, "before-search-and-refinement")
+
+    async def existing_experiment(*args, **kwargs):
+        return str(ids[0]), None, None, None
+
+    monkeypatch.setattr(pipeline, "experiment", existing_experiment)
+    fid, mutation = await source(api, vtc_payload, monkeypatch)
+    with api.factory() as uow:
+        before = report(Service(uow, api.settings), manifest)["arms"][0]
+    response = await api.client.post(
+        f"/api/v1/findings/{fid}/minimize",
+        json={"probe_limit": 1},
+        headers={"Idempotency-Key": "comparison-refinement"},
+    )
+    assert response.status_code == 202, response.text
+    jid = UUID(response.json()["job_id"])
+    await execute_job(api.factory, api.settings, jid)
+    result = await reviewed_probe(api, jid, monkeypatch, [0, 0, 0, 0])
+    assert result["result"]["minimization"]["best_finding_id"] != fid
+    xid = UUID((await request(api, fid)).json()["export_id"])
+    await execute_job(api.factory, api.settings, xid)
+    with api.factory() as uow:
+        tid = Service(uow, api.settings).experiment(ids[0])["target_config_id"]
+        Budget(uow).configure_deployment_allowance(
+            max_usd=Decimal(0),
+            max_calls=20,
+            expires_at=uow.connection.scalar(select(func.now())) + timedelta(hours=1),
+            configured_by="isolated-comparison-followup-fixture",
+        )
+        uow.commit()
+    response = await api.client.post(
+        f"/api/v1/regressions/{xid}/retest",
+        json={
+            "target_config_id": str(tid),
+            "limits": {"max_calls": 3, "max_estimated_usd": 1, "max_runtime_seconds": 600},
+        },
+        headers={"Idempotency-Key": "comparison-retest"},
+    )
+    assert response.status_code == 202, response.text
+    replies(monkeypatch, [1, 1, 1])
+    await execute_job(api.factory, api.settings, UUID(response.json()["job_id"]))
+    with api.factory() as uow:
+        after = report(Service(uow, api.settings), manifest)["arms"][0]
+    for key in (
+        "generated_candidates",
+        "candidate_validity",
+        "suspected_findings_total",
+        "stable_findings",
+        "observations_by_phase",
+        "valid_screening_observations",
+        "target_requests_by_phase",
+        "target_calls_consumed",
+        "usage",
+        "usage_by_category",
+        "proposed_plans",
+    ):
+        assert after[key] == before[key], key
+    assert after["source_target_calls_consumed"] == 11
+    assert after["source_usage"]["dispatched_requests"] == 11
+    assert after["refinement_usage"]["dispatched_requests"] == 4
+    assert after["retest_usage"]["dispatched_requests"] == 3
+
+    rendered = markdown(
+        {
+            "arms": [after],
+            "provenance": "LOCAL_FIXTURE",
+            "interpretation": "Test only",
+            "limitations": [],
+        }
+    )
+    assert "refinement 4 requests" in rendered and "retest 3 requests" in rendered

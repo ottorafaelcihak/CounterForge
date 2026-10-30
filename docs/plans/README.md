@@ -1,14 +1,18 @@
 # CounterForge implementation roadmap
 
-**Status:** Phases 01–06 are implemented with fixture verification. Phase 06 adds
-portable regression exports, evidence/library screens and a predeclared small
-comparison. Its real runs used 10 calls / USD 0.011852 confirmed, plus up to USD
-0.012 unresolved: random screening was correct; Spark paused after an ambiguous
-image timeout. No genuine stable failure or live regression export was demonstrated.
-See the [Phase 06 handoff](phase-06-handoff.md) and
-[comparison report](phase-06-comparison-results.md). Phase 05 separately used
-13 calls / USD 0.041512. Usable SAM masks on this illustration, automatic threshold
-calibration and held-out evaluation remain unmet. Phases 07–11 remain planned.
+**Status:** Phases 01–07 are implemented with fixture verification. Phase 07 adds
+optional feedback search, independently reviewed minimization and job-isolated
+version retests. Its live demonstration retained a real subsequent Spark plan
+consuming actual VALID/CORRECT prior evidence: 10 calls / USD 0.014801 total,
+including the expired first attempt. See the [Phase 07 handoff](phase-07-handoff.md)
+and [frozen policy](phase-07-policy.json).
+
+Phase 06's small descriptive comparison used 10 calls / USD 0.011852 confirmed,
+plus up to USD 0.012 unresolved; its Spark image timed out and random screening was
+correct. Phase 05 separately used 13 calls / USD 0.041512. No genuine stable failure
+or live regression export was demonstrated. Usable SAM masks on the illustration,
+automatic threshold calibration and held-out strategy evaluation remain unmet.
+Phases 08–11 remain planned.
 
 Read plans in order. Checked implementation gates refer to their verification
 handoffs; fixture success never substitutes for the outstanding live/human gates

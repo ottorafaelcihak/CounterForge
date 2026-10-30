@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, allPages, assetURL, type components } from "@/lib/client-api";
 import { ExportCard, RunnerInstructions, fixtureLabel, usd } from "@/components/export-ui";
 
+import { MinimizationPanel } from "./minimization-panel";
+
 type Finding = components["schemas"]["Finding"];
 type ExportRecord = components["schemas"]["ExportRef"];
 const errorText = (e: unknown) => e instanceof Error ? e.message : "The request could not be completed.";
@@ -62,6 +64,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         {finding.mutation_id && <Link href={"/mutations/" + finding.mutation_id}>Open candidate review and audit history</Link>}
       </section>
       {!evidence && <p className="review-warning">Retained detailed evidence requires review or repair. Open the candidate audit history; export remains unavailable.</p>}
+      <MinimizationPanel findingId={findingId} eligible={!!evidence?.export_eligible} />
       {evidence && <>
         <section className="form-panel"><h2>Retained images</h2><div className="evidence-image-grid">{["original", "candidate", "diff", "protected_mask"].map(role => { const asset = evidence.assets[role]; return asset ? <figure key={role}><figcaption>{role.replaceAll("_", " ")}</figcaption>{/* Authenticated immutable evidence; native images preserve exact bytes. */}
           <img src={assetURL(asset.asset_id)} alt={role.replaceAll("_", " ") + " evidence"} /><details><summary>SHA-256</summary><code>{asset.sha256}</code></details></figure> : null; })}</div></section>
