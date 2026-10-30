@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "revision": "PENDING",
+  "contract_version": "1.0.0",
+  "policy_revision": "strict-binary-human-gates-1",
+  "entries": [
+    {
+      "case_id": "PENDING",
+      "split": "development",
+      "source_path": "PENDING",
+      "normalized_path": "PENDING",
+      "media_type": "image/png",
+      "source_sha256": null,
+      "normalized_sha256": null,
+      "width": null,
+      "height": null,
+      "verified_count": null,
+      "rights": {
+        "source": "PENDING",
+        "permission": "PENDING",
+        "redistribution_cleared": null,
+        "reviewer": "PENDING",
+        "reviewed_at": null
+      },
+      "label_reviewer": "PENDING",
+      "label_reviewed_at": null,
+      "ambiguity": null,
+      "ambiguity_notes": "PENDING"
+    }
+  ],
+  "exclusions": [],
+  "sha256": null,
+  "_status": "TEMPLATE ONLY - not an admitted dataset. Human labels, counts and redistribution approval are pending; validation must fail closed until every field is real human evidence for exactly 8 development and 4 held-out cases."
+}

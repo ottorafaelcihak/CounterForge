@@ -67,3 +67,11 @@ test-e2e:
 .PHONY: verify-export
 verify-export:
 	$(PYTHON) -m scripts.verify_export
+
+# Explicit NO MONEY default: this exercises ledger/report methodology only.
+# Pass EVALUATE_ARGS to route another CLI command, e.g.
+#   make evaluate EVALUATE_ARGS="verify-bundle /path/to/bundle"
+.PHONY: evaluate
+EVALUATE_PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,$(PYTHON))
+evaluate:
+	$(EVALUATE_PYTHON) -m evaluations.cli $(if $(EVALUATE_ARGS),$(EVALUATE_ARGS),fixture)

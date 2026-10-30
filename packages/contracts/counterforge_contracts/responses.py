@@ -211,7 +211,7 @@ class ExperimentView(ContractModel):
     metrics: Metrics
     stop_reason: str | None = None
     mode: Literal["ADAPTIVE", "RANDOM_BASELINE"] = "ADAPTIVE"
-    search_policy: Literal["ONE_SHOT", "FEEDBACK_V1"] = "ONE_SHOT"
+    search_policy: Literal["ONE_SHOT", "FEEDBACK_V1", "RANDOM_V1"] = "ONE_SHOT"
     planner_history: list[PlannerHistory] = Field(default_factory=list)
     planning_batches: list[PlanningBatch] = Field(default_factory=list)
     synthetic: bool = False

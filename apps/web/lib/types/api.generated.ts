@@ -1231,7 +1231,7 @@ export interface components {
              * @default ONE_SHOT
              * @enum {string}
              */
-            search_policy: "ONE_SHOT" | "FEEDBACK_V1";
+            search_policy: "ONE_SHOT" | "FEEDBACK_V1" | "RANDOM_V1";
             /**
              * Spent Usd
              * @default 0
@@ -2543,7 +2543,7 @@ export interface components {
              * @default ONE_SHOT
              * @enum {string}
              */
-            search_policy: "ONE_SHOT" | "FEEDBACK_V1";
+            search_policy: "ONE_SHOT" | "FEEDBACK_V1" | "RANDOM_V1";
             /**
              * Target Config Id
              * Format: uuid

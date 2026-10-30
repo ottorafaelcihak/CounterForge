@@ -28,6 +28,35 @@ def test_feedback_is_opt_in_and_adaptive_only():
         StartExperiment(**args, mode="RANDOM_BASELINE", search_policy="FEEDBACK_V1")
 
 
+def test_random_loop_is_random_baseline_only():
+    args = dict(project_id=uuid4(), contract_id=uuid4(), target_config_id=uuid4())
+    assert (
+        StartExperiment(**args, mode="RANDOM_BASELINE", search_policy="RANDOM_V1").search_policy
+        == "RANDOM_V1"
+    )
+    with pytest.raises(ValidationError, match="RANDOM_BASELINE"):
+        StartExperiment(**args, search_policy="RANDOM_V1")
+    with pytest.raises(ValidationError, match="RANDOM_BASELINE"):
+        StartExperiment(**args, mode="ADAPTIVE", search_policy="RANDOM_V1")
+
+
+def test_loop_helpers_distinguish_policies():
+    from services.worker.app.experiments import (
+        feedback_enabled,
+        loop_enabled,
+        random_loop_enabled,
+    )
+
+    assert loop_enabled({"search_policy": "FEEDBACK_V1"})
+    assert loop_enabled({"search_policy": "RANDOM_V1"})
+    assert not loop_enabled({"search_policy": "ONE_SHOT"})
+    assert not loop_enabled({})
+    assert feedback_enabled({"search_policy": "FEEDBACK_V1"})
+    assert not feedback_enabled({"search_policy": "RANDOM_V1"})
+    assert random_loop_enabled({"search_policy": "RANDOM_V1"})
+    assert not random_loop_enabled({"search_policy": "FEEDBACK_V1"})
+
+
 def test_fixed_exploration_slots_cannot_be_reallocated():
     from services.worker.app.adaptive_policy import exploration_slot
 

@@ -6,6 +6,9 @@ from counterforge_contracts.plans import MutationPlan
 from counterforge_contracts.versions import MutationFamily
 
 RANDOM_REVISION = "random-initial-v2"
+RANDOM_LOOP_REVISION = "random-loop-v1"
+RANDOM_LOOP_SLOT_STRATEGY = "seed-plus-slot-v1"
+RANDOM_LOOP_AUTHOR = "RANDOM_LOOP"
 STRENGTH_RANGE = (0.0, 1.0)
 
 

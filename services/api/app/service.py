@@ -627,12 +627,26 @@ class Service:
             ),
         )
 
-    def start_experiment(self, body: StartExperiment, idempotency_key: str) -> ExperimentRef:
+    def start_experiment(
+        self,
+        body: StartExperiment,
+        idempotency_key: str,
+        *,
+        _evaluation: dict[str, Any] | None = None,
+        _experiment_id: UUID | None = None,
+    ) -> ExperimentRef:
         self.project(body.project_id, lock=True)
         request = body.model_dump(mode="json")
         if body.search_policy == "ONE_SHOT":
             # Match pre-feedback fingerprints for safe retries across deployment.
             request.pop("search_policy")
+        if _evaluation is not None:
+            if set(_evaluation) != {"evaluation", "evaluation_identity"} or _experiment_id is None:
+                raise ValueError("Internal evaluation requires complete immutable metadata and ID")
+            request["evaluation"] = _evaluation
+            request["experiment_id"] = str(_experiment_id)
+        elif _experiment_id is not None:
+            raise ValueError("Explicit IDs are reserved for declared evaluations")
         digest = fingerprint(request)
         previous = (
             self.db.execute(
@@ -717,10 +731,16 @@ class Service:
                 "random_seed": body.random_seed
                 if body.random_seed is not None
                 else uuid4().int & (2**63 - 1),
-                "planner_template_revision": PLANNER_TEMPLATE,
-                "slot_strategy": "ordinal-mod5-zero-random-v1",
+                "planner_template_revision": "random-loop-v1"
+                if body.search_policy == "RANDOM_V1"
+                else PLANNER_TEMPLATE,
+                "slot_strategy": "seed-plus-slot-v1"
+                if body.search_policy == "RANDOM_V1"
+                else "ordinal-mod5-zero-random-v1",
                 "revision": "feedback-v1"
                 if body.search_policy == "FEEDBACK_V1"
+                else "random-loop-v1"
+                if body.search_policy == "RANDOM_V1"
                 else "random-initial-v2"
                 if body.mode == "RANDOM_BASELINE"
                 else "spark-initial-v1",
@@ -729,11 +749,14 @@ class Service:
             "provider_dispatch_enabled": self.settings.provider_mode != "DISABLED",
             "provider_mode": self.settings.provider_mode,
         }
+        if _evaluation is not None:
+            snapshot.update(_evaluation)
         limits = body.limits
         row = (
             self.db.execute(
                 self.t.experiments.insert()
                 .values(
+                    **({"id": _experiment_id} if _experiment_id is not None else {}),
                     project_id=body.project_id,
                     contract_id=body.contract_id,
                     target_config_id=body.target_config_id,

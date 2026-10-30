@@ -1,0 +1,8 @@
+{
+  "_status": "TEMPLATE ONLY - map each frozen case_id to already-created contract/target IDs. full_contract_id is required for the full_system generator ablation arm.",
+  "PENDING-case-id": {
+    "contract_id": null,
+    "full_contract_id": null,
+    "target_config_id": null
+  }
+}

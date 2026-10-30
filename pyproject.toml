@@ -26,7 +26,7 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["services"]
+packages = ["services", "evaluations"]
 
 [dependency-groups]
 dev = [
@@ -69,6 +69,6 @@ ignore = ["E501"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["packages", "services", "scripts", "tests/contracts/test_provider_protocols.py"]
+files = ["packages", "services", "scripts", "evaluations", "tests/contracts/test_provider_protocols.py"]
 exclude = ["__pycache__"]
 plugins = ["pydantic.mypy"]

@@ -137,6 +137,11 @@ def claim(factory: Any, settings: Any, eid: UUID) -> dict[str, Any] | None:
             or e["state"] not in ACTIVE_STATES
         ):
             return None
+        from services.api.app.evaluation import search_allowed
+
+        if not search_allowed(s, e):
+            uow.commit()
+            return None
         try:
             require_provider_mode(s, e)
         except ServiceError:
@@ -150,8 +155,13 @@ def claim(factory: Any, settings: Any, eid: UUID) -> dict[str, Any] | None:
             return None
         try:
             Budget(uow)._require_runnable(e)
-        except ServiceError:
-            transition(s, eid, "BUDGET_EXHAUSTED", "RUNTIME_EXPIRED")
+        except ServiceError as exc:
+            from services.api.app.evaluation import GlobalEvaluationExhausted
+
+            reason = (
+                exc.stop_reason if isinstance(exc, GlobalEvaluationExhausted) else "RUNTIME_EXPIRED"
+            )
+            transition(s, eid, "BUDGET_EXHAUSTED", reason)
             s.db.execute(
                 s.t.experiments.update()
                 .where(s.t.experiments.c.id == eid)
@@ -461,7 +471,11 @@ async def target_stage(
                 )
                 try:
                     canonical_confirmation(s, cast(UUID, finding_id))
-                except ServiceError:
+                except ServiceError as exc:
+                    from services.api.app.evaluation import GlobalEvaluationExhausted
+
+                    if isinstance(exc, GlobalEvaluationExhausted):
+                        raise
                     s.db.execute(
                         s.t.findings.update()
                         .where(s.t.findings.c.id == finding_id)
@@ -541,6 +555,15 @@ def feedback_enabled(snapshot: dict[str, Any]) -> bool:
     return bool(snapshot.get("search_policy", "ONE_SHOT") == "FEEDBACK_V1")
 
 
+def random_loop_enabled(snapshot: dict[str, Any]) -> bool:
+    return bool(snapshot.get("search_policy", "ONE_SHOT") == "RANDOM_V1")
+
+
+def loop_enabled(snapshot: dict[str, Any]) -> bool:
+    """Bounded multi-slot loop: adaptive feedback or seeded random loop."""
+    return feedback_enabled(snapshot) or random_loop_enabled(snapshot)
+
+
 def finish_slot(s: Service, e: Any) -> None:
     """Advance an attempt even when no new unique image was produced."""
     slot = e["checkpoint_json"].get("slot_index", 0) + 1
@@ -563,10 +586,18 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
     from services.api.app.planner_history import planner_history
 
     from .adaptive_policy import POLICY_REVISION, SLOT_STRATEGY, exploration_slot, rank_proposals
-    from .random_strategy import RANDOM_REVISION, random_plan
+    from .random_strategy import (
+        RANDOM_LOOP_AUTHOR,
+        RANDOM_LOOP_REVISION,
+        RANDOM_LOOP_SLOT_STRATEGY,
+        RANDOM_REVISION,
+        random_plan,
+    )
 
     snap = job["config_snapshot"]
     feedback = feedback_enabled(snap)
+    random_loop = random_loop_enabled(snap)
+    loop = loop_enabled(snap)
     contract = VisualTestContract.model_validate(snap["contract"])
     prices = experiment_prices(snap)
     with factory() as uow:
@@ -578,7 +609,7 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
         calls, slots = Budget(uow)._pending(e["id"])
         if (
             e["candidates_created"] + slots >= e["max_candidates"]
-            or feedback
+            or loop
             and slot >= e["max_candidates"]
             or e["calls_consumed"] + calls >= e["max_target_calls"]
         ):
@@ -593,10 +624,17 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             pause_review(s, e["id"], "SEARCH_POLICY_REVISION_UNAVAILABLE")
             uow.commit()
             return
+        if random_loop and (
+            snap["strategy"].get("revision") != RANDOM_LOOP_REVISION
+            or snap["strategy"].get("slot_strategy") != RANDOM_LOOP_SLOT_STRATEGY
+        ):
+            pause_review(s, e["id"], "SEARCH_POLICY_REVISION_UNAVAILABLE")
+            uow.commit()
+            return
         remaining = Limits.model_validate(snap["limits"]).model_copy(
             update={
                 "max_candidates": e["max_candidates"]
-                - (slot if feedback else e["candidates_created"] + slots),
+                - (slot if loop else e["candidates_created"] + slots),
                 "max_target_calls": e["max_target_calls"] - e["calls_consumed"] - calls,
                 "max_estimated_usd": max(
                     0, float(e["max_estimated_usd"] - e["spent_usd"] - e["reserved_usd"])
@@ -611,7 +649,8 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             }
         )
         # Rank using every retained outcome; send only the bounded recent window.
-        history = planner_history(s, e["id"], limit=e["max_candidates"])
+        # The random loop never conditions on outcomes: no planner history.
+        history = [] if random_loop else planner_history(s, e["id"], limit=e["max_candidates"])
         if feedback:
             context = e["checkpoint_json"].get("planning_context")
             if context is None:
@@ -632,23 +671,39 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
     purpose = f"PLANNER_{slot}" if feedback else "PLANNER"
     if random:
         strategy = snap.get("strategy")
-        if not strategy or (not feedback and strategy.get("revision") != RANDOM_REVISION):
+        expected_revision = RANDOM_LOOP_REVISION if random_loop else RANDOM_REVISION
+        if (
+            not strategy
+            or (not feedback and not random_loop and strategy.get("revision") != RANDOM_REVISION)
+            or (random_loop and strategy.get("revision") != expected_revision)
+        ):
             raise ServiceError(
                 ErrorCode.REVIEW_REQUIRED, "Random search requires a recorded seed and revision."
             )
         plans = [
             random_plan(
-                strategy["random_seed"] + (slot if feedback else 0),
+                strategy["random_seed"] + (slot if loop else 0),
                 contract.allowed_mutations,
                 float(prices.upper("muse-image-1.0")),
             )
         ]
         evidence = {
-            "author": "RANDOM_EXPLORATION" if feedback else "RANDOM_BASELINE",
+            "author": RANDOM_LOOP_AUTHOR
+            if random_loop
+            else "RANDOM_EXPLORATION"
+            if feedback
+            else "RANDOM_BASELINE",
             "synthetic": settings.provider_mode == "FIXTURE",
             "random_seed": strategy["random_seed"],
             "strength_range": strategy["strength_range"],
         }
+        if random_loop:
+            evidence["random_loop"] = {
+                "slot_index": slot,
+                "revision": RANDOM_LOOP_REVISION,
+                "slot_strategy": RANDOM_LOOP_SLOT_STRATEGY,
+                "loop_seed": strategy["random_seed"] + slot,
+            }
     else:
         port = accounting(factory, settings, job, purpose)
         async with MetaTransport(
@@ -749,6 +804,42 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 history_snapshot=[] if random else sanitized_history(history),
                 rankings=rankings,
             ).model_dump(mode="json")
+        elif random_loop:
+            # Contract/budget gating only, with no outcome history and no
+            # learned family preference: an invalid or unaffordable seeded
+            # plan is retained but not selected, so the slot is consumed.
+            from counterforge_mutations.registry import approve_plan
+
+            target = snap["target"]
+            tokens = target["inference_options"].get(
+                "max_output_tokens", target["inference_options"].get("max_completion_tokens", 128)
+            )
+            unit = (
+                float(prices.upper("muse-spark-1.3", tokens))
+                if settings.provider_mode != "FIXTURE"
+                else 0.0
+            )
+            costs = {
+                "generation": 3 * float(prices.upper("muse-image-1.0")),
+                "sam": 3 * float(prices.upper("sam-3.1")),
+                "screen": 3 * unit,
+                "confirmation": 3 * unit,
+            }
+            if settings.provider_mode == "FIXTURE":
+                costs = {k: 0.0 for k in costs}
+            available = max(0.0, float(e["max_estimated_usd"] - e["spent_usd"] - e["reserved_usd"]))
+            gated = []
+            for plan in plans:
+                cost = sum(costs[k] for k in ("sam", "screen", "confirmation"))
+                if plan.requires_muse_image:
+                    cost += costs["generation"]
+                try:
+                    approve_plan(contract, plan)
+                except ValueError:
+                    continue
+                if cost <= available:
+                    gated.append(plan)
+            selected = gated
         usage = (
             s.db.execute(
                 select(s.t.usage_events)
@@ -773,7 +864,9 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                     experiment_id=e["id"],
                     planner_model=evidence["author"],
                     strategy="RANDOM" if random else "META_ADAPTIVE",
-                    strategy_revision=POLICY_REVISION
+                    strategy_revision=RANDOM_LOOP_REVISION
+                    if random_loop
+                    else POLICY_REVISION
                     if feedback
                     else RANDOM_REVISION
                     if random
@@ -785,7 +878,11 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 )
                 .returning(s.t.mutation_plans.c.id)
             )
-            if (feedback and rankings[index].selected) or (not feedback and index == 0):
+            if (
+                (feedback and rankings[index].selected)
+                or (random_loop and plan in selected)
+                or (not feedback and not random_loop and index == 0)
+            ):
                 selected_id = retained_id
         save_checkpoint(
             s,
@@ -799,7 +896,9 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             e["id"],
             "PLAN_RECORDED",
             {
-                "strategy_revision": POLICY_REVISION
+                "strategy_revision": RANDOM_LOOP_REVISION
+                if random_loop
+                else POLICY_REVISION
                 if feedback
                 else "spark-initial-v1"
                 if e["mode"] == "ADAPTIVE"
@@ -811,7 +910,7 @@ async def plan_stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
         if e["state"] in ACTIVE_STATES:
             if selected:
                 transition(s, e["id"], "MUTATING")
-            elif feedback:
+            elif loop:
                 finish_slot(s, s.experiment(e["id"]))
         uow.commit()
 
@@ -894,7 +993,7 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
             with factory() as uow:
                 s = Service(uow, settings)
                 owned(s, job)
-                if feedback_enabled(job["config_snapshot"]) and not cp.get("plans"):
+                if loop_enabled(job["config_snapshot"]) and not cp.get("plans"):
                     finish_slot(s, s.experiment(eid))
                 else:
                     transition(s, eid, "MUTATING")
@@ -953,7 +1052,7 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 CreateMutation(
                     plan=plan,
                     rng_seed=(snap["strategy"]["random_seed"] + cp.get("slot_index", 0))
-                    if feedback_enabled(snap)
+                    if loop_enabled(snap)
                     else int(eid.int % (2**31)),
                     background_job_id=background,
                 ),
@@ -1094,7 +1193,7 @@ async def stage(factory: Any, settings: Any, job: dict[str, Any]) -> None:
                 if selected is None:
                     if review:
                         pause_review(s, eid, "CANDIDATE_HUMAN_REVIEW_REQUIRED")
-                    elif feedback_enabled(e["config_snapshot"]):
+                    elif loop_enabled(e["config_snapshot"]):
                         finish_slot(s, e)
                     else:
                         transition(s, eid, "COMPLETED", "BOUNDED_PLAN_COMPLETE")
@@ -1141,7 +1240,11 @@ async def execute_experiment(factory: Any, settings: Any, eid: UUID) -> None:
                         usage["operation_key"], "EXPERIMENT_STAGE_FAILED"
                     )
             if e["state"] not in {"PAUSE_REQUESTED", "CANCEL_REQUESTED"}:
-                if isinstance(exc, TimeoutError) or (
+                from services.api.app.evaluation import GlobalEvaluationExhausted
+
+                if isinstance(exc, GlobalEvaluationExhausted):
+                    transition(s, eid, "BUDGET_EXHAUSTED", exc.stop_reason)
+                elif isinstance(exc, TimeoutError) or (
                     isinstance(exc, ServiceError) and exc.code == ErrorCode.BUDGET_EXCEEDED
                 ):
                     transition(s, eid, "BUDGET_EXHAUSTED", "STAGE_BUDGET_EXCEEDED")

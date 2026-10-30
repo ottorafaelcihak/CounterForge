@@ -1,0 +1,13 @@
+{
+  "protocol_sha256": null,
+  "dataset_sha256": null,
+  "authorized_by": "PENDING",
+  "authorized_at": null,
+  "expires_at": null,
+  "max_api_calls": null,
+  "max_usd": null,
+  "max_runtime_seconds": null,
+  "paid_provider_calls_authorized": null,
+  "sha256": null,
+  "_status": "TEMPLATE ONLY - no Phase 08 paid budget is approved. A real authorization must be hash-bound to the frozen protocol/dataset, signed via evaluations integrity seal, and supplied only by the coordinator. Never commit a real authorization or key."
+}

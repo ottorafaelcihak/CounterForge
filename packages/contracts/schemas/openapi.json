@@ -790,7 +790,8 @@
             "default": "ONE_SHOT",
             "enum": [
               "ONE_SHOT",
-              "FEEDBACK_V1"
+              "FEEDBACK_V1",
+              "RANDOM_V1"
             ],
             "title": "Search Policy",
             "type": "string"
@@ -4252,7 +4253,8 @@
             "default": "ONE_SHOT",
             "enum": [
               "ONE_SHOT",
-              "FEEDBACK_V1"
+              "FEEDBACK_V1",
+              "RANDOM_V1"
             ],
             "title": "Search Policy",
             "type": "string"

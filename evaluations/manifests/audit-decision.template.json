@@ -1,0 +1,16 @@
+{
+  "candidate_id": "PENDING",
+  "candidate_sha256": null,
+  "image_sha256": null,
+  "evidence_sha256": null,
+  "original_verdict": null,
+  "automatic_verdict": null,
+  "reviewer": "PENDING",
+  "independent": true,
+  "reviewed_at": null,
+  "judgment": null,
+  "rationale": "PENDING",
+  "supersedes": null,
+  "sha256": null,
+  "_status": "TEMPLATE ONLY - human judgments remain pending. Do not fabricate reviews. Append real decisions with `evaluations.cli audit-append`; corrections set supersedes to the prior decision sha256."
+}

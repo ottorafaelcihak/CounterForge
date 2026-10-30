@@ -7,6 +7,13 @@ consuming actual VALID/CORRECT prior evidence: 10 calls / USD 0.014801 total,
 including the expired first attempt. See the [Phase 07 handoff](phase-07-handoff.md)
 and [frozen policy](phase-07-policy.json).
 
+Phase 08 implements the frozen matched-budget evaluation harness, blinded
+independent audit and source-reconciled reports in `evaluations/`. Measured
+real-model evaluation remains pending: no approved 12-case human dataset and
+no Phase 08 paid authorization exist. See the
+[Phase 08 handoff](phase-08-handoff.md), [evaluation guide](../evaluation.md)
+and [limitations](../limitations.md).
+
 Phase 06's small descriptive comparison used 10 calls / USD 0.011852 confirmed,
 plus up to USD 0.012 unresolved; its Spark image timed out and random screening was
 correct. Phase 05 separately used 13 calls / USD 0.041512. No genuine stable failure

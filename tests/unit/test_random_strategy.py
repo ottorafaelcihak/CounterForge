@@ -20,6 +20,17 @@ def test_recorded_random_seed_reproduces_the_plan_and_full_available_range():
     assert RANDOM_REVISION == "random-initial-v2"
 
 
+def test_random_loop_slots_are_distinct_and_reproducible():
+    from services.worker.app.random_strategy import RANDOM_LOOP_REVISION
+
+    assert RANDOM_LOOP_REVISION == "random-loop-v1"
+    seed = 71
+    first = [random_plan(seed + slot, FAMILIES, 0.01) for slot in range(4)]
+    again = [random_plan(seed + slot, FAMILIES, 0.01) for slot in range(4)]
+    assert first == again
+    assert len({(p.family, p.strength) for p in first}) >= 2
+
+
 def test_random_families_cannot_escape_the_contract():
     assert random_plan(7, ["brightness_shift"], 0.01).family == "brightness_shift"
     with pytest.raises(ValueError):

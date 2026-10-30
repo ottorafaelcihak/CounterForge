@@ -1,0 +1,15 @@
+{
+  "revision": "PENDING",
+  "dataset_sha256": null,
+  "policy_revision": "strict-binary-human-gates-1",
+  "target_revision": null,
+  "code_revision": "PENDING",
+  "random_seed": null,
+  "target_calls_per_arm": null,
+  "max_candidates_per_arm": null,
+  "max_api_calls": null,
+  "max_usd": null,
+  "max_runtime_seconds": null,
+  "sha256": null,
+  "_status": "TEMPLATE ONLY - freeze with `evaluations.cli freeze-protocol` only after the dataset manifest is frozen. Arms, families, ranges and confirmation policy use the frozen defaults in evaluations/protocol.py."
+}

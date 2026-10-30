@@ -275,6 +275,9 @@ class Budget:
         return operation, usage
 
     def _require_runnable(self, experiment: RowMapping) -> None:
+        from .evaluation import require_runtime
+
+        require_runtime(self, experiment)
         if experiment["state"] not in ACTIVE_STATES:
             raise ServiceError(
                 ErrorCode.INVALID_STATE,
@@ -515,6 +518,9 @@ class Budget:
             raise ServiceError(
                 ErrorCode.BUDGET_EXCEEDED, "Reservation would exceed the estimated spend cap."
             )
+        from .evaluation import reserve_global
+
+        reserve_global(self, experiment, upper, max(calls, 1))
         category = self._category(stage)
         pinned = cast(dict[str, Any], experiment["config_snapshot"] or {}).get("target") or {}
         operation_id = self.db.scalar(

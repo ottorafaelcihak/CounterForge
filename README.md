@@ -354,6 +354,15 @@ tests/fixtures/phase04/  Labeled synthetic candidate evidence specimens
 docs/plans/        Ordered phases and verification handoffs
 ```
 
+Phases 01–07 implement typed contracts, PostgreSQL evidence storage, atomic spend
+accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
+independent verification, durable experiments and portable regression ZIPs. Phase 08
+adds the frozen matched-budget evaluation harness and independent audit in
+`evaluations/`; measured real-model evaluation remains pending human dataset
+labels and a separate paid authorization. See the
+[Phase 08 handoff](docs/plans/phase-08-handoff.md),
+[evaluation guide](docs/evaluation.md) and [limitations](docs/limitations.md).
+
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
 and [phase 06 handoff](docs/plans/phase-06-handoff.md). The PRD, technical
 specification and supplied SQL remain the source documents.
