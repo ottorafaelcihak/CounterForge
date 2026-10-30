@@ -1,0 +1,82 @@
+{
+  "status": "VERIFIED_PRIVATE_REVIEW_DRAFT",
+  "sha256": "77aba653d3ece4958935974d09a02f0cf04e8a0f25aa3c34965abf26ffbf43cf",
+  "bytes": 1248053,
+  "duration_seconds": 180,
+  "decoded_frames": 180,
+  "frames_per_second": 1,
+  "dimensions": [
+    1280,
+    720
+  ],
+  "audio": "none; silent with burned captions",
+  "verification": "FFmpeg decoded all180 frames; stream duration180s, VP9 1280x720 1fps, no audio; midpoint encoded frames of all7 scenes inspected",
+  "publication_status": "UNPUBLISHED",
+  "source_scenes": [
+    {
+      "id": "seed",
+      "start_seconds": 0,
+      "duration_seconds": 20,
+      "image": "seed.png",
+      "sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+      "provenance": "RECORDED SOURCE \u2014 HUMAN COUNT 5",
+      "caption": "The same CC0 procedural seed used in the recorded development runs; count five was independently approved."
+    },
+    {
+      "id": "contract",
+      "start_seconds": 20,
+      "duration_seconds": 25,
+      "image": "protected-mask.png",
+      "sha256": "c8a8b93c9e86d59f3fa43b3aa84817bbfd06c2c24b76085a1fc0b3b7e11eb940",
+      "provenance": "LOCAL_FIXTURE \u2014 SIMULATED REVIEW",
+      "caption": "The fixture export retains five protected regions and a locked count of five. Review in this test segment is simulated."
+    },
+    {
+      "id": "process",
+      "start_seconds": 45,
+      "duration_seconds": 35,
+      "image": "process.png",
+      "sha256": "08c94c98f8f13cbc45529419305b83963a172c841ab1efca9c869ed7cf83fd6e",
+      "provenance": "REAL PROVIDER RECORDS \u2014 NO NEW CALLS",
+      "caption": "Recorded Spark, Muse Image and SAM use across bounded development runs. SAM\u2019s incomplete result is disclosed."
+    },
+    {
+      "id": "rejection",
+      "start_seconds": 80,
+      "duration_seconds": 25,
+      "image": "phase04-desktop-invalid.png",
+      "sha256": "d5e49f8bff9789cc27bfe80948d30580fd055908689244b87fba5d93a9f0cf59",
+      "provenance": "LOCAL_FIXTURE \u2014 ACTUAL RECORDED UI",
+      "caption": "The candidate becomes INVALID after a simulated additional-object review. Rejection and revision history remain visible."
+    },
+    {
+      "id": "outcome",
+      "start_seconds": 105,
+      "duration_seconds": 25,
+      "image": "outcome.png",
+      "sha256": "f0fa0d76b465ac58403ebd52c631a54521b4ad0bf372beb73cb49dee2d4e754f",
+      "provenance": "REAL PROVIDER RECORDS \u2014 ZERO STABLE FINDINGS",
+      "caption": "The recorded target stayed correct. No real-model failure or live regression export is invented."
+    },
+    {
+      "id": "runner",
+      "start_seconds": 130,
+      "duration_seconds": 30,
+      "image": "runner.png",
+      "sha256": "035dc5525497e2550e881355106c3841cfa85637568a3c7dbfef51080acc3dd1",
+      "provenance": "LOCAL_FIXTURE \u2014 ACTUAL OFFLINE PYTEST OUTPUT",
+      "caption": "The exported fixture test passes for a healthy target and fails with expected=5 actual=4 for a deliberately broken target."
+    },
+    {
+      "id": "metrics",
+      "start_seconds": 160,
+      "duration_seconds": 20,
+      "image": "metrics.png",
+      "sha256": "a67571637034e5e9d49acc82c9f0e063b229bf593843220628ed8a50518591d2",
+      "provenance": "REAL PROVIDER RECORDS \u2014 NOT A BENCHMARK",
+      "caption": "Costs are historical actuals and unresolved bounds. Phase 08 evaluation has not run; this preparation used zero Meta calls."
+    }
+  ],
+  "fixture_bundle_sha256": "34435504971aa19f9b8c16068e03667922e41d445f9a25f8743ada26c9e2c08c",
+  "provider_calls": 0
+}

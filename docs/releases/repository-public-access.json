@@ -1,0 +1,11 @@
+{
+  "kind": "UNAUTHENTICATED_PUBLIC_HTTP",
+  "repository": "https://github.com/ottorafaelcihak/CounterForge",
+  "artifact_url": "https://raw.githubusercontent.com/ottorafaelcihak/CounterForge/8029ff28421a0bc463af18934de153cd16302600/README.md",
+  "resolved_url": "https://raw.githubusercontent.com/ottorafaelcihak/CounterForge/8029ff28421a0bc463af18934de153cd16302600/README.md",
+  "status": 200,
+  "revision": "8029ff28421a0bc463af18934de153cd16302600",
+  "sha256": "aba38fcfeb53db7ac0442daa7ac93e04fa80d9ac3ef00c0c1c4a83ac64f6558a",
+  "credentials_sent": false,
+  "cookies_sent": false
+}

@@ -1,0 +1,515 @@
+{
+  "schema_version": 1,
+  "kind": "counterforge-release-evidence-index",
+  "product_runtime_revision": "8029ff28421a0bc463af18934de153cd16302600",
+  "phase10_docs_tooling_revision": null,
+  "phase10_package_hash": "2fc15168910875b62bd95c45f64380b3d9e903a3ce480bbf3116499d4167608e",
+  "measurements_status": "root_measured_local (all frozen quality gates PASS, incl. fresh DB suite)",
+  "release_ready": false,
+  "generated": "2026-10-30",
+  "artifacts": {
+    "repository_url": "https://github.com/ottorafaelcihak/CounterForge",
+    "repository_visibility": "public; unauthenticated HTTP 200 verified by root 2026-10-30, frozen README bytes match local Git blob (repository-public-access.json)",
+    "product_url": null,
+    "video_url": null,
+    "submission_receipt": null,
+    "video_artifact": {
+      "sha256": "77aba653d3ece4958935974d09a02f0cf04e8a0f25aa3c34965abf26ffbf43cf",
+      "verification": "docs/releases/demo-verification.json",
+      "status": "PRIVATE_REVIEW_DRAFT_UNPUBLISHED"
+    },
+    "repository_license": "MIT"
+  },
+  "sample_manifest": {
+    "manifest": "fixtures/phase03/manifest.json",
+    "source_file": "fixtures/phase03/five-blue-containers.png",
+    "source_count": 1,
+    "recorded_sha256": "fffd1c6bb468fd41623a5936a60b64daf438e0f438c8d049e883f65c7bdb7a5a",
+    "rights_as_recorded": "CC0-1.0",
+    "rights_notice_file_present": false,
+    "owner_review": "Prior human source/count/five-mask review approved; media publication and separate rights acknowledgement remain pending."
+  },
+  "missing_gates": [
+    {
+      "id": "license-owner-choice",
+      "status": "passed",
+      "detail": "Owner confirmed MIT 2026-10-30; canonical LICENSE added (Copyright (c) 2026 CounterForge contributors). Third-party licenses remain separate; no compatibility approval claimed."
+    },
+    {
+      "id": "root-secret-dependency-sbom-checks",
+      "status": "passed",
+      "detail": "pip-audit 2.10.1 strict: 62 locked, 0 vulns, 0 skip; npm audit: 467 deps, 0 vulns. Gitleaks 8.30.1 source/history: 1 explicit public dummy rehearsal token (scripts/rehearse_ops.sh:18), triaged, 0 untriaged, 0 real credentials. Generated .next build tree: 13 PRIVATE framework keys, not false positives, excluded from public archives/static proxy; static client .next/static: 0 findings. Inventory: 62 Python licenses / 467 npm / 442 notices (two hash-verified locked wheels); installed-notice scope only, no legal compatibility approval. Final candidate-source/fixtureZIP/media scan: same1explicitdummy,0realcredentials,0untriaged. Inventory+notices retained publicly; all-platform OCI/provider-rights/legal-compatibility certification outside this result."
+    },
+    {
+      "id": "root-fresh-export-quality-gates",
+      "status": "passed",
+      "detail": "Clean git archive 8029 SHA 91a40698abce0fcfe9453259a70c42bf1065af96088b196deddf4391a9c9845a; uv --locked --offline and npm locked install PASS; lint 220 / mypy 115 / TS / schema / unit 245 / contracts 173 / export / web build / Node 13 PASS; fresh E2E 15 PASS 149.85s; clean ops 2 PASS 3.13s; frozen clean DB suite 280 PASS, 2 expected ops-rehearsal SKIPs, 438.24s. All frozen quality gates PASS (fresh LOCAL verification, not live)."
+    },
+    {
+      "id": "real-stable-failure",
+      "status": "unmet",
+      "detail": "0 real stable findings; no live regression export"
+    },
+    {
+      "id": "sam-live-usable-masks",
+      "status": "unmet",
+      "detail": "Live SAM returned 0 usable instances on the development illustration"
+    },
+    {
+      "id": "phase08-measured-evaluation",
+      "status": "pending",
+      "detail": "No 12 human labels/rights and no paid authorization; no aggregates invented"
+    },
+    {
+      "id": "demo-video",
+      "status": "passed",
+      "detail": "Private silent captioned draft encoded180 frames/180seconds/1280x720/1fps; all frames decoded and7scene midpoint frames visually inspected. Not published. See demo-verification.json."
+    },
+    {
+      "id": "public-access-verification",
+      "status": "pending",
+      "detail": "Frozen public repository README HTTP200 and exact blob verified. Product and video URLs absent; no product/video unauthenticated access receipt."
+    },
+    {
+      "id": "organizer-rules-verification",
+      "status": "pending",
+      "detail": "Checked 2026-10-30: deadline confirmed on public page; rules/form/track/eligibility inaccessible via web HTML"
+    },
+    {
+      "id": "publication-submission-authorization",
+      "status": "pending",
+      "detail": "No authorization, receipt, or submission claimed"
+    }
+  ],
+  "checks": [
+    {
+      "id": "release_checks_offline",
+      "status": "passed",
+      "summary": "0structural errors, release_ready=false; final current workspace lint/types/266unit PASS, final check record in phase-10-handoff.md."
+    },
+    {
+      "id": "quality_gates_frozen_revision",
+      "status": "passed",
+      "summary": "Root fresh LOCAL verification on frozen 8029 export: lint/mypy/TS/schema/unit 245/contracts 173/export/web build/Node 13 PASS; E2E 15 PASS; ops 2 PASS; frozen clean DB suite 280 PASS (2 expected ops SKIPs). Not a live-provider result."
+    },
+    {
+      "id": "secret_scan",
+      "status": "triaged",
+      "summary": "Gitleaks 8.30.1: history/source 1 explicit public dummy rehearsal token, triaged, 0 untriaged; generated .next PRIVATE framework keys (13) excluded from public archives; static client 0 findings."
+    },
+    {
+      "id": "dependency_license_sbom",
+      "status": "measured",
+      "summary": "pip-audit 2.10.1 strict 62 locked 0 vulns 0 skip; npm audit 467 deps 0 vulns; inventory summary docs/releases/dependency-inventory-summary.json (62/467/442). No legal compatibility approval implied."
+    },
+    {
+      "id": "fresh_export_setup",
+      "status": "passed",
+      "summary": "Clean git archive 8029 SHA 91a40698abce0fcfe9453259a70c42bf1065af96088b196deddf4391a9c9845a; uv sync --locked --offline PASS; npm locked install PASS (root 2026-10-30)."
+    },
+    {
+      "id": "demo_video_verification",
+      "status": "passed_private",
+      "summary": "FFmpeg decoded all180 frames; stream duration180s, VP9 1280x720 1fps, no audio; midpoint encoded frames of all7 scenes inspected; unpublished private draft, see demo-verification.json."
+    },
+    {
+      "id": "public_access_check",
+      "status": "repository_only",
+      "summary": "Frozen public README unauthenticated HTTP200+blob match. Product/video still pending."
+    },
+    {
+      "id": "latency_local_fixture",
+      "status": "measured_local",
+      "summary": "p95 (20 samples, small fixture only): live 0.60ms, ready 9.14ms, projects 1.57ms. Public latency unmeasured; no aggregate invented."
+    },
+    {
+      "id": "public_proxy_policy_local",
+      "status": "passed_stub",
+      "summary": "Nginx syntax PASS; 45 local TLS route/method/header assertions PASS against dummy upstreams. Source hash/image digest in proxy-rehearsal-results.json. No public deployment or real product receipt."
+    },
+    {
+      "id": "phase10_delta",
+      "status": "passed",
+      "summary": "Final current workspace lint/types/266unit PASS; active-call Pause1PASS2.35s and2capturebrowserPASS24.51s; no app/SDK/schema change. Frozen runtime full gates recorded separately."
+    },
+    {
+      "id": "independent_review",
+      "status": "passed",
+      "summary": "ClaudeCode claude-opus-5 reviewed completed diff and focused fixes; all10findingsresolved,0remainingmaterialissues. See review-summary.json."
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "PRD-AT-01",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_seed_api.py::test_seed_round_trip_keeps_original_evidence_and_normalized_asset",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Development CC0 seed only; not held-out"
+    },
+    {
+      "id": "PRD-AT-02",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_three_distinct_baselines_and_wrong_seed_stops",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "No live seed was baseline-wrong"
+    },
+    {
+      "id": "PRD-AT-03",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-04-handoff.md"
+      ],
+      "test": "tests/unit/test_invariants.py::test_removal_cannot_be_overridden_and_audit_preserves_structural_fail",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Fixture specimens, simulated acceptance only"
+    },
+    {
+      "id": "PRD-AT-04",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-04-handoff.md"
+      ],
+      "test": "tests/unit/test_invariants.py::test_human_semantic_and_visibility_resolution",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "No live ambiguous-occlusion claim"
+    },
+    {
+      "id": "PRD-AT-05",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_only_valid_candidates_dispatch",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Live candidate screened CORRECT; no live failure followed"
+    },
+    {
+      "id": "PRD-AT-06",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_screen_excluded_three_fresh_canonical_confirmations",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Live fresh confirmations: 0"
+    },
+    {
+      "id": "PRD-AT-07",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/unit/test_reproduction.py::test_fresh_confirmation_classification",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Fixture-only"
+    },
+    {
+      "id": "PRD-AT-08",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/integrations/test_export_runner.py::test_clean_fixture_healthy_passes_broken_asserts",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "No live export exists; fixture bundle only"
+    },
+    {
+      "id": "PRD-AT-09",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/security.md"
+      ],
+      "test": "tests/contracts/test_meta_transport.py::test_third_party_debug_logging_cannot_emit_request_media_or_keys",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Locked dependency audits0knownvulns; finalsource/ZIP/media scan1explicitdummytriaged0realcredentials; privateframeworkbuildkeys excluded. No general security proof."
+    },
+    {
+      "id": "PRD-AT-10",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_expired_resume_and_durable_replay",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Disposable fixture services"
+    },
+    {
+      "id": "PRD-AT-11",
+      "status": "pending",
+      "evidence": [
+        "README.md",
+        "ATTRIBUTION.md"
+      ],
+      "test": "scripts/release_checks.py",
+      "run_revision": "phase10_delta",
+      "date": "2026-10-30",
+      "deviation": "MIT LICENSE added (owner-confirmed 2026-10-30); all frozen-8029 fresh-export local quality gates PASS (root-measured, incl. DB 280 PASS)",
+      "revision_note": "Current Phase10 workspace; bound by the Git commit containing this index and source-package-manifest.json. Artifact/test did not exist at frozen runtime8029."
+    },
+    {
+      "id": "PRD-AT-12",
+      "status": "pending",
+      "evidence": [
+        "docs/demo/storyboard.md",
+        "docs/plans/phase-09-handoff.md"
+      ],
+      "test": "tests/integrations/test_public_demo.py::test_zero_finding_terminal_run_prepares_honest_empty_snapshot",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Verified180s private silent captioned draft; repository public frozenREADME verified; product/video publication and access receipts pending."
+    },
+    {
+      "id": "TS-AT-01",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_contracts_and_jobs.py::test_concurrent_contract_revisions_are_immutable_and_canonical",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "One development seed only"
+    },
+    {
+      "id": "TS-AT-02",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_three_distinct_baselines_and_wrong_seed_stops",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "See PRD-AT-02"
+    },
+    {
+      "id": "TS-AT-03",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-03-provider-record.md"
+      ],
+      "test": "tests/integrations/test_mask_review.py::test_four_detections_for_five_require_correction_review_and_fresh_acknowledgement",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Live SAM 0 usable instances, INCOMPLETE; human masks authoritative"
+    },
+    {
+      "id": "TS-AT-04",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-04-handoff.md"
+      ],
+      "test": "tests/unit/test_invariants.py::test_bound_human_review_can_accept_background",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Fixture only"
+    },
+    {
+      "id": "TS-AT-05",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-04-handoff.md"
+      ],
+      "test": "tests/unit/test_invariants.py::test_sixth_target_in_background_is_not_accepted_by_preservation",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Fixture only"
+    },
+    {
+      "id": "TS-AT-06",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_recovery_unsent_retry_or_sent_unknown_charge",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Real timeout retained UNKNOWN up to USD 0.012, not retried"
+    },
+    {
+      "id": "TS-AT-07",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_screen_excluded_three_fresh_canonical_confirmations",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Real stable failure: none; 0 live stable findings"
+    },
+    {
+      "id": "TS-AT-08",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/unit/test_reproduction.py::test_fresh_confirmation_classification",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Fixture-only"
+    },
+    {
+      "id": "TS-AT-09",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/integrations/test_export_runner.py::test_clean_fixture_healthy_passes_broken_asserts",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Fixture/replay runner"
+    },
+    {
+      "id": "TS-AT-10",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/integrations/test_export_runner.py::test_clean_fixture_healthy_passes_broken_asserts",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Expected assertion on fixture/replay, not a live model failure"
+    },
+    {
+      "id": "TS-AT-11",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_contracts_and_jobs.py::test_experiment_locks_snapshot_and_start_is_idempotent",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Offline/integration"
+    },
+    {
+      "id": "TS-AT-12",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_budget_reservations.py::test_competing_reservations_cannot_oversubscribe_any_cap",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Fixture budgets"
+    },
+    {
+      "id": "TS-AT-13",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_experiment_pipeline.py::test_pause_during_confirmation_drains_without_next_dispatch",
+      "run_revision": "phase10_delta",
+      "date": "2026-10-30",
+      "deviation": "Phase10 active-call Pause regression: 1PASS2.35s against current workspace runtime. Test added after frozen8029 export; no live call.",
+      "revision_note": "Current Phase10 workspace; bound by the Git commit containing this index and source-package-manifest.json. Artifact/test did not exist at frozen runtime8029."
+    },
+    {
+      "id": "TS-AT-14",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-06-handoff.md"
+      ],
+      "test": "tests/unit/test_regression_bundle.py::test_bundle_rejects_missing_unsafe_or_secret_content",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-29",
+      "deviation": "Final candidate source+fixtureZIP/media scan completed:1explicitdummytokenonly; safe runner verified outside checkout."
+    },
+    {
+      "id": "TS-AT-15",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-09-handoff.md"
+      ],
+      "test": "tests/integrations/test_seed_api.py::test_private_content_requires_owner_and_is_verified_before_serving",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Outsider check pending publication"
+    },
+    {
+      "id": "TS-AT-16",
+      "status": "fixture_verified",
+      "evidence": [
+        "docs/plans/phase-09-handoff.md"
+      ],
+      "test": "tests/integrations/test_public_demo.py::test_fixture_gallery_is_sanitized_isolated_and_dispatches_nothing",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Real snapshot private DRAFT, 0 findings; nothing public"
+    },
+    {
+      "id": "TS-AT-17",
+      "status": "pending",
+      "evidence": [
+        "docs/plans/phase-08-handoff.md",
+        "docs/plans/phase-06-comparison-results.md"
+      ],
+      "test": "tests/unit/test_evaluation_completion.py::test_differing_invalid_rates_under_equal_total_target_caps",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Phase 06 arm unfinished; Phase 08 no 12 human labels/rights/budget; no lift claim"
+    },
+    {
+      "id": "TS-AT-18",
+      "status": "partial_live",
+      "evidence": [
+        "docs/plans/phase-07-live-results.json",
+        "docs/plans/phase-05-handoff.md"
+      ],
+      "test": "tests/integrations/test_provider_jobs.py::test_four_capability_sdk_fixture_smoke_keeps_live_gate_unmet",
+      "run_revision": "8029ff28421a0bc463af18934de153cd16302600",
+      "date": "2026-10-30",
+      "deviation": "Real Spark/Image/target retained; SAM INCOMPLETE; formal smoke-meta not run"
+    },
+    {
+      "id": "TS-AT-19",
+      "status": "pending",
+      "evidence": [
+        "docs/demo/storyboard.md"
+      ],
+      "test": "scripts/capture_release_demo.py",
+      "run_revision": "phase10_delta",
+      "date": "2026-10-30",
+      "deviation": "Verified180s private silent captioned draft; repository public frozenREADME verified; product/video publication and access receipts pending.",
+      "revision_note": "Current Phase10 workspace; bound by the Git commit containing this index and source-package-manifest.json. Artifact/test did not exist at frozen runtime8029."
+    },
+    {
+      "id": "TS-AT-20",
+      "status": "pending",
+      "evidence": [
+        "ATTRIBUTION.md",
+        "fixtures/phase03/manifest.json"
+      ],
+      "test": "scripts/release_checks.py",
+      "run_revision": "phase10_delta",
+      "date": "2026-10-30",
+      "deviation": "MIT LICENSE added (owner-confirmed); fixture manifest has no separate rights notice, owner review pending; dependency inventory measured (62/467/442), no compatibility approval",
+      "revision_note": "Current Phase10 workspace; bound by the Git commit containing this index and source-package-manifest.json. Artifact/test did not exist at frozen runtime8029."
+    }
+  ],
+  "run_revision_semantics": "product_runtime_revision 8029ff2 is the frozen runtime for fresh LOCAL quality verification. Historical real-provider reports retain their source commits/evidence_refs separately; their live-call revision is unknown (null), not 8029. The Phase 10 Pause/test/tooling delta is validated against the current Phase 10 workspace, not the frozen 8029 source. Rows marked phase10_delta refer to the new current-workspace artifact/test and require revision_note; they are not claimed as frozen8029 checks.",
+  "historical_provider_reports": {
+    "run_revision": null,
+    "note": "Source commits/evidence refs retained in Phase 05-07 handoffs; no 8029 live-call claim."
+  },
+  "clean_export": {
+    "archive_sha256": "91a40698abce0fcfe9453259a70c42bf1065af96088b196deddf4391a9c9845a",
+    "uv_locked_offline": "PASS",
+    "npm_locked_install": "PASS"
+  },
+  "phase10_package_hash_scope": "All candidate tracked/nonignored source files except docs/releases/** (release metadata excluded to avoid circular hashes). Git commit binds the entire repository. Private media not included; separately hashed in demo-verification.json."
+}

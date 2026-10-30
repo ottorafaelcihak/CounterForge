@@ -434,6 +434,31 @@ async def test_cancel_during_confirmation_drains_without_next_dispatch(
         assert f["confirmation_attempts"] == 1 and f["status"] == "SUSPECTED"
 
 
+async def test_pause_during_confirmation_drains_without_next_dispatch(
+    api, vtc_payload, monkeypatch
+):
+    eid, _ = await valid_candidate(api, vtc_payload)
+    replies(monkeypatch, [0])
+    settings = fixture_settings(api)
+    await runner.execute_experiment(api.factory, settings, UUID(eid))
+
+    async def pause_in_flight(*args):
+        response = await api.client.post(f"/api/v1/experiments/{eid}/pause")
+        assert response.json()["state"] == "PAUSE_REQUESTED"
+        return await original(*args)
+
+    replies(monkeypatch, [0])
+    original = runner.evaluate_target
+    monkeypatch.setattr(runner, "evaluate_target", pause_in_flight)
+    await runner.execute_experiment(api.factory, settings, UUID(eid))
+    assert row(api, eid)["state"] == "PAUSED" and row(api, eid)["calls_consumed"] == 2
+    await runner.execute_experiment(api.factory, settings, UUID(eid))
+    assert row(api, eid)["calls_consumed"] == 2
+    with api.factory() as uow:
+        f = uow.connection.execute(select(uow.tables.findings)).mappings().one()
+        assert f["confirmation_attempts"] == 1 and f["status"] == "SUSPECTED"
+
+
 async def test_unknown_uploaded_fixture_seed_fails_closed(api, vtc_payload):
     eid, *_ = await experiment(api, vtc_payload)
     await runner.execute_experiment(api.factory, fixture_settings(api), UUID(eid))

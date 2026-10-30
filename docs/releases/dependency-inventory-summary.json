@@ -1,0 +1,10 @@
+{
+  "python_locked": 62,
+  "python_installed": 60,
+  "npm_locked": 467,
+  "npm_installed": 388,
+  "notice_files": 442,
+  "missing_declared_license_python": [],
+  "missing_declared_license_npm": [],
+  "custom_parser_license": "SAM License"
+}

@@ -49,6 +49,9 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-configuration-placeholder
           OWNER_AUTH_TOKEN: ci-configuration-placeholder
+      - run: npm test --prefix apps/web
+      - run: make release-check
+      - run: make verify-export
       - run: make build-web
       - run: uv run --locked python -m playwright install --with-deps chromium
       - run: make test-e2e

@@ -227,6 +227,8 @@ def test_candidate_evidence_review_and_explicit_audit(setup_stack, vtc_payload):
             record.click()
             expect(verdict).to_have_text("INVALID")
             expect(page.get_by_test_id("validation-revision")).to_have_count(4)
+            page.evaluate("window.scrollTo(0, 0)")
+            page.screenshot(path=str(stack.tmp_path / "phase04-desktop-invalid.png"))
 
             decide(
                 "consistent", "clear", "Automated fixture: simulate correcting the prior judgement."

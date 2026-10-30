@@ -112,3 +112,12 @@ ops-rehearsal:
 EVALUATE_PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,$(PYTHON))
 evaluate:
 	$(EVALUATE_PYTHON) -m evaluations.cli $(if $(EVALUATE_ARGS),$(EVALUATE_ARGS),fixture)
+
+# Offline Phase 10 structural validation only; not release readiness.
+# No network, provider, database, or external-link/scanner verification.
+.PHONY: release-check release-inventory
+release-check:
+	$(EVALUATE_PYTHON) -m scripts.release_checks
+
+release-inventory:
+	$(EVALUATE_PYTHON) -m scripts.release_checks --inventory

@@ -1,0 +1,78 @@
+# EXAMPLE ONLY - not deployed. No domain, TLS, or autodeploy is
+# invented here. Root adapts hostnames/certs and checks this config
+# (e.g. `nginx -t`) before any use. Public surface is read-only.
+
+server {
+    listen 443 ssl;
+    server_name PUBLIC_DEMO_HOST;  # root supplies; not invented
+
+    # ssl_certificate     /path/supplied/by/root;
+    # ssl_certificate_key /path/supplied/by/root;
+
+    # Read-only publicly: reject every non-GET/HEAD method at server
+    # level, before any location proxying.
+    if ($request_method !~ ^(GET|HEAD)$) {
+        return 405;
+    }
+
+    # Public upstreams never receive caller credentials.
+    # Every proxy location MUST repeat both directives: declaring any
+    # proxy_set_header inside a location disables all inherited headers.
+    proxy_set_header Authorization "";
+    proxy_set_header Cookie "";
+
+    # Required Next.js static assets for the /demo page only.
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+    }
+
+    # Sanitized read-only gallery page (SSR loads the API directly;
+    # there is no web BFF manifest route at /api/public/demo).
+    location = /demo {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+    }
+
+    # Public demo manifest, served by the API itself. Its
+    # content_urls point at the /api/v1 asset route below.
+    location = /api/v1/public/demo {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+    }
+
+    # Public snapshot image content via the API (canonical UUIDs).
+    location ~ "^/api/v1/public/demo/assets/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/content$" {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+    }
+
+    # SSR image URLs emitted by the web app (fresh public asset IDs).
+    location ~ "^/api/public/demo/assets/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/content$" {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+    }
+
+    # Everything else is denied publicly: no owner/private API
+    # (all other /api/v1/... paths), no /api/backend, no
+    # /api/session, no projects/seeds/experiments/findings/
+    # regressions pages, and no /api/public/demo manifest route.
+    location / {
+        return 404;
+    }
+}

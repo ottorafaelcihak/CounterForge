@@ -39,6 +39,61 @@ make build-web
 when a live-test flag is inherited. After changing canonical contracts, run
 `make generate-contracts`, review the generated diff and run `make check-contracts`.
 
+### Fresh checkout (fixture-first)
+
+```bash
+git clone <repository-url> CounterForge && cd CounterForge
+export UV_LINK_MODE=copy UV_CACHE_DIR=/tmp/counterforge-uv-cache
+uv sync --locked            # exact Python deps from uv.lock; Python 3.12
+npm ci --prefix apps/web    # exact web deps from apps/web/package-lock.json; Node 24
+cp .env.example .env        # set POSTGRES_PASSWORD and a strong OWNER_AUTH_TOKEN only
+make compose-check
+make services-up            # Compose runs migrations before API/worker/web start
+make test                   # offline unit+contract; no provider calls
+```
+
+No development database, `.env`, or private attachment is needed for
+the offline checks. Migration order is owned by Compose on
+`services-up`; for host development run `make migrate` explicitly
+before `make dev-api`/worker (below).
+
+**Private owner setup** is the default local stack above: owner token
+stays server-side, ports bind to loopback, projects are scoped by
+`OWNER_LABEL`.
+
+**Optional live execution** is never part of fresh setup. It requires
+`PROVIDER_MODE=LIVE`, `RUN_META_LIVE_TESTS=1`, a server-only
+`MODEL_API_KEY`, an existing finite operator allowance, and explicit
+per-run call/dollar/runtime limits (see *Explicit live smoke gate*).
+Fixture mode (`PROVIDER_MODE=FIXTURE`,
+`ALLOW_SYNTHETIC_FIXTURES=1`, `APP_ENV=development`) is synthetic and
+labeled; it is not live evidence.
+
+## Model roles
+
+| Role | Model | Notes |
+| --- | --- | --- |
+| Planner | Muse Spark 1.3 (`muse-spark-1.3`) | Typed experiment plans; labeled deterministic fallback on invalid/unavailable output |
+| Generator | Muse Image 1.0 (`muse-image-1.0`) | Bounded scene/background generation and edits |
+| Perception | SAM 3.1 (`sam-3.1`) | Segmentation proposals; human review is authoritative, SAM agreement cannot approve |
+| Target under test | Muse Spark 1.3 (curated `META_SPARK`) | **Shares the Spark model family with the planner**; planner/target independence is not claimed |
+| Validity review | Deterministic verifier + human reviewer | Independent of the target; no model self-approval |
+
+Configured revision labels are provider-managed: they do **not** pin
+binary weights, and a later provider revision may behave differently.
+No formal safety proof is claimed. Details:
+[provider record](docs/plans/phase-03-provider-record.md).
+
+Release status, acceptance evidence, and attribution:
+[release evidence index](docs/releases/evidence-index.json),
+[submission matrix](docs/submission.md), [ATTRIBUTION.md](ATTRIBUTION.md),
+[API reference](docs/api.md), and [limitations](docs/limitations.md).
+Original code is under the [MIT License](LICENSE) (owner-confirmed);
+third-party work keeps its own licenses (see ATTRIBUTION).
+`release_ready` is currently **false**; every missing gate is listed
+in the evidence index. Run `make release-check` for the offline
+structural validation (validation correctness is not release readiness).
+
 ## Run local services
 
 Copy `.env.example` to an ignored `.env` and configure `POSTGRES_PASSWORD` and a
@@ -386,3 +441,11 @@ for verification, observed latency and operational limits.
 Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
 and [phase 06 handoff](docs/plans/phase-06-handoff.md). The PRD, technical
 specification and supplied SQL remain the source documents.
+
+Phase 10 adds the MIT license, attribution and dependency notices, API reference,
+32-row acceptance matrix, offline release validation, deployment policy and a
+verified private three-minute demo draft. Public deployment, video publication,
+organizer eligibility/rules verification and submission remain pending. Real
+provider runs found zero stable failures; no benchmark lift is claimed. See the
+[Phase 10 handoff](docs/plans/phase-10-handoff.md) and
+[submission draft](docs/submission.md).

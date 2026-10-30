@@ -1,0 +1,27 @@
+{
+  "provider": "Claude Code",
+  "model": "claude-opus-5",
+  "initial_job_id": "6362701b-e7ef-4445-bbb5-72010b88180e",
+  "initial_status": "completed; supervisor_alive=false",
+  "initial_verdict": "No blocker; approve after F1-F3 evidence/validator issues addressed",
+  "resolution": {
+    "F1": "Parse asserted readiness and reject any disagreement with index; adversarial regression added",
+    "F2": "Four new artifact/test rows use explicit phase10_delta plus mandatory revision_note",
+    "F3": "Explicitly disclose full frozen-runtime suites plus targeted current-workspace test-only delta; no full current DB/E2E claim",
+    "F4": "Generic FFmpeg path and external binary prerequisite documented",
+    "F5": "Nginx inheritance warning; current policy unchanged, 45assertions rerun with new hash",
+    "F6": "Template and storyboard labels synchronized to actual verified privatevideo",
+    "F7": "Missing scenes fail; populated images require actual matching SHA; empty template remains explicit preparation-only",
+    "F8": "pending_root legend documented",
+    "F9": "Prepared proxy/private video explicitly not deployed/published",
+    "F10": "Early input closure fails even with zero process exit; subprocess regression added"
+  },
+  "scoped_rereview": {
+    "job_id": "9c71a1df-2245-471f-99ee-9ccde769cc76",
+    "status": "completed; supervisor_alive=false",
+    "verdict": "All10priorfindingsfixed; no remaining material issue",
+    "checks": "21focusedunitPASS0.26s; release-check0errors",
+    "remaining_nonmaterial_note": "The phase10_delta sentinel depends on accurate revision_note text; current4rows correctly attributed."
+  },
+  "new_meta_test_calls": 0
+}

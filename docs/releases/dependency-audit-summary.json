@@ -1,0 +1,31 @@
+{
+  "python": {
+    "tool": "pip-audit2.10.1",
+    "exit_code": 0,
+    "checked": 62,
+    "vulnerability_records": 0,
+    "skipped": []
+  },
+  "npm": {
+    "exit_code": 0,
+    "audit_metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 17,
+        "dev": 413,
+        "optional": 88,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 467
+      }
+    }
+  },
+  "limits": "Known-advisory lookup at scan time, not a security or compatibility proof."
+}

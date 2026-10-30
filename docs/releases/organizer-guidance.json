@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-10-30T17:02:44.523912+00:00",
+  "sources": [
+    {
+      "url": "https://dev.meta.ai/events/global-hackathon",
+      "kind": "OFFICIAL_PUBLIC_EVENT_PAGE",
+      "status": "READ",
+      "supported_facts": [
+        "Project submission deadline November4 9PMET",
+        "Indie developer and startup tracks",
+        "Push the Frontier and Build for Your World themes",
+        "Organizer says dates may change"
+      ]
+    },
+    {
+      "url": "https://cerebralvalley.ai/e/meta-ai-developer-hackathon",
+      "kind": "ORGANIZER_PUBLIC_EVENT_PAGE",
+      "status": "READ",
+      "supported_facts": [
+        "Publicschedule agrees with November4 9PMET deadline"
+      ]
+    },
+    {
+      "url": "https://cerebralvalley.ai/e/meta-ai-developer-hackathon/details",
+      "kind": "PARTICIPANT_GUIDE",
+      "status": "UNVERIFIED",
+      "reason": "WebtextonlyLoading; IABnetERR_NETWORK_CHANGED; nofinalrules/formretrieved"
+    }
+  ],
+  "deadline": {
+    "source_local": "2026-11-04T21:00:00-05:00",
+    "utc": "2026-11-05T02:00:00+00:00",
+    "Europe_Madrid": "2026-11-05T03:00:00+01:00"
+  },
+  "entry_track": "PROPOSED_INDIE_DEVELOPER_UNCONFIRMED",
+  "theme": "PROPOSED_PUSH_THE_FRONTIER",
+  "team_identity": "UNCONFIRMED_GIT_AUTHOR_otto_ONLY_METADATA",
+  "form_fields_status": "DRAFT_GENERIC_REQUIRED_FIELDS_FROM_PROJECT_SPEC_NOT_VERIFIED_CURRENT_FORM",
+  "eligibility_status": "OWNER_REVIEW_REQUIRED_NO_LEGAL_ASSERTION",
+  "submission_status": "NOT_SUBMITTED",
+  "submission_receipt": null,
+  "publication_authorization": null
+}

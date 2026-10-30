@@ -1,0 +1,26 @@
+{
+  "bundle_sha256": "34435504971aa19f9b8c16068e03667922e41d445f9a25f8743ada26c9e2c08c",
+  "results": [
+    {
+      "case": "healthy",
+      "exit_code": 0,
+      "stdout_sha256": "69b41085b2f44cc047a4f4854987d4f99bdea433751360002508e9c01d65acd8",
+      "provenance": "LOCAL_FIXTURE",
+      "new_model_calls": 0
+    },
+    {
+      "case": "broken",
+      "exit_code": 1,
+      "stdout_sha256": "62f875e8e0395ee89944c06ce567caf301305cff1cc1d61e89e94b156553937f",
+      "provenance": "LOCAL_FIXTURE",
+      "new_model_calls": 0
+    },
+    {
+      "case": "replay",
+      "exit_code": 1,
+      "stdout_sha256": "2abc8a38808dcb0a2e868e0eb9f3dd320473ab59778f03bfef9c407ad4121564",
+      "provenance": "LOCAL_FIXTURE",
+      "new_model_calls": 0
+    }
+  ]
+}

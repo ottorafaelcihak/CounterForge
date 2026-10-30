@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "title": "CounterForge 180s release demo (template - root fills image/sha256)",
+  "width": 1280,
+  "height": 720,
+  "scenes": [
+    {
+      "id": "seed",
+      "start_seconds": 0,
+      "duration_seconds": 20,
+      "image": "",
+      "sha256": null,
+      "provenance": "RECORDED SOURCE \u2014 HUMAN COUNT 5",
+      "caption": "The same CC0 procedural seed used in the recorded development runs; count five was independently approved."
+    },
+    {
+      "id": "contract",
+      "start_seconds": 20,
+      "duration_seconds": 25,
+      "image": "",
+      "sha256": null,
+      "provenance": "LOCAL_FIXTURE \u2014 SIMULATED REVIEW",
+      "caption": "The fixture export retains five protected regions and a locked count of five. Review in this test segment is simulated."
+    },
+    {
+      "id": "process",
+      "start_seconds": 45,
+      "duration_seconds": 35,
+      "image": "",
+      "sha256": null,
+      "provenance": "REAL PROVIDER RECORDS \u2014 NO NEW CALLS",
+      "caption": "Recorded Spark, Muse Image and SAM use across bounded development runs. SAM\u2019s incomplete result is disclosed."
+    },
+    {
+      "id": "rejection",
+      "start_seconds": 80,
+      "duration_seconds": 25,
+      "image": "",
+      "sha256": null,
+      "provenance": "LOCAL_FIXTURE \u2014 ACTUAL RECORDED UI",
+      "caption": "The candidate becomes INVALID after a simulated additional-object review. Rejection and revision history remain visible."
+    },
+    {
+      "id": "outcome",
+      "start_seconds": 105,
+      "duration_seconds": 25,
+      "image": "",
+      "sha256": null,
+      "provenance": "REAL PROVIDER RECORDS \u2014 ZERO STABLE FINDINGS",
+      "caption": "The recorded target stayed correct. No real-model failure or live regression export is invented."
+    },
+    {
+      "id": "runner",
+      "start_seconds": 130,
+      "duration_seconds": 30,
+      "image": "",
+      "sha256": null,
+      "provenance": "LOCAL_FIXTURE \u2014 ACTUAL OFFLINE PYTEST OUTPUT",
+      "caption": "The exported fixture test passes for a healthy target and fails with expected=5 actual=4 for a deliberately broken target."
+    },
+    {
+      "id": "metrics",
+      "start_seconds": 160,
+      "duration_seconds": 20,
+      "image": "",
+      "sha256": null,
+      "provenance": "REAL PROVIDER RECORDS \u2014 NOT A BENCHMARK",
+      "caption": "Costs are historical actuals and unresolved bounds. Phase 08 evaluation has not run; this preparation used zero Meta calls."
+    }
+  ]
+}

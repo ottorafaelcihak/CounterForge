@@ -1,0 +1,250 @@
+{
+  "status": "PASS",
+  "scope": "ISOLATED_LOCAL_TLS_PROXY_POLICY_WITH_UPSTREAM_STUBS; no public deployment or real product access receipt",
+  "source_sha256": "8f8ff727c732af9106207043dd62a7ae15f0eb2b311a0cc7b5679feb5da2dd0e",
+  "nginx_image_digest": "nginx@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949",
+  "tests": [
+    {
+      "method": "GET",
+      "path": "/demo",
+      "status": 200,
+      "upstream_port": 3000,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "HEAD",
+      "path": "/demo",
+      "status": 200,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "POST",
+      "path": "/demo",
+      "status": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/demo",
+      "status": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/demo",
+      "status": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/demo",
+      "status": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/demo",
+      "status": 405
+    },
+    {
+      "method": "GET",
+      "path": "/_next/static/test.js",
+      "status": 200,
+      "upstream_port": 3000,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "HEAD",
+      "path": "/_next/static/test.js",
+      "status": 200,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "POST",
+      "path": "/_next/static/test.js",
+      "status": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/_next/static/test.js",
+      "status": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/_next/static/test.js",
+      "status": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/_next/static/test.js",
+      "status": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/_next/static/test.js",
+      "status": 405
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/demo",
+      "status": 200,
+      "upstream_port": 8000,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/v1/public/demo",
+      "status": 200,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/public/demo",
+      "status": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/public/demo",
+      "status": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/public/demo",
+      "status": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/public/demo",
+      "status": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/v1/public/demo",
+      "status": 405
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 200,
+      "upstream_port": 8000,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 200,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/v1/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 200,
+      "upstream_port": 3000,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 200,
+      "credentials_forwarded": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/public/demo/assets/00000000-0000-0000-0000-000000000001/content",
+      "status": 405
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/projects",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/session",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/backend/projects",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/demo",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/demo/assets/not-a-uuid/content",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/demo/assets/not-a-uuid/content",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/_next/server/private",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/demo/other",
+      "status": 404
+    }
+  ],
+  "provider_calls": 0,
+  "certificate": "disposable localhost test certificate trusted explicitly; no TLS verification disabled"
+}

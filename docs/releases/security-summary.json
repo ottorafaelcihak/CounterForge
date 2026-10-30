@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-30",
+  "tools": {
+    "gitleaks": "8.30.1",
+    "pip-audit": "2.10.1",
+    "npm": "11.16.0"
+  },
+  "history": {
+    "raw_findings": 1,
+    "untriaged": 0,
+    "real_credential_findings": 0,
+    "dispositions": [
+      {
+        "fingerprint": "8029ff28421a0bc463af18934de153cd16302600:scripts/rehearse_ops.sh:generic-api-key:18",
+        "file": "scripts/rehearse_ops.sh",
+        "line": 18,
+        "commit": "8029ff28421a0bc463af18934de153cd16302600",
+        "rule": "generic-api-key",
+        "classification": "DECLARED_DISPOSABLE_TEST_CREDENTIAL",
+        "reason": "Public fixed rehearsal owner token; fixture-only isolated stack with empty model key, never a live workspace credential."
+      }
+    ]
+  },
+  "private_next_build": {
+    "findings": 13,
+    "classification": "GENERATED_PRIVATE_FRAMEWORK_KEYS",
+    "disposition": "Not distributed. Server/cache build files excluded from source/browser/static artifacts; these are NOT false positives."
+  },
+  "client_static": {
+    "findings": 0
+  },
+  "dependency_audit": "dependency-audit-summary.json",
+  "final_release_scan": {
+    "scanner": "gitleaks8.30.1",
+    "archive_depth": 2,
+    "raw_findings": 1,
+    "real_credentials": 0,
+    "untriaged": 0,
+    "disposition": "Exact same explicit dummy rehearsal token at scripts/rehearse_ops.sh:18, verified. No blanket exclusion.",
+    "scope": "All tracked and nonignored candidate source files plus private-review fixture ZIP, WebM and encoded contact sheet. Private .next server/cache/.env/backups excluded. Binary media also visually inspected; secret-pattern scans cannot replace visual review."
+  },
+  "limits": "Known advisory and pattern scans at scan time; not a security or license-compatibility proof."
+}
