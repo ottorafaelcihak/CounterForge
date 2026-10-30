@@ -22,6 +22,13 @@
 
 ## Workstream A: Regression CI integration — FR-20
 
+**Status: Option A selected; design `DRAFT_UNAPPROVED`.** The user selected
+Option A. The offline-first scope is the coordinator's proposal for the first increment, pending approval. The concrete design is in
+[Phase 11 CI design](phase-11-ci-design.md) and the numbered implementation
+proposal is [Plan 12](plan-12.md). Selection is not approval of the full
+design; the approval checkbox below remains unchecked. Live CI is deferred,
+not implemented (0 model calls / $0 cap).
+
 **Depends on:** Portable runner, clean-environment checks and version retests from phases 06–07.
 
 **Minimum interface:** A documented GitHub Actions workflow invokes the existing bundle runner with environment-supplied credentials and checksum-pinned artifacts. Core VTC semantics do not change.

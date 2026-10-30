@@ -24,7 +24,12 @@ local operational hardening. Its [handoff](phase-09-handoff.md) records browser,
 restart/recovery, backup/restore and latency evidence. The real-provider snapshot
 is a private zero-finding draft; publication and redistribution approval remain
 Phase 10 actions. Phase 08's measured campaign remains gated as described above.
-Phases 10–11 remain planned.
+Phase 10 release preparation is committed/pushed in `e0efa`; its actual public
+gates (publication, public access, submission) remain pending and
+`release_ready` remains false. For Phase 11, only Workstream A (Option A,
+offline CI) has a design: [Phase 11 CI design](phase-11-ci-design.md) and
+[Plan 12](plan-12.md), both `DRAFT_UNAPPROVED`. Workstreams B–D remain
+untouched roadmap items; no P2 feature is implemented.
 
 Read plans in order. Checked implementation gates refer to their verification
 handoffs; fixture success never substitutes for the outstanding live/human gates
@@ -60,6 +65,7 @@ waive a correctness, budget or provenance requirement.
 | [09 — Product completion and operations](plan-09.md) | Complete UI, public gallery and hardened local deployment | 08 | Browser, access and operational gates pass | Nov 3 |
 | [10 — Release and submission](plan-10.md) | Reproducible release, attribution, demo and submission evidence | 09 | Acceptance/deviation report and outsider access checks | Nov 4 |
 | [11 — Post-MVP roadmap](plan-11.md) | Separate P2 workstreams and design gates | 10 | New work requires its own approved design and plan | After MVP |
+| [12 — Offline regression CI](plan-12.md) | Offline-only CI wrapper + self-test workflow (draft) | 11A design | Owner approves design + plan; four fixed controls pass | After approval |
 
 Default execution is sequential. Interfaces can be developed against fixtures,
 but a phase cannot claim its integration gate before its prerequisites pass.
@@ -101,7 +107,7 @@ phase 09 completes the product experience. Public demo publication is phase 10.
 | FR-17 Equal-budget random comparison | 08 | 06 |
 | FR-18 Rejection explorer | 09 | 04, 05 |
 | FR-19 Model-version retest | 07 | 06 |
-| FR-20 CI integration | 11 | Future design gate |
+| FR-20 CI integration | 11A / 12 (draft, offline only) | Live follow-up needs separate approval |
 | FR-21 Additional visual tasks | 11 | Future verifier designs |
 | FR-22 Human-approved repair pipeline | 11 | Future design gate |
 
