@@ -27,10 +27,10 @@ Phase 10 actions. Phase 08's measured campaign remains gated as described above.
 Phase 10 release preparation is committed/pushed in `e0efa`; its actual public
 gates (publication, public access, submission) remain pending and
 `release_ready` remains false. Phase 11 Workstream A (Option A) now has an
-owner-approved offline CI implementation in [Plan 12](plan-12.md). The trusted consumer and four synthetic
-controls pass local verification; a GitHub `master` run remains pending an
-authorized push. See the [Phase 12 handoff](phase-12-handoff.md). Live CI and
-Workstreams B–D remain future roadmap items.
+owner-approved offline CI implementation in [Plan 12](plan-12.md). The trusted
+consumer and four synthetic controls pass local verification and the first
+GitHub `master` run. See the [Phase 12 handoff](phase-12-handoff.md). Live CI
+and Workstreams B–D remain future roadmap items.
 
 Read plans in order. Checked implementation gates refer to their verification
 handoffs; fixture success never substitutes for the outstanding live/human gates
@@ -66,7 +66,7 @@ waive a correctness, budget or provenance requirement.
 | [09 — Product completion and operations](plan-09.md) | Complete UI, public gallery and hardened local deployment | 08 | Browser, access and operational gates pass | Nov 3 |
 | [10 — Release and submission](plan-10.md) | Reproducible release, attribution, demo and submission evidence | 09 | Acceptance/deviation report and outsider access checks | Nov 4 |
 | [11 — Post-MVP roadmap](plan-11.md) | Separate P2 workstreams and design gates | 10 | New work requires its own approved design and plan | After MVP |
-| [12 — Offline regression CI](plan-12.md) | Offline CI consumer + self-test workflow, locally verified | Approved 11A design | Local controls pass; GitHub master receipt pending | Nov 1, 2026 |
+| [12 — Offline regression CI](plan-12.md) | Offline CI consumer + self-test workflow, locally and GitHub verified | Approved 11A design | All four controls pass locally and on GitHub master | Nov 1, 2026 |
 
 Default execution is sequential. Interfaces can be developed against fixtures,
 but a phase cannot claim its integration gate before its prerequisites pass.
@@ -108,7 +108,7 @@ phase 09 completes the product experience. Public demo publication is phase 10.
 | FR-17 Equal-budget random comparison | 08 | 06 |
 | FR-18 Rejection explorer | 09 | 04, 05 |
 | FR-19 Model-version retest | 07 | 06 |
-| FR-20 CI integration | 11A / 12 (implemented offline locally) | GitHub receipt pending; live follow-up needs separate approval |
+| FR-20 CI integration | 11A / 12 (implemented offline, GitHub verified) | Live follow-up needs separate approval |
 | FR-21 Additional visual tasks | 11 | Future verifier designs |
 | FR-22 Human-approved repair pipeline | 11 | Future design gate |
 

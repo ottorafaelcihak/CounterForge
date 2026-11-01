@@ -3,7 +3,7 @@
 > **For agentic workers:** Use `superpowers:subagent-driven-development` or `superpowers:executing-plans` with the required three-provider bridge. One editor at a time on `master` (default: Codex
 > implements; Claude Code reviews the diff; Muse checks acceptance). No
 > delegation to a second editor in the same checkout.
-**Status: `IMPLEMENTED_OFFLINE_LOCAL`** — The owner approved this plan and [the Phase 11 CI design](phase-11-ci-design.md) on 2026-11-01. Local implementation and verification are recorded in the [Phase 12 handoff](phase-12-handoff.md). The GitHub execution receipt remains pending an authorized push; live CI remains unapproved.
+**Status: `IMPLEMENTED_OFFLINE_VERIFIED`** — The owner approved this plan and [the Phase 11 CI design](phase-11-ci-design.md) on 2026-11-01. Local implementation and verification are recorded in the [Phase 12 handoff](phase-12-handoff.md). The [GitHub master run](https://github.com/ottorafaelcihak/CounterForge/actions/runs/41322213155) passed all four controls after the authorized push; live CI remains unapproved.
 
 
 **Goal:** Ship an offline-only GitHub Actions regression check (0 provider calls, $0 cap) where a healthy fixture passes, a broken fixture fails as a regression, and tamper/infrastructure failures are execution errors.
@@ -80,12 +80,12 @@
   tests/integrations/test_export_runner.py tests/unit/test_regression_bundle.py -q` (incl. old-format bundle test) and `make verify-export` all pass unchanged.
 - [x] Full local gate: `make lint`, `make typecheck`,
   `uv run --locked pytest tests/unit -q` pass; confirm no full DB/E2E run is required for this increment.
-- [ ] After an authorized push, inspect the actual workflow run and record its URL and four-control results in `docs/plans/phase-12-handoff.md`. Until then the remote receipt stays pending; canceled/skipped runs are never passing receipts. Master runs use PR-only cancellation so a later master event does not cancel a running receipt. Prove negative exits locally with the fixed controls; do not push a deliberately broken master commit. The case consumer exit 1 remains a failure regardless of a synthetic suite result.
+- [x] After an authorized push, inspect the actual workflow run and record its URL and four-control results in `docs/plans/phase-12-handoff.md`. Until then the remote receipt stays pending; canceled/skipped runs are never passing receipts. Master runs use PR-only cancellation so a later master event does not cancel a running receipt. Prove negative exits locally with the fixed controls; do not push a deliberately broken master commit. The case consumer exit 1 remains a failure regardless of a synthetic suite result.
 - [x] Update Plan 11 Workstream A checkboxes that are actually satisfied,
   README phase table/FR-20 row, and design status; owner approval was recorded on 2026-11-01.
 
 ## Exit criteria
-- [ ] All Task 1–4 tests pass; `make verify-export` green; workflow green
+- [x] All Task 1–4 tests pass; `make verify-export` green; workflow green
   on `master` with the four fixed controls matching.
 - [x] No secret, live call, or bundle-code execution path exists; reports
   prove `provider_calls=0`, `cost_usd=0`.

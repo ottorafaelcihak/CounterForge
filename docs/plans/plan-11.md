@@ -22,12 +22,11 @@
 
 ## Workstream A: Regression CI integration — FR-20
 
-**Status: Option A implemented offline and verified locally.** The owner approved
-[the CI design](phase-11-ci-design.md) and [Plan 12](plan-12.md) on 2026-11-01.
+**Status: Option A implemented offline and verified locally and on GitHub.**
+The owner approved [the CI design](phase-11-ci-design.md) and [Plan 12](plan-12.md) on 2026-11-01.
 The trusted consumer and fixed synthetic workflow controls are implemented;
-[the Phase 12 handoff](phase-12-handoff.md) records local evidence. A GitHub
-`master` execution receipt remains pending an authorized push. Live CI remains
-deferred (0 model calls / $0 cap for this increment).
+[the Phase 12 handoff](phase-12-handoff.md) records local evidence and the
+successful GitHub `master` execution receipt. Live CI remains deferred (0 model calls / $0 cap for this increment).
 
 **Depends on:** Portable runner, clean-environment checks and version retests from phases 06–07.
 
@@ -36,7 +35,7 @@ deferred (0 model calls / $0 cap for this increment).
 - [x] Define the supported repository/workflow trigger and credential trust boundary, including a no-secret fixture/replay mode for forks and pull requests.
 - [ ] Choose opt-in live-run conditions, finite spend/runtime/concurrency caps and how CI execution costs are reported before implementing workflow dispatch.
 - [x] Design pass/fail/unknown infrastructure reporting so target regressions remain distinguishable from provider outages.
-- [x] Offline acceptance scenarios verified locally: healthy fixture passes; broken fixture fails the correctness assertion; tampered bundle stops before dispatch; workflow policy uses trusted PR-base inputs without model secrets or paid inference. Remote execution remains pending.
+- [x] Offline acceptance scenarios verified locally: healthy fixture passes; broken fixture fails the correctness assertion; tampered bundle stops before dispatch; workflow policy uses trusted PR-base inputs without model secrets or paid inference. The GitHub master run also passed all four fixed controls.
 - [x] Approve the offline workflow design and create a separate implementation plan before implementation (owner approval 2026-11-01).
 - [ ] Approve a separate live CI design, funding envelope and implementation plan before adding live CI.
 

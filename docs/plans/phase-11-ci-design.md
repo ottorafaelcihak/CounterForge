@@ -1,6 +1,6 @@
 # Phase 11 Workstream A — Regression CI Design (Option A, Offline-Only)
 
-**Status: `IMPLEMENTED_OFFLINE_LOCAL`** — The owner approved this design and [Plan 12](plan-12.md) on 2026-11-01. See the [Phase 12 handoff](phase-12-handoff.md) for local verification. GitHub execution evidence remains pending an authorized push; live CI requires a separate decision.
+**Status: `IMPLEMENTED_OFFLINE_VERIFIED`** — The owner approved this design and [Plan 12](plan-12.md) on 2026-11-01. See the [Phase 12 handoff](phase-12-handoff.md) for local verification. The [GitHub master run](https://github.com/ottorafaelcihak/CounterForge/actions/runs/41322213155) passed all four offline controls; live CI requires a separate decision.
 
 **Goal:** Run reviewed CounterForge regression bundles in GitHub Actions with zero provider calls, so a healthy target passes, a broken target fails as a correctness regression, and infrastructure failure is never misreported as a regression.
 

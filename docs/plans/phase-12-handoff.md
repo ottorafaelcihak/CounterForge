@@ -1,8 +1,10 @@
 # Phase 12 — Offline regression CI handoff
 
-**Status:** Implemented and verified locally on `master`, 2026-11-01, after the
-owner approved [Plan 12](plan-12.md) and [the CI design](phase-11-ci-design.md).
-The GitHub workflow execution receipt remains pending an authorized push.
+**Status:** Implemented and verified locally and on GitHub `master`, 2026-11-01,
+after the owner approved [Plan 12](plan-12.md) and
+[the CI design](phase-11-ci-design.md). The owner authorized the push, and the
+[first hosted offline run](https://github.com/ottorafaelcihak/CounterForge/actions/runs/41322213155) succeeded for implementation commit
+`5ae0b55cd072e6f967065ea320b63f1a4df878b1`.
 Live CI remains a separate future design and funding decision.
 
 ## Delivered behavior
@@ -145,8 +147,15 @@ Snapshot preparation, rehash or cleanup failures currently share the fixed
 has not started. They still return execution error 2 with null counts. This
 minor triage limitation does not change the pass/fail boundary.
 
-- GitHub workflow run URL and four-control artifact: **pending authorized push**.
-  Local syntax and protocol checks do not establish a successful hosted run.
+- GitHub hosted execution: [run 41322213155](https://github.com/ottorafaelcihak/CounterForge/actions/runs/41322213155),
+  push on `master`, attempt 1, completed successfully on 2026-11-01. The consume,
+  validated summary and artifact-upload steps all succeeded. Downloaded artifact
+  `offline-regression-receipt` (ID `13089259922`, archive digest
+  `sha256:cc86bbf3ac559e981b62130a168c5ff1f1e91faf6ad2e5e9be27e74b8852ef77`)
+  contains `suite.json`; independent inspection confirmed all four exact rows
+  above, `matched=true` for each, suite exit 0 / PASS / OK, and zero provider
+  calls/cost. This receipt applies to implementation commit `5ae0b55`; subsequent
+  documentation commits do not replace that tested source identity.
 - FR-20 live execution: deferred; no new paid authorization or credential setup.
 - Workstreams B–D remain untouched roadmap items.
 - Phase 08's measured benchmark, genuine stable-failure discovery, and Phase 10's
