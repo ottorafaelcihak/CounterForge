@@ -22,22 +22,23 @@
 
 ## Workstream A: Regression CI integration — FR-20
 
-**Status: Option A selected; design `DRAFT_UNAPPROVED`.** The user selected
-Option A. The offline-first scope is the coordinator's proposal for the first increment, pending approval. The concrete design is in
-[Phase 11 CI design](phase-11-ci-design.md) and the numbered implementation
-proposal is [Plan 12](plan-12.md). Selection is not approval of the full
-design; the approval checkbox below remains unchecked. Live CI is deferred,
-not implemented (0 model calls / $0 cap).
+**Status: Option A implemented offline and verified locally.** The owner approved
+[the CI design](phase-11-ci-design.md) and [Plan 12](plan-12.md) on 2026-11-01.
+The trusted consumer and fixed synthetic workflow controls are implemented;
+[the Phase 12 handoff](phase-12-handoff.md) records local evidence. A GitHub
+`master` execution receipt remains pending an authorized push. Live CI remains
+deferred (0 model calls / $0 cap for this increment).
 
 **Depends on:** Portable runner, clean-environment checks and version retests from phases 06–07.
 
-**Minimum interface:** A documented GitHub Actions workflow invokes the existing bundle runner with environment-supplied credentials and checksum-pinned artifacts. Core VTC semantics do not change.
+**Minimum interface:** The offline increment invokes the trusted installed bundle runner with checksum-pinned local artifacts and no model credentials. A future live increment requires its own approved credential and budget design. Core VTC semantics do not change.
 
-- [ ] Define the supported repository/workflow trigger and credential trust boundary, including a no-secret fixture/replay mode for forks and pull requests.
+- [x] Define the supported repository/workflow trigger and credential trust boundary, including a no-secret fixture/replay mode for forks and pull requests.
 - [ ] Choose opt-in live-run conditions, finite spend/runtime/concurrency caps and how CI execution costs are reported before implementing workflow dispatch.
-- [ ] Design pass/fail/unknown infrastructure reporting so target regressions remain distinguishable from provider outages.
-- [ ] Acceptance scenarios: healthy model passes; known broken target fails the correctness assertion; tampered bundle stops before dispatch; fork PR cannot obtain secrets or trigger paid inference.
-- [ ] Approve the concrete workflow design and create a separate implementation plan before adding live CI.
+- [x] Design pass/fail/unknown infrastructure reporting so target regressions remain distinguishable from provider outages.
+- [x] Offline acceptance scenarios verified locally: healthy fixture passes; broken fixture fails the correctness assertion; tampered bundle stops before dispatch; workflow policy uses trusted PR-base inputs without model secrets or paid inference. Remote execution remains pending.
+- [x] Approve the offline workflow design and create a separate implementation plan before implementation (owner approval 2026-11-01).
+- [ ] Approve a separate live CI design, funding envelope and implementation plan before adding live CI.
 
 ## Workstream B: Additional visual tasks — FR-21
 
@@ -84,5 +85,5 @@ provider, then repair. These are independent future decisions, not prerequisites
 for the MVP. Select one workstream at a time and preserve the frozen release.
 
 - [ ] Every selected workstream has an approved design, explicit I/O and migration decisions, funded/authorized live access if needed and concrete acceptance tests.
-- [ ] Untouched workstreams remain roadmap items, not partially implemented or claimed functionality.
-- [ ] Add the selected workstream's detailed numbered plan to this directory and update [the roadmap](README.md) when its design gate passes.
+- [x] Untouched workstreams remain roadmap items, not partially implemented or claimed functionality.
+- [x] Add the selected workstream's detailed numbered plan to this directory and update [the roadmap](README.md) when its design gate passes.

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "healthy",
+      "bundle_path": "v1-fixture.zip",
+      "expected_sha256": "e91352ad992ea233cd6429b18218b92de796b2551ff4193896713428bc46b6a6",
+      "mode": "fixture",
+      "fixture_count": 5,
+      "variant": "none",
+      "expectation": {
+        "exit_code": 0,
+        "verdict": "PASS",
+        "reason_code": "OK",
+        "expected_count": 5,
+        "actual_count": 5
+      }
+    },
+    {
+      "case_id": "broken",
+      "bundle_path": "v1-fixture.zip",
+      "expected_sha256": "e91352ad992ea233cd6429b18218b92de796b2551ff4193896713428bc46b6a6",
+      "mode": "fixture",
+      "fixture_count": 4,
+      "variant": "none",
+      "expectation": {
+        "exit_code": 1,
+        "verdict": "REGRESSION",
+        "reason_code": "COUNT_MISMATCH",
+        "expected_count": 5,
+        "actual_count": 4
+      }
+    },
+    {
+      "case_id": "replay",
+      "bundle_path": "v1-fixture.zip",
+      "expected_sha256": "e91352ad992ea233cd6429b18218b92de796b2551ff4193896713428bc46b6a6",
+      "mode": "replay",
+      "fixture_count": null,
+      "variant": "none",
+      "expectation": {
+        "exit_code": 1,
+        "verdict": "REGRESSION",
+        "reason_code": "COUNT_MISMATCH",
+        "expected_count": 5,
+        "actual_count": 4
+      }
+    },
+    {
+      "case_id": "tampered",
+      "bundle_path": "v1-fixture.zip",
+      "expected_sha256": "e91352ad992ea233cd6429b18218b92de796b2551ff4193896713428bc46b6a6",
+      "mode": "fixture",
+      "fixture_count": 5,
+      "variant": "flip_first_byte",
+      "expectation": {
+        "exit_code": 2,
+        "verdict": "EXECUTION_ERROR",
+        "reason_code": "BUNDLE_SHA_MISMATCH",
+        "expected_count": null,
+        "actual_count": null
+      }
+    }
+  ]
+}

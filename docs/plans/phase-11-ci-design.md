@@ -1,6 +1,6 @@
 # Phase 11 Workstream A — Regression CI Design (Option A, Offline-Only)
 
-**Status: `DRAFT_UNAPPROVED`** — User selected Option A only. This is not approval of the full design. Do not implement until the owner approves this document and [Plan 12](plan-12.md). No product code is changed by this document.
+**Status: `IMPLEMENTED_OFFLINE_LOCAL`** — The owner approved this design and [Plan 12](plan-12.md) on 2026-11-01. See the [Phase 12 handoff](phase-12-handoff.md) for local verification. GitHub execution evidence remains pending an authorized push; live CI requires a separate decision.
 
 **Goal:** Run reviewed CounterForge regression bundles in GitHub Actions with zero provider calls, so a healthy target passes, a broken target fails as a correctness regression, and infrastructure failure is never misreported as a regression.
 
@@ -41,34 +41,72 @@ The installed package module runs isolated as `python -I -m counterforge_regress
 ```python
 Mode = Literal["fixture", "replay"]
 Verdict = Literal["PASS", "REGRESSION", "EXECUTION_ERROR"]
+
+
 @dataclass(frozen=True)
 class ExpectedOutcome:
-    exit_code: int; verdict: Verdict; reason_code: str
-    expected_count: int | None; actual_count: int | None
+    exit_code: int
+    verdict: Verdict
+    reason_code: str
+    expected_count: int | None
+    actual_count: int | None
+
+
 @dataclass(frozen=True)
 class CiCatalogEntry:
-    case_id: str; bundle_path: Path; expected_sha256: str; mode: Mode
+    case_id: str
+    bundle_path: Path
+    expected_sha256: str
+    mode: Mode
     fixture_count: int | None
     variant: Literal["none", "flip_first_byte"]
     expectation: ExpectedOutcome | None
+
+
 @dataclass(frozen=True)
 class CaseResult:
-    schema_version: Literal[1]; case_id: str | None; verdict: Verdict
-    exit_code: int; reason_code: str; expected_count: int | None; actual_count: int | None
-    bundle_sha256: str | None; mode: Mode | None; provenance: str | None
-    provider_calls: Literal[0] = 0; cost_usd: Literal[0] = 0
+    schema_version: Literal[1]
+    case_id: str | None
+    verdict: Verdict
+    exit_code: int
+    reason_code: str
+    expected_count: int | None
+    actual_count: int | None
+    bundle_sha256: str | None
+    mode: Mode | None
+    provenance: str | None
+    provider_calls: Literal[0] = 0
+    cost_usd: Literal[0] = 0
+
+
 @dataclass(frozen=True)
 class SelfTestCheck:
-    expected: ExpectedOutcome; actual: CaseResult; matched: bool
+    expected: ExpectedOutcome
+    actual: CaseResult
+    matched: bool
+
+
 @dataclass(frozen=True)
 class SuiteReport:
-    schema_version: Literal[1]; kind: Literal["PIPELINE_SELF_TEST"]
-    selected_ids: tuple[str, ...]; checks: tuple[SelfTestCheck, ...]
-    verdict: Verdict; exit_code: int; reason_code: str
-    provider_calls: Literal[0] = 0; cost_usd: Literal[0] = 0
+    schema_version: Literal[1]
+    kind: Literal["PIPELINE_SELF_TEST"]
+    selected_ids: tuple[str, ...]
+    checks: tuple[SelfTestCheck, ...]
+    verdict: Verdict
+    exit_code: int
+    reason_code: str
+    provider_calls: Literal[0] = 0
+    cost_usd: Literal[0] = 0
 
-def evaluate_bundle(zip_bytes: bytes, *, trusted_sha256: str, mode: Mode,
-                    fixture_count: int | None = None, case_id: str | None = None) -> CaseResult: ...
+
+def evaluate_bundle(
+    zip_bytes: bytes,
+    *,
+    trusted_sha256: str,
+    mode: Mode,
+    fixture_count: int | None = None,
+    case_id: str | None = None,
+) -> CaseResult: ...
 def parse_catalog(data: bytes, *, catalog_dir: Path) -> tuple[CiCatalogEntry, ...]: ...
 def matches_control(actual: CaseResult, expected: ExpectedOutcome) -> bool: ...
 def run_catalog(case_ids: Sequence[str] | None = None) -> SuiteReport: ...

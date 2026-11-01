@@ -40,6 +40,8 @@ npm-debug.log*
 data/
 /artifacts/
 *.zip
+# Retained, reviewed offline CI harness; other runtime exports stay ignored.
+!tests/fixtures/regression_ci/v1-fixture.zip
 
 # --- Editor / OS ----------------------------------------------------------
 .DS_Store

@@ -1,0 +1,146 @@
+name: CounterForge offline regression
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  offline-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Enforce trusted ref
+        env:
+          TRUSTED_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master') || ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master') }}
+        run: test "$TRUSTED_REF" = true
+      # PRs consume the reviewed base code/catalog/archive. The existing ci.yml
+      # tests PR-head source; this job is not evidence about proposed consumer edits.
+      # The first master addition bootstraps this module and retained catalog.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+          python-version: "3.12"
+          enable-cache: false
+      - run: uv sync --locked
+      # Genuine consumption uses case --case-id <reviewed-id> --report <path.json>
+      # after a future owner-reviewed local catalog addition (path + outer SHA).
+      # A genuine case exit 1 fails; only this fixed four-control suite inverts it.
+      - name: Consume all four fixed controls
+        id: consume
+        env:
+          REPORT_PATH: ${{ runner.temp }}/suite.json
+        run: .venv/bin/python -I -m counterforge_regression.ci suite --report "$REPORT_PATH" > /dev/null
+      - name: Validate structured summary
+        if: ${{ always() && steps.consume.outcome != 'skipped' }}
+        env:
+          REPORT_PATH: ${{ runner.temp }}/suite.json
+        run: |
+          .venv/bin/python -I - <<'PY'
+          # BEGIN VALIDATED SUMMARY
+          import json
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          def unique(pairs):
+              result = {}
+              for key, value in pairs:
+                  if key in result:
+                      raise ValueError()
+                  result[key] = value
+              return result
+
+          def require(condition):
+              if not condition:
+                  raise ValueError()
+
+          def same(a, b):
+              return type(a) is type(b) and a == b
+
+          def main():
+              path = Path(os.environ["REPORT_PATH"])
+              require(not path.is_symlink())
+              with path.open("rb") as source:
+                  data = source.read(16385)
+              require(len(data) <= 16384)
+              report = json.loads(data, object_pairs_hook=unique)
+              fields = {"schema_version", "kind", "selected_ids", "checks", "verdict", "exit_code", "reason_code", "provider_calls", "cost_usd"}
+              require(isinstance(report, dict) and set(report) == fields)
+              require(same(report["schema_version"], 1) and report["kind"] == "PIPELINE_SELF_TEST")
+              require(same(report["provider_calls"], 0) and same(report["cost_usd"], 0))
+              ids = ["healthy", "broken", "replay", "tampered"]
+              require(report["selected_ids"] == ids)
+              controls = [(0, "PASS", "OK", 5, 5), (1, "REGRESSION", "COUNT_MISMATCH", 5, 4), (1, "REGRESSION", "COUNT_MISMATCH", 5, 4), (2, "EXECUTION_ERROR", "BUNDLE_SHA_MISMATCH", None, None)]
+              outcome_keys = ["exit_code", "verdict", "reason_code", "expected_count", "actual_count"]
+              actual_keys = set(outcome_keys) | {"schema_version", "case_id", "bundle_sha256", "mode", "provenance", "provider_calls", "cost_usd"}
+              reasons = {"OK", "COUNT_MISMATCH", "BUNDLE_SHA_MISMATCH", "BUNDLE_INVALID", "CATALOG_INVALID", "INVALID_INPUT", "REPORT_PATH_UNSAFE", "CHILD_TIMEOUT", "CHILD_EXECUTION_ERROR", "UNKNOWN_CHILD_OUTPUT", "RUNNER_EXECUTION_ERROR", "REPORT_WRITE_ERROR", "SELF_TEST_MISMATCH"}
+              checks = report["checks"]
+              require(isinstance(checks, list) and len(checks) == 4)
+              rows = []
+              for case_id, fixed, check in zip(ids, controls, checks, strict=True):
+                  require(isinstance(check, dict) and set(check) == {"expected", "actual", "matched"})
+                  expected, actual = check["expected"], check["actual"]
+                  require(isinstance(expected, dict) and set(expected) == set(outcome_keys))
+                  require(all(same(expected[k], v) for k, v in zip(outcome_keys, fixed, strict=True)))
+                  require(isinstance(actual, dict) and set(actual) == actual_keys)
+                  require(actual["case_id"] == case_id and same(actual["schema_version"], 1))
+                  require(same(actual["provider_calls"], 0) and same(actual["cost_usd"], 0))
+                  require(actual["mode"] == ("replay" if case_id == "replay" else "fixture"))
+                  require(actual["provenance"] in (None, "LOCAL_FIXTURE", "REAL_PROVIDER"))
+                  digest = actual["bundle_sha256"]
+                  require(digest is None or (isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)))
+                  code, verdict, reason = (actual[k] for k in outcome_keys[:3])
+                  require(type(code) is int and code in (0, 1, 2))
+                  require(verdict == ("PASS", "REGRESSION", "EXECUTION_ERROR")[code] and reason in reasons)
+                  exp, act = actual["expected_count"], actual["actual_count"]
+                  if code == 2:
+                      require(exp is None and act is None and reason not in ("OK", "COUNT_MISMATCH"))
+                  else:
+                      require(type(exp) is int and 0 <= exp <= 1000 and type(act) is int)
+                      require((code == 0 and reason == "OK" and exp == act) or (code == 1 and reason == "COUNT_MISMATCH" and exp != act))
+                  matched = all(same(actual[k], expected[k]) for k in outcome_keys)
+                  require(type(check["matched"]) is bool and check["matched"] == matched)
+                  rows.append({"case_id": case_id, "expected": expected, "actual": {k: actual[k] for k in outcome_keys}, "matched": matched})
+              all_matched = all(r["matched"] for r in rows)
+              execution = any(not r["matched"] and r["actual"]["exit_code"] == 2 for r in rows)
+              code = 0 if all_matched else 2 if execution else 1
+              require(same(report["exit_code"], code))
+              require(report["verdict"] == ("PASS", "REGRESSION", "EXECUTION_ERROR")[code])
+              require(report["reason_code"] == ("OK" if all_matched else "SELF_TEST_MISMATCH"))
+              rendered = "## Offline pipeline self-test\n\n```json\n" + json.dumps(rows, indent=2) + "\n```\n"
+              require(len(rendered.encode()) <= 16384)
+              # All validation finishes before opening the summary. No raw child text.
+              with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a") as summary:
+                  summary.write(rendered)
+              return code
+
+          try:
+              result = main()
+          except Exception:
+              result = 2
+          sys.exit(result)
+          # END VALIDATED SUMMARY
+          PY
+      - name: Retain safe JSON receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: offline-regression-receipt
+          path: ${{ runner.temp }}/suite.json
+          if-no-files-found: error
+          retention-days: 14
