@@ -511,5 +511,11 @@
     "uv_locked_offline": "PASS",
     "npm_locked_install": "PASS"
   },
-  "phase10_package_hash_scope": "All candidate tracked/nonignored source files except docs/releases/** (release metadata excluded to avoid circular hashes). Git commit binds the entire repository. Private media not included; separately hashed in demo-verification.json."
+  "phase10_package_hash_scope": "All candidate tracked/nonignored source files except docs/releases/** (release metadata excluded to avoid circular hashes). Git commit binds the entire repository. Private media not included; separately hashed in demo-verification.json.",
+  "current_local_preparation": {
+    "date": "2026-11-02",
+    "receipt": "docs/releases/local-final-readiness.json",
+    "guide": "docs/guides/live-final-testing.md",
+    "scope": "Local software verification and private recording-tool rehearsal; live/human/publication gates remain pending"
+  }
 }

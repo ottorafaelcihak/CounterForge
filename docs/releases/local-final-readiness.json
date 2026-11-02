@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "checked_date": "2026-11-02",
+  "status": "LOCAL_SOFTWARE_VERIFIED_WAITING_FOR_HUMAN_LIVE_GATES",
+  "baseline_commit": "5d11fd04d8a22efa0f140d3f8f7a839487175a9c",
+  "scope": "Same tracked application runtime as baseline; current delta is documentation only. Local test image and private artifacts are ignored, not product changes.",
+  "runtime_inventory_sha256": "84e2f3074f8d5b2b2fdcea24beef2a021d96dcc85ffffaf0aa6055dc193eee22",
+  "runtime_inventory_files": 324,
+  "project": {
+    "project_id": "5b5f65fc-64b4-474e-bdbb-6ca784301dc8",
+    "name": "Phase 08 final live benchmark",
+    "owner_ui": "http://localhost:3000/projects/5b5f65fc-64b4-474e-bdbb-6ca784301dc8",
+    "state": "EMPTY_PROJECT_ONLY_HUMAN_GATES_PENDING"
+  },
+  "services": {
+    "api": "healthy",
+    "worker": "healthy",
+    "web": "healthy",
+    "postgres": "healthy",
+    "redis": "healthy"
+  },
+  "provider_mode": "DISABLED",
+  "operator_allowance_configured": false,
+  "phase08_provider_calls_this_work": 0,
+  "phase08_spend_usd": "0",
+  "serial_review_override": {
+    "path": ".cache/phase08/compose.review.yaml",
+    "config_validation": "PASS",
+    "activated": false
+  },
+  "tests": {
+    "python_lint": "PASS",
+    "python_format": "PASS:243 files formatted",
+    "python_mypy": "PASS:118 source files",
+    "unit_contract": "568 passed",
+    "database": "281 passed,2 expected operational-rehearsal skips",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_tests": "13 passed",
+    "linux_web_production_build": "PASS",
+    "browser_e2e": "15 passed",
+    "generated_contracts": "9 schemas and TypeScript contracts match",
+    "export": "PASS",
+    "release_structure": "PASS:0 errors,release_ready=false",
+    "operational_backup_restore": "NOT RERUN:2 explicit-gate tests skipped"
+  },
+  "test_isolation": {
+    "database": "counterforge_final_test_20261102",
+    "browser_database": "counterforge_final_browser_20261102",
+    "redis": "disposable counterforge-final-redis loopback port56380 DB15",
+    "initial_run": "Invalid concurrent setup: suites shared one test database and contended on database-wide provider advisory lock. Failed/interrupted logs retained; not represented as passing.",
+    "resolution": "Separated browser/database databases; full isolated reruns passed. Initial failures were test infrastructure contention, not resolved by weakening product locks."
+  },
+  "video_tool_smoke": {
+    "status": "VERIFIED_PRIVATE_TOOL_SMOKE_ONLY",
+    "frames": 7,
+    "duration_seconds": 7,
+    "width": 1280,
+    "height": 720,
+    "audio": false,
+    "sha256": "fdc469197fe52db1492c55b189b582532d45c73c9524d6b3bd15ba6857a8b6e1",
+    "source_sha256": "b25a0232ff3ed2f29f78c81ad799ee4b7e515db3445e39fb9e57326dd5aa39b3",
+    "publication": "NOT_AUTHORIZED",
+    "benchmark_evidence": false,
+    "encoded_midpoint_browser_check": {
+      "duration": 7,
+      "width": 1280,
+      "height": 720
+    },
+    "proof_frame_inspection": "provenance banner visible, no token value, no performance claim"
+  },
+  "final_video": "NOT_RECORDED_PENDING_REAL_REVIEWED_EVIDENCE",
+  "publication": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "submission": "NOT_AUTHORIZED_NOT_PERFORMED",
+  "independent_review": {
+    "codex": "Native read-only guide,recording-plan,submission draft,budget and scoped receipt review completed; no material findings.",
+    "claude": "CLI 2.0.69 attempted, OAuth401 invalid,0modeltokens; no review completed",
+    "muse": "Unavailable",
+    "bridge": "Unavailable",
+    "three_provider_participation": false
+  },
+  "human_gates": [
+    "Independent labels,ambiguity,rights and confirmed8/4 split",
+    "Target/settings and reviewed masks/contracts/bindings",
+    "Hash-bound dataset/protocol freeze and separate finite Phase08 paid authorization/expiry",
+    "Secure local key entry and supervised candidate review",
+    "Independent blinded audit and verified real result bundle",
+    "Specific final-media/publication/submission approvals"
+  ],
+  "evidence_root": ".cache/final-qa",
+  "guides": [
+    "docs/guides/live-final-testing.md",
+    "docs/demo/final-recording-plan.md",
+    "docs/demo/submission-content-draft.md",
+    "docs/benchmark/live-budget-check.md"
+  ],
+  "isolated_test_results": {
+    "database": {
+      "exit_code": 0,
+      "seconds": 589.69,
+      "database": "counterforge_final_test_20261102",
+      "command": [
+        "/opt/counterforge-venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/integrations",
+        "-q",
+        "--tb=short",
+        "-p",
+        "no:cacheprovider",
+        "--allow-hosts=127.0.0.1,localhost,::1"
+      ]
+    },
+    "browser": {
+      "exit_code": 0,
+      "seconds": 220.63,
+      "database": "counterforge_final_browser_20261102",
+      "command": [
+        "/opt/counterforge-venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/e2e",
+        "-q",
+        "--tb=short",
+        "-p",
+        "no:cacheprovider"
+      ]
+    }
+  },
+  "local_test_resources": "Ephemeral Redis test process removed after suites; separate disposable test databases and private logs retained. Normal app remains running.",
+  "human_review_update": {
+    "status": "USER_ENTERED_COUNTS_REVIEW_INCOMPLETE",
+    "worksheet_preserved_uncommitted": "docs/benchmark/drafts/image-review.md",
+    "issues": [
+      "12 held-out entries instead of8/4",
+      "Missing timezone-aware review timestamps",
+      "Rights evidence/redistribution decision recorded as none",
+      "Repeated nine-mug ambiguity text conflicts with varying counts"
+    ],
+    "feedback": ".cache/phase08/private/review-feedback.md",
+    "transcribed_into_frozen_manifest": false
+  }
+}

@@ -172,8 +172,10 @@ also consume the global API/dollar/runtime limits. A small cap may censor a run.
 
 Codex must reconcile current entitlement, pricing and worst-case per-request
 inputs/outputs before recommending a dollar estimate. If a request's maximum
-cost is bounded by R USD, the conservative aggregate estimate is `600 × R`;
-R is currently unverified, so no complete-run dollar estimate is asserted. The
+cost is bounded by R USD, the conservative aggregate estimate is `600 × R`.
+The [November 2 pricing worksheet](../benchmark/live-budget-check.md) now records
+the existing request bounds and explains why a small cap may censor the run;
+the actual selected target and complete-run bill remain unestablished. The
 hard USD 5 exposure proposal does not prove the campaign can finish for USD 5.
 You choose call/dollar/runtime caps and an explicit timezone-aware expiry after
 reviewing that worksheet. Free credits do not authorize arbitrary spending.
@@ -249,16 +251,36 @@ The command shape was checked through `run --help`; **no live invocation was run
 ```python
 # Save locally as a private launcher only AFTER authorization; run with Python.
 import getpass, subprocess
-args = [".venv/bin/python", "-m", "evaluations.cli", "run",
-        "--dataset", "<FROZEN_DATASET.json>", "--assets", "<ASSET_ROOT>",
-        "--protocol", "<FROZEN_PROTOCOL.json>", "--bindings", "<BINDINGS.json>",
-        "--project-id", "<PROJECT_ID>",
-        "--database-url", "<LOCAL_DATABASE_URL>",
-        "--artifact-root", "<SHARED_SEED_AND_REVIEW_ARTIFACT_ROOT>",
-        "--output", "<DURABLE_RUN_DIRECTORY>", "--live",
-        "--live-authorization", "<PRIVATE_AUTHORIZATION.json>", "--key-stdin"]
+
+args = [
+    ".venv/bin/python",
+    "-m",
+    "evaluations.cli",
+    "run",
+    "--dataset",
+    "<FROZEN_DATASET.json>",
+    "--assets",
+    "<ASSET_ROOT>",
+    "--protocol",
+    "<FROZEN_PROTOCOL.json>",
+    "--bindings",
+    "<BINDINGS.json>",
+    "--project-id",
+    "<PROJECT_ID>",
+    "--database-url",
+    "<LOCAL_DATABASE_URL>",
+    "--artifact-root",
+    "<SHARED_SEED_AND_REVIEW_ARTIFACT_ROOT>",
+    "--output",
+    "<DURABLE_RUN_DIRECTORY>",
+    "--live",
+    "--live-authorization",
+    "<PRIVATE_AUTHORIZATION.json>",
+    "--key-stdin",
+]
 # URL must omit an embedded password; a separate masked prompt can supply PGPASSWORD.
 import os
+
 env = dict(os.environ)
 env["PGPASSWORD"] = getpass.getpass("Local database password: ")
 key = getpass.getpass("Authorized Meta API key: ")

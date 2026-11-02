@@ -14,7 +14,7 @@
       "normalized_sha256": "79fb305d7c84d078e33bb89bf18c30ac5c639c05fa9b7bfe285be23bcd8ad9bd",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 5,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -22,7 +22,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -37,7 +37,7 @@
       "normalized_sha256": "81034052a39b474ed70ed5ec7f540d869464860c309fa82e5d1814086dd9e7d5",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 1,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -45,7 +45,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -60,7 +60,7 @@
       "normalized_sha256": "d0d67bba660f7cf832563d204d98200126bb7603be210b05d2ea1ac45eda32d5",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 2,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -68,7 +68,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -83,7 +83,7 @@
       "normalized_sha256": "5ada32d205e889b976c6985ca544da27868b4f4383ba6cd093da110913de2281",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 3,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -91,7 +91,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -106,7 +106,7 @@
       "normalized_sha256": "e28b4a547be787111e95865df22a3bcde6d7d06ff81e713e908f484364d339a4",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 4,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -114,7 +114,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -129,7 +129,7 @@
       "normalized_sha256": "7d79cd34427ebb46e53071d7588af33ba037417b0271dfd6b7e8d9cdb7e97bc0",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 6,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -137,7 +137,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -152,7 +152,7 @@
       "normalized_sha256": "40ffb088fd7e62ec313b7830bb6148ece4541e8a2c59c4c6d428bb62dcc0ab1b",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 7,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -160,7 +160,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -175,7 +175,7 @@
       "normalized_sha256": "08a33aef80bca314330ffeedb25362b73096e14d81917477815d3183043889d3",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 8,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -183,7 +183,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -198,7 +198,7 @@
       "normalized_sha256": "8ca5ff244ef041d76fc487b33310c97aa8fa791ffbb81fb26c6a87ba5f9d649f",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 10,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -206,7 +206,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -221,7 +221,7 @@
       "normalized_sha256": "582e3b9b6c45b8f3f78db30f75cc9d522ff4c54e0515a465b52ef88acb8d05e5",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 12,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -229,7 +229,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -244,7 +244,7 @@
       "normalized_sha256": "de1bdcd600fcd8b377dabea1dcfb04589b46ca18db37cc88769a7d839db81f9c",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 9,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -252,7 +252,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -267,7 +267,7 @@
       "normalized_sha256": "00728cbf26bce6f81b4642635897f14c601ee69838647ae37ff9ed814f91bef9",
       "width": 1448,
       "height": 1086,
-      "verified_count": null,
+      "verified_count": 11,
       "rights": {
         "source": "PENDING",
         "permission": "PENDING",
@@ -275,7 +275,7 @@
         "reviewer": "PENDING",
         "reviewed_at": null
       },
-      "label_reviewer": "PENDING",
+      "label_reviewer": "Otto",
       "label_reviewed_at": null,
       "ambiguity": null,
       "ambiguity_notes": "PENDING"
@@ -283,5 +283,5 @@
   ],
   "exclusions": [],
   "sha256": null,
-  "_status": "UNAPPROVED USER-SUPPLIED ASSETS: hashes and normalization prepared offline; counts, rights, independent reviews and split confirmation pending. Remove metadata only after real approvals."
+  "_status": "UNAPPROVED DRAFT. User-entered counts/reviewer transcribed, not frozen. Label/rights timestamps, permission evidence, actual ambiguity review and split confirmation remain unresolved. Stored8/4 split is the original proposal; worksheet currently says all12HELD_OUT and must be clarified. No paid authority."
 }

@@ -152,3 +152,17 @@ release index parse; git diff --check passed. Linux scripts.release_checks exite
 not release readiness; external links/scanners not verified.
 
 Only documentation/drafts are committed; user-provided docs/images remains untracked.
+
+## Subsequent final-test preparation
+
+The [live/final handoff](../guides/live-final-testing.md) and
+[scoped local receipt](../releases/local-final-readiness.json) record 568 unit/contract,
+281 database integration (2 expected operational skips),15 browser and13 web tests
+passing. Separate disposable databases were needed to avoid cross-suite contention
+on the application provider lock; initial failed/interrupted logs were retained.
+A new empty owner project is prepared, without invented seed labels or model
+settings. Seven-second private video-tool smoke verified; final video and genuine
+benchmark remain pending. Current rates/reservation bounds are documented in
+[live budget check](live-budget-check.md); no allowance was increased.
+Claude review failed OAuth401 before any model execution; native Codex review
+completed, Muse/bridge unavailable. No paid Phase08 calls or publication occurred.
