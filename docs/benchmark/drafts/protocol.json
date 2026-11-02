@@ -1,0 +1,37 @@
+{
+  "revision": "phase08-proposal-v1",
+  "dataset_sha256": null,
+  "policy_revision": "strict-binary-human-gates-1",
+  "target_revision": null,
+  "code_revision": "8e14731ed4f752b610484fbfb07c7108a98d4204",
+  "random_seed": 17,
+  "target_calls_per_arm": 10,
+  "max_candidates_per_arm": 3,
+  "max_api_calls": 600,
+  "max_usd": "5.00",
+  "max_runtime_seconds": 3600,
+  "sha256": null,
+  "_status": "UNAPPROVED PLANNING CAPS, NOT SPENDING AUTHORITY. Dataset/target hashes pending; refresh code_revision to final verified commit before freeze. Cost-to-completion estimate is not established.",
+  "primary_policy": "FEEDBACK_V1",
+  "arms": [
+    "random_det",
+    "spark_det",
+    "full_system"
+  ],
+  "deterministic_families": [
+    "brightness_shift"
+  ],
+  "full_families": [
+    "brightness_shift",
+    "background_replacement",
+    "background_clutter"
+  ],
+  "strength_range": [
+    0,
+    1
+  ],
+  "baseline_calls": 3,
+  "fresh_confirmation_calls": 3,
+  "heldout_use": "reporting_only",
+  "order_rule": "reverse_on_odd_seed"
+}

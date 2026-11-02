@@ -5,6 +5,11 @@ not establish a real model weakness.
 
 ## Evaluation (Phase 08)
 
+The November 2 [human guide](guides/phase08-human-action-guide.md) and
+[preparation ledger](benchmark/00-status.md) document the current private candidate
+image preparation and offline verification. Supplying images does not approve
+their counts, rights, split or a paid run; no genuine benchmark result exists yet.
+
 - **No measured real-model evaluation yet.** No approved 12-case human
   dataset (labels/rights pending) and no Phase 08 paid authorization
   exist. All Phase 08 numbers produced so far are methodology-fixture

@@ -58,7 +58,7 @@
     {
       "id": "phase08-measured-evaluation",
       "status": "pending",
-      "detail": "No 12 human labels/rights and no paid authorization; no aggregates invented"
+      "detail": "Pending independent labels/rights for 12 user-supplied candidate images and separate Phase 08 paid authorization. Offline preparation: docs/benchmark/00-status.md; human steps: docs/guides/phase08-human-action-guide.md. No real benchmark aggregates or paid calls."
     },
     {
       "id": "demo-video",

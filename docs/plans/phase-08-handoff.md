@@ -1,5 +1,11 @@
 # Phase 08 handoff — evaluation and independent audit
 
+November 2 host update: the historical proposal path below is absent on this
+Windows host and in its fresh test container. New unapproved twelve-slot drafts,
+the [human guide](../guides/phase08-human-action-guide.md), and an offline verified
+[preparation ledger](../benchmark/00-status.md) are available. Human gates remain
+pending; the historical path is not current asset evidence.
+
 Phase 08 implements the frozen-dataset, matched-budget evaluation harness
 and independent audit described in [plan 08](plan-08.md) and
 [the evaluation guide](../evaluation.md). Code and methodology tests are

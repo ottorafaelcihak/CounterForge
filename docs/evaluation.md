@@ -1,5 +1,10 @@
 # Phase 08 evaluation
 
+For the current host's ready-to-run preparation and human gates, start with the
+[step-by-step human action guide](guides/phase08-human-action-guide.md) and
+[November 2 preparation ledger](benchmark/00-status.md). The historical `/tmp`
+proposal directory is absent here; the twelve-slot drafts are unapproved.
+
 Phase 08 adds a frozen, matched-budget evaluation harness, an independent
 human audit, and source-reconciled reports. It measures validity, failure
 discovery, reproducibility and cost. It does **not** yet report measured
