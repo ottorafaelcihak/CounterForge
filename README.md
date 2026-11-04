@@ -2,22 +2,176 @@
 
 Find the failure. Prove the weakness. Prevent the regression.
 
-CounterForge is a visual-model reliability laboratory developed for the **Meta
-hackathon**. It combines Meta's AI models with controlled image changes,
-human-verified ground truth and repeated evaluation. Its goal is to turn
-reproducible visual-model failures into portable regression tests, starting with
-single-image object counting.
+CounterForge is a reliability lab for vision-language models, developed for the
+**Meta hackathon**. An engineer supplies an image, a counting question and a
+human-verified answer. CounterForge searches for controlled image changes that
+preserve that answer but cause the target model to answer incorrectly. When a
+failure survives review and fresh confirmation, the system can package its
+evidence as a portable regression test.
 
-Phases 01–07 implement typed contracts, PostgreSQL evidence storage, atomic spend
-accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
-independent verification, durable experiments and portable regression ZIPs. Optional feedback search, reviewed reduction probes
-and independent target-version retests extend that pipeline. Three
-correct seed checks precede search; only VALID candidates reach screening, and a
-stable finding requires three fresh incorrect confirmations. Owner evidence pages
-and a regression library show provenance, reproduction, costs and verified
-downloads. See the [Phase 07 handoff](docs/plans/phase-07-handoff.md) for the frozen policy,
-verification, live feedback usage and remaining gates. Fixture success does not establish a
-real model weakness; automatic threshold calibration remains outstanding.
+For example, a seed image contains five blue mugs. CounterForge can change the
+lighting or surrounding background while preserving the approved mug pixels.
+The answer must remain five. A changed image only becomes a useful test after
+its count and visibility have been reviewed; an incorrect model response then
+needs separate confirmation before it qualifies for export.
+
+The MVP focuses on **single-image object counting with 1–16 protected instances**.
+It serves AI engineers investigating model blind spots and QA engineers checking
+whether validated failures persist across target configurations. The application
+runs locally with an authenticated owner workspace, bounded server-side provider
+calls and retained evidence. It does not automatically repair or retrain models.
+
+## Contents
+
+- [Capabilities](#capabilities)
+- [Experiment flow](#experiment-flow)
+- [System architecture](#system-architecture)
+- [Current results and limits](#current-results-and-limits)
+- [Development setup](#development-setup)
+- [Model roles](#model-roles)
+- [Run local services](#run-local-services)
+- [Run a bounded experiment](#run-a-bounded-experiment)
+- [Inspect and export a finding](#inspect-and-export-a-finding)
+- [Verification and maintenance](#verification-and-maintenance)
+- [Project structure](#project-structure)
+- [Further documentation](#further-documentation)
+
+## Capabilities
+
+| Capability | What CounterForge provides |
+| --- | --- |
+| Reviewed ground truth | Image normalization, human count labels, editable instance masks and approval tied to exact asset revisions. |
+| Visual Test Contracts (VTCs) | Versioned definitions of the protected objects, expected answer, allowed mutation families, invariants and run limits. |
+| Controlled mutations | Deterministic brightness and clutter changes, plus Muse Image background generation with the approved foreground preserved. |
+| Search strategies | Initial Spark planning, optional feedback-driven Spark planning and a seeded random baseline. |
+| Independent validity checks | Provenance, geometry and pixel checks; SAM supporting evidence; mandatory human semantic and visibility decisions. |
+| Bounded execution | Durable jobs, candidate/call/dollar/runtime caps, conservative cost reservations, pause/resume/cancel and explicit handling of uncertain charges. |
+| Evidence inspection | Original/candidate/difference images, masks, validation history, model responses, target settings, costs and event timelines. |
+| Reproduction and regression | Separate screening and fresh confirmation, reviewed reduction probes, verified regression ZIPs and bounded retests against another target configuration. |
+| Evaluation and CI | A frozen matched-budget evaluation/audit harness and an offline CI consumer with labeled synthetic controls. The full real-model benchmark remains pending. |
+
+## Experiment flow
+
+```mermaid
+flowchart TD
+    Seed["Upload image, question and human-verified count"]
+    Masks["Review segmentation and approve each object mask"]
+    Contract["Save VTC, target settings and finite run limits"]
+    Baseline{"Seed correct in all 3 baseline trials?"}
+    Stop["Stop search and retain the reason"]
+    Plan["Propose a permitted change: Spark or seeded random"]
+    Mutate["Generate candidate and preserve protected pixels"]
+    Verify{"Deterministic checks and human review"}
+    Review["Pause for human semantics and visibility review"]
+    Reject["Retain rejected candidate and reasons"]
+    Screen{"Screen VALID candidate against target"}
+    Correct["Retain correct response"]
+    Unknown["Retain uncertainty; resolve before continuing"]
+    Confirm{"All 3 fresh confirmations incorrect?"}
+    Other["Retain intermittent or not-reproduced result"]
+    Stable["Stable for these 3 fresh trials"]
+    Export["Verify eligibility and export regression ZIP"]
+    Next{"Another attempt fits the remaining limits?"}
+    Complete["Finish with evidence, costs and stop reason"]
+
+    Seed --> Masks --> Contract --> Baseline
+    Baseline -->|No| Stop
+    Baseline -->|Yes| Plan
+    Plan --> Mutate --> Verify
+    Verify -->|REVIEW_REQUIRED| Review
+    Review -->|Record decision and resume| Verify
+    Verify -->|INVALID| Reject
+    Verify -->|VALID| Screen
+    Screen -->|Correct| Correct
+    Screen -->|Unknown or provider error| Unknown
+    Screen -->|Incorrect| Confirm
+    Confirm -->|Yes| Stable
+    Confirm -->|No, all replies interpretable| Other
+    Confirm -->|Unknown or incomplete| Unknown
+    Stable --> Export
+    Stable --> Next
+    Correct --> Next
+    Reject --> Next
+    Other --> Next
+    Next -->|Yes| Plan
+    Next -->|No| Complete
+```
+
+All provider dispatches must fit the applicable authorization and budget;
+confirmation calls are reserved before dispatch. Human-review pauses consume
+wall-clock time. An unfinished confirmation is inconclusive, and uncertain
+provider outcomes require reconciliation rather than a blind retry. The diagram
+shows the main decision flow; export is a separate owner-requested job, and a
+finding does not itself end an experiment's remaining search attempts.
+
+A VTC fixes the expected answer. Neither the planner, target model nor SAM can
+silently change it or approve a candidate. Deterministic checks establish
+structural properties; a human still checks count, semantic integrity and
+visibility. Required failures produce `INVALID`, and unresolved required checks
+remain `REVIEW_REQUIRED`.
+
+The regression ZIP contains the retained images, expected and observed answers,
+model settings, mutation provenance, manifest, checksums and a Pytest runner. Its
+assertion checks correctness: a model that reproduces the counting error fails
+the test; a model that returns the correct count passes. Offline replay preserves
+the recorded response and is labeled separately from a fresh live call.
+
+## System architecture
+
+```mermaid
+flowchart LR
+    Owner["Engineer / human reviewer"] --> Web["Next.js owner workspace"]
+    Web -->|Same-origin proxy and session| API["FastAPI API"]
+    API --> DB[("PostgreSQL: durable state and evidence records")]
+    API --> Assets[("Artifact volume: immutable media and bundles")]
+    API --> Queue[("Redis / RQ: job notifications")]
+    Queue --> Worker["Bounded Python worker"]
+    Worker --> DB
+    Worker --> Assets
+    Worker --> Local["Transforms, verification and export"]
+    Worker --> Adapters["Spark, Image, SAM and target adapters"]
+    Adapters --> Meta["Meta Model API"]
+```
+
+The **web app** handles project setup, mask editing, review, experiment monitoring
+and the regression library. **FastAPI** owns authentication, typed requests,
+idempotency, persistence and authorization. The **worker** advances experiments
+and executes bounded provider operations and CPU-only export jobs.
+
+**PostgreSQL is the source of truth** for experiment state, job intent, reviews,
+observations, usage and budgets. Redis provides queue notification; recovery uses
+durable database records. Media and bundles live in a persistent,
+content-addressed artifact volume and are checked against retained hashes.
+
+Model credentials stay server-side. The default deployment binds ports to
+loopback and requires an owner session for research controls. A separate,
+explicitly published read-only snapshot can expose selected reviewed evidence;
+preparing a draft does not publish it. See [architecture](docs/architecture.md)
+and [security](docs/security.md) for the detailed boundaries.
+
+## Current results and limits
+
+The experiment, review, confirmation, export, refinement and retest workflows are
+implemented. The evaluation harness and offline regression CI are also
+implemented; synthetic controls verify pipeline behavior and do not establish a
+real-model weakness.
+
+The supervised **November 4, 2026 one-seed live pilot** completed with three
+correct baseline replies and three human-reviewed brightness variants, all
+counted correctly by Muse Spark 1.3. It consumed **6 target calls** and reported
+**USD 0.028916 total provider usage**, including planner and SAM operations, with
+no unresolved charges at completion. Run ID:
+`44d5e899-184d-4d47-a644-38c4b67d38d4`. This is a small workflow demonstration;
+it establishes no stable counting failure or advantage over random search.
+
+The full 12-case matched-budget benchmark, independent audit and automatic
+threshold calibration remain outstanding. The proposed 100-variant and audited
+validity targets are goals, not measured results. No genuine stable failure is
+currently claimed. Public product/video publication and final submission remain
+pending, and `release_ready` remains **false**. Current gates are tracked in the
+[release evidence index](docs/releases/evidence-index.json),
+[benchmark preparation ledger](docs/benchmark/00-status.md) and
+[limitations](docs/limitations.md).
 
 ## Development setup
 
@@ -90,9 +244,8 @@ Release status, acceptance evidence, and attribution:
 [API reference](docs/api.md), and [limitations](docs/limitations.md).
 Original code is under the [MIT License](LICENSE) (owner-confirmed);
 third-party work keeps its own licenses (see ATTRIBUTION).
-`release_ready` is currently **false**; every missing gate is listed
-in the evidence index. Run `make release-check` for the offline
-structural validation (validation correctness is not release readiness).
+Run `make release-check` for offline structural validation; a passing structural
+check does not by itself establish release readiness.
 
 ## Run local services
 
@@ -147,7 +300,9 @@ orientation, composites alpha on white and creates a metadata-free RGB PNG.
 Original bytes/SHA, normalized SHA and pixel SHA are retained separately. Upload
 filenames never determine storage paths.
 
-Configure a curated `META_SPARK` or synthetic `LOCAL_FIXTURE` target. A target
+Configure a curated `META_SPARK` or synthetic `LOCAL_FIXTURE` target. New targets
+saved through the workspace pin temperature to 0, `top_p` to null and the output
+limit to 1,024 tokens. Existing targets retain their saved settings. A target
 check is one handshake; it is not the full seed baseline from phase 05. Request
 segmentation with explicit call, dollar and runtime limits, then inspect each
 instance over the source image. Paint, erase or use source-coordinate rectangles
@@ -415,37 +570,32 @@ apps/web/          Owner setup, evidence, regression library and API types
 services/api/      Authenticated API, database, artifacts and accounting
 services/worker/   Durable experiments, CPU export jobs and recovery
 packages/          Contracts, adapters, verification and portable bundles
+evaluations/       Frozen protocols, matched-budget runs, audit and reports
 fixtures/phase03/  Original CC0 development seed and manifest
-scripts/           Contract generation, smoke, comparison and maintenance
+scripts/           Contract generation, smoke, comparison, release and maintenance
 tests/             Offline, PostgreSQL and real-process browser checks
 tests/fixtures/phase04/  Labeled synthetic candidate evidence specimens
+.github/workflows/ Quality checks and offline regression CI
 docs/plans/        Ordered phases and verification handoffs
+docs/guides/       Human review, live testing and submission preparation
+docs/benchmark/    Dataset/protocol drafts and genuine benchmark gates
+docs/releases/     Release evidence and readiness receipts
 ```
 
-Phases 01–07 implement typed contracts, PostgreSQL evidence storage, atomic spend
-accounting, bounded Meta adapters, reviewed seed/mask setup, controlled mutations,
-independent verification, durable experiments and portable regression ZIPs. Phase 08
-adds the frozen matched-budget evaluation harness and independent audit in
-`evaluations/`; measured real-model evaluation remains pending human dataset
-labels and a separate paid authorization. See the
-[Phase 08 handoff](docs/plans/phase-08-handoff.md),
-[evaluation guide](docs/evaluation.md) and [limitations](docs/limitations.md).
+## Further documentation
 
-Phase 09 completes owner project/run views, candidate filters, authenticated stream
-reconnection, session renewal, evidence controls and the isolated recorded gallery.
-It adds readiness, bounded logs, backup/restore and a disposable restart/recovery
-rehearsal. The retained real-provider demo draft has zero confirmed findings and
-remains unpublished. See the [Phase 09 handoff](docs/plans/phase-09-handoff.md)
-for verification, observed latency and operational limits.
+| Topic | Reference |
+| --- | --- |
+| Product scope and requirements | [PRD](docs/CounterForge_PRD_v1.0.md) |
+| System contracts, state machines and original design | [Technical specification](docs/CounterForge_Technical_Specification_v1.0.md) |
+| Complete documentation and implementation history | [Documentation index](docs/README.md) and [roadmap](docs/plans/README.md) |
+| Feedback search, refinement and retests | [Phase 07 handoff](docs/plans/phase-07-handoff.md) and [frozen policy](docs/plans/phase-07-policy.json) |
+| Matched-budget evaluation and independent audit | [Evaluation guide](docs/evaluation.md) and [Phase 08 handoff](docs/plans/phase-08-handoff.md) |
+| Operational architecture and recovery | [Architecture](docs/architecture.md), [operations runbook](docs/operations/runbook.md) and [Phase 09 handoff](docs/plans/phase-09-handoff.md) |
+| Offline regression CI, controls and trust boundaries | [Phase 12 handoff](docs/plans/phase-12-handoff.md) |
+| Release acceptance, attribution and publication gates | [Submission matrix](docs/submission.md), [Phase 10 handoff](docs/plans/phase-10-handoff.md) and [attribution](ATTRIBUTION.md) |
+| Supervised testing, recording and submission preparation | [Live final-testing guide](docs/guides/live-final-testing.md) |
 
-Start with the [documentation index](docs/README.md), [roadmap](docs/plans/README.md)
-and [phase 06 handoff](docs/plans/phase-06-handoff.md). The PRD, technical
-specification and supplied SQL remain the source documents.
-
-Phase 10 adds the MIT license, attribution and dependency notices, API reference,
-32-row acceptance matrix, offline release validation, deployment policy and a
-verified private three-minute demo draft. Public deployment, video publication,
-organizer eligibility/rules verification and submission remain pending. Real
-provider runs found zero stable failures; no benchmark lift is claimed. See the
-[Phase 10 handoff](docs/plans/phase-10-handoff.md) and
-[submission draft](docs/submission.md).
+The PRD, technical specification and supplied SQL are the source design
+documents. Implementation handoffs and evidence receipts record what has
+actually been built and verified, including deviations and remaining gates.
